@@ -102,8 +102,6 @@ Your phone can't reach `localhost` — you need to use your Mac's local network 
    CORS_ORIGINS=["http://localhost:8081","http://<your-mac-ip>:8081"]
    ```
 
-4. Restart both the backend and Expo (`npx expo start --clear`).
-
 > Your Mac's local IP can change when you reconnect to WiFi. Re-run `ipconfig getifaddr en0` if it stops working.
 
 ### Teller sandbox credentials
