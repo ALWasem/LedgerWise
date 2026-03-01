@@ -38,7 +38,7 @@ This is a full-stack fintech application that connects to real bank accounts, al
 - **Routing:** Single `App.tsx` for now (Iteration 1). Will migrate to Expo Router in Iteration 2.
 - **State Management:** React hooks for now; migrate to Zustand if complexity grows
 - **API Client:** `fetch` in `App.tsx` for now; will move to `/frontend/src/api/` in Iteration 2
-- **Styling:** StyleSheet API (no Tailwind/NativeWind unless explicitly added)
+- **Styling:** StyleSheet API (no Tailwind/NativeWind unless explicitly added). Styles live in `frontend/src/styles/` and are imported into their screen/component file (e.g. `app.styles.ts` → imported in `App.tsx`).
 - **Teller Connect (web):** JS widget injected via `document.createElement('script')` in a `useEffect`
 - **Teller Connect (mobile):** WebView inside a Modal, HTML page auto-opens the widget, communicates back via `postMessage`
 - **Important:** All UI components must use React Native primitives (`View`, `Text`, `Pressable`, etc.) — not HTML elements like `div` or `span`.
@@ -143,6 +143,8 @@ Files marked `*` exist now. Everything else is planned for future iterations.
 │   │   ├── components/          Reusable UI components
 │   │   ├── hooks/               Custom React hooks
 │   │   ├── contexts/            React Context providers (auth, theme)
+│   │   ├── styles/            * StyleSheet files (one per screen/component)
+│   │   │   └── app.styles.ts  * Styles for App.tsx
 │   │   ├── utils/               Formatters, helpers
 │   │   └── types/               TypeScript type definitions
 │   ├── assets/                *
