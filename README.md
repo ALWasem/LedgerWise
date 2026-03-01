@@ -47,11 +47,13 @@ cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000 --host 0.0.0.0
 # API docs at http://localhost:8000/docs
 ```
 
 > Each time you open a new terminal you'll need to re-run `source venv/bin/activate` from the `backend/` directory before starting the server.
+
+> **`--host 0.0.0.0`** makes the server reachable on your local network (required for testing on a physical phone). Without it, the server only accepts connections from your own machine.
 
 ### Frontend (web)
 
@@ -80,6 +82,29 @@ npx expo start
 ```
 
 > **iOS simulator tip:** Go to **I/O → Keyboard → disable "Connect Hardware Keyboard"** in the Simulator menu bar, otherwise typing in the Teller Connect login form will cause the page to refresh.
+
+### Frontend (physical phone)
+
+Your phone can't reach `localhost` — you need to use your Mac's local network IP instead.
+
+1. Find your Mac's IP:
+   ```bash
+   ipconfig getifaddr en0
+   ```
+
+2. Update `frontend/.env`:
+   ```
+   EXPO_PUBLIC_API_URL=http://<your-mac-ip>:8000
+   ```
+
+3. Update `backend/.env` to add the IP to CORS origins:
+   ```
+   CORS_ORIGINS=["http://localhost:8081","http://<your-mac-ip>:8081"]
+   ```
+
+4. Restart both the backend and Expo (`npx expo start --clear`).
+
+> Your Mac's local IP can change when you reconnect to WiFi. Re-run `ipconfig getifaddr en0` if it stops working.
 
 ### Teller sandbox credentials
 
