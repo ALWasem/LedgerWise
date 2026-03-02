@@ -29,9 +29,21 @@ A personal finance app that connects to real bank accounts and shows your transa
 - Node.js 18+
 - A [Teller](https://teller.io) account with sandbox credentials (App ID + certificate files)
 
-### Backend
+### Quick start (recommended)
 
-Create `backend/.env` with the following:
+A `Makefile` at the root handles setup and startup automatically:
+
+```bash
+make install   # first-time setup: creates Python venv + installs all deps
+make backend   # start the FastAPI server (auto-creates venv if missing)
+make frontend  # start the Expo dev server
+```
+
+### Manual setup
+
+#### Backend
+
+Create `backend/.env`:
 
 ```
 TELLER_CERT_PATH=certs/certificate.pem
@@ -55,9 +67,9 @@ uvicorn app.main:app --reload --port 8000 --host 0.0.0.0
 
 > **`--host 0.0.0.0`** makes the server reachable on your local network (required for testing on a physical phone). Without it, the server only accepts connections from your own machine.
 
-### Frontend (web)
+#### Frontend (web)
 
-Create `frontend/.env` with the following:
+Create `frontend/.env`:
 
 ```
 EXPO_PUBLIC_API_URL=http://localhost:8000
@@ -73,7 +85,7 @@ npx expo start --web
 # Opens at http://localhost:8081
 ```
 
-### Frontend (iOS simulator)
+#### Frontend (iOS simulator)
 
 ```bash
 cd frontend
