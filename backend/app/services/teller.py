@@ -2,8 +2,12 @@ import base64
 from typing import Any
 
 import httpx
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.config import settings
+from app.models import Transaction
 
 TELLER_BASE_URL = "https://api.teller.io"
 
@@ -51,3 +55,24 @@ def get_all_transactions(access_token: str) -> list[dict[str, Any]]:
         all_transactions.extend(txns)
     all_transactions.sort(key=lambda t: t.get("date", ""), reverse=True)
     return all_transactions
+
+
+async def get_transactions_from_db(db: AsyncSession) -> list[dict[str, Any]]:
+    """Fetch all transactions from the database, joined with account info."""
+    result = await db.execute(
+        select(Transaction)
+        .options(joinedload(Transaction.account))
+        .order_by(Transaction.date.desc())
+    )
+    rows = result.scalars().all()
+
+    return [
+        {
+            "id": str(txn.teller_transaction_id),
+            "date": txn.date.isoformat(),
+            "description": txn.description,
+            "amount": str(txn.amount),
+            "account_name": txn.account.account_name or "Unknown",
+        }
+        for txn in rows
+    ]

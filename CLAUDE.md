@@ -4,7 +4,7 @@
 
 This is a full-stack fintech application that connects to real bank accounts, allowing users to view transactions, balances, and manage their financial data. The app targets a small friends & family user base initially (5–50 users) with architecture designed to scale to production.
 
-**Current phase: Iteration 1 complete.** Basic Teller bank linking and transaction viewing works on both web and iOS simulator. No auth, no database — access tokens flow directly from Teller Connect to the backend proxy and are not persisted.
+**Current phase: Iteration 1 complete, DB infrastructure set up.** Basic Teller bank linking and transaction viewing works on both web and iOS simulator. Database layer is in place (SQLAlchemy models, Alembic migrations, Supabase connection) but no auth yet. The teller router currently serves mock Robinhood data; the real Teller service code is ready but commented out.
 
 ## Development Phases
 
@@ -15,8 +15,8 @@ This is a full-stack fintech application that connects to real bank accounts, al
 - Core features: bank linking, transaction viewing, balance dashboard
 - Target users: friends & family (5–50 people)
 
-**Iteration 1 (done):** Teller Connect → transaction list, no auth, no DB. Works on web and iOS.
-**Iteration 2 (next):** Add Supabase auth, persist enrolled tokens, proper routing with Expo Router.
+**Iteration 1 (done):** Teller Connect → transaction list, works on web and iOS. DB models (User, Account, Transaction) + Alembic migrations + async Supabase connection set up. Mock Robinhood data pipeline for testing.
+**Iteration 2 (next):** Add Supabase auth middleware, re-enable live Teller data, Pydantic response schemas, Expo Router migration, persist enrolled tokens.
 
 ### Phase 2 — Mobile Expansion (FUTURE)
 - Build iOS app from the same Expo codebase (no rewrite needed)
@@ -85,25 +85,28 @@ Files marked `*` exist now. Everything else is planned for future iterations.
 /
 ├── CLAUDE.md
 ├── README.md
+├── Makefile                   * make backend, make frontend, make install
 ├── .gitignore                 *
 ├── backend/                   *
 │   ├── app/
 │   │   ├── main.py            * FastAPI app, CORS config
 │   │   ├── config.py          * pydantic-settings env config
-│   │   ├── dependencies.py      Dependency injection (DB sessions, auth)
+│   │   ├── dependencies.py    * Async SQLAlchemy engine + session (get_db)
 │   │   ├── middleware/
 │   │   │   ├── auth.py          JWT validation middleware
 │   │   │   └── rate_limit.py    Redis-based rate limiter
-│   │   ├── models/
-│   │   │   ├── user.py          User SQLAlchemy model
-│   │   │   ├── account.py       Bank account model
-│   │   │   └── transaction.py   Transaction model
+│   │   ├── models/            *
+│   │   │   ├── __init__.py    * Exports all models
+│   │   │   ├── base.py        * DeclarativeBase
+│   │   │   ├── user.py        * User model (UUID, email, name, timestamps)
+│   │   │   ├── account.py     * Account model (Teller fields, user FK)
+│   │   │   └── transaction.py * Transaction model (full schema, account FK)
 │   │   ├── schemas/
 │   │   │   ├── user.py          Pydantic request/response schemas
 │   │   │   ├── account.py
 │   │   │   └── transaction.py
 │   │   ├── routers/
-│   │   │   ├── teller.py      * POST /api/v1/teller/transactions
+│   │   │   ├── teller.py      * POST /api/v1/teller/transactions (currently mock data)
 │   │   │   ├── auth.py          /api/v1/auth/*
 │   │   │   ├── accounts.py      /api/v1/accounts/*
 │   │   │   ├── transactions.py  /api/v1/transactions/*
@@ -115,14 +118,19 @@ Files marked `*` exist now. Everything else is planned for future iterations.
 │   │   └── utils/
 │   │       ├── encryption.py    Encrypt/decrypt Teller tokens at rest
 │   │       └── errors.py        Standardized error responses
-│   ├── alembic/                 Database migrations
+│   ├── alembic/               * Database migrations
+│   │   └── versions/          * Contains initial migration
+│   ├── alembic.ini            * Alembic config
+│   ├── scripts/               *
+│   │   └── import_robinhood.py * Upserts mock data from robinhood_data.json into Supabase
+│   ├── robinhood_data.json    * Mock Robinhood transaction data for testing
 │   ├── tests/
 │   ├── certs/                 * Teller mTLS certs (gitignored)
 │   │   ├── certificate.pem    * Teller certificate
 │   │   └── private_key.pem    * Teller private key
 │   ├── requirements.txt       *
 │   ├── .env                   * Local env (gitignored)
-│   ├── .env.example           *
+│   ├── .env.example
 │   ├── Dockerfile
 │   └── railway.toml
 ├── frontend/                  * Single codebase for web + iOS/Android
@@ -152,7 +160,7 @@ Files marked `*` exist now. Everything else is planned for future iterations.
 │   ├── package.json           *
 │   ├── tsconfig.json          *
 │   ├── .env                   * Local env (gitignored)
-│   ├── .env.example           *
+│   ├── .env.example
 │   └── eas.json                 EAS Build config (used in Phase 2)
 └── .github/
     └── workflows/               CI/CD (lint, test, deploy)
@@ -168,6 +176,7 @@ Files marked `*` exist now. Everything else is planned for future iterations.
 4. **Teller tokens encrypted at rest:** Access tokens for bank connections are AES-encrypted before storing in Supabase. The encryption key lives in environment variables, never in code.
 5. **Cache-aside pattern:** Redis is optional — if Redis is down, the app still works (just slower). Never make Redis a hard dependency.
 6. **No GraphQL:** REST is simpler for this scale. If query complexity grows, consider adding GraphQL later.
+7. **Router → Service → Model layering:** Routers handle HTTP concerns only (request validation, response formatting, error mapping). Services contain business logic, external API calls, and data orchestration. Models are SQLAlchemy table mappings with no logic. The flow is always Router → Service → Model/DB.
 
 ## Environment Variables
 
@@ -178,11 +187,11 @@ TELLER_CERT_PATH=certs/certificate.pem
 TELLER_KEY_PATH=certs/private_key.pem
 TELLER_ENV=sandbox
 CORS_ORIGINS=["http://localhost:8081"]
-
-# Planned (Iteration 2+)
 DATABASE_URL=          # Supabase Postgres connection string
 SUPABASE_URL=
 SUPABASE_KEY=
+
+# Planned (Iteration 2+)
 UPSTASH_REDIS_URL=
 UPSTASH_REDIS_TOKEN=
 R2_ACCOUNT_ID=
@@ -198,10 +207,11 @@ Frontend (`frontend/.env`):
 # Active now
 EXPO_PUBLIC_API_URL=http://localhost:8000
 EXPO_PUBLIC_TELLER_APP_ID=   # Teller application ID
-
-# Planned (Iteration 2+)
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
+
+# Planned (Iteration 2+)
+# (none currently)
 ```
 
 ## Conventions & Style
@@ -229,12 +239,20 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Common Tasks
 
+### Quick start (Makefile)
+```bash
+make install    # Install backend + frontend dependencies
+make backend    # Run backend (activates venv, starts uvicorn)
+make frontend   # Run frontend (starts Expo web)
+```
+
 ### Run backend locally
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000 --host 0.0.0.0
 # API docs at http://localhost:8000/docs
+# --host 0.0.0.0 is needed for physical device testing
 ```
 
 ### Run frontend locally (web — Phase 1)
@@ -243,6 +261,7 @@ cd frontend
 npm install
 npx expo start --web
 # Opens in browser at http://localhost:8081
+# After editing .env, restart with: npx expo start --web --clear
 ```
 
 ### Run frontend on iOS simulator
@@ -259,6 +278,13 @@ npx expo start
 cd backend
 alembic upgrade head          # Apply migrations
 alembic revision --autogenerate -m "description"  # Create migration
+```
+
+### Import mock data into Supabase
+```bash
+cd backend
+python -m scripts.import_robinhood
+# Upserts robinhood_data.json into DB (creates test user test@ledgerwise.dev)
 ```
 
 ### Deploy
