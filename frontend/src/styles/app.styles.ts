@@ -105,4 +105,10 @@ export const styles = StyleSheet.create({
     color: '#0f172a',
     fontWeight: '600',
   },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

@@ -4,14 +4,15 @@
 
 Full-stack fintech app connecting to real bank accounts for transaction viewing, balances, and spending analysis. React Native Web frontend (Expo) + FastAPI backend + Supabase (PostgreSQL). Targets friends & family initially (5–50 users), designed to scale.
 
-**Current state:** Teller bank linking, transaction list, and spending summary work on web and iOS simulator. Database layer in place (SQLAlchemy + Alembic + Supabase). No auth yet. Teller router serves mock data; real Teller service code is ready but commented out.
+**Current state:** Teller bank linking, transaction list, and spending summary work on web and iOS (Expo Go). Google OAuth via Supabase Auth works on both web and native iOS. Database layer in place (SQLAlchemy + Alembic + Supabase). Teller router serves mock data; real Teller service code is ready but commented out.
 
 ## Development Phases
 
 ### Phase 1 — Web App (CURRENT)
 **Iteration 1 (done):** Teller Connect → transaction list on web + iOS. DB models + migrations + Supabase connection.
 **Iteration 1.5 (done):** Spending summary with category breakdown. Frontend decomposed into components, hooks, and feature modules.
-**Iteration 2 (next):** Supabase auth middleware, re-enable live Teller data, Expo Router migration, persist enrolled tokens.
+**Iteration 1.75 (done):** Google OAuth sign-in via Supabase Auth. Web uses `signInWithOAuth` redirect flow; native iOS uses `expo-auth-session` + `signInWithIdToken` (bypasses Supabase redirect, which doesn't work in Expo Go). Backend JWT validation middleware via JWKS (guards `/api/v1/me`; not yet applied to all routes).
+**Iteration 2 (next):** Apply auth middleware to all routes, re-enable live Teller data, Expo Router migration, persist enrolled tokens, native session persistence (AsyncStorage).
 
 ### Phase 2 — Mobile (FUTURE)
 Build iOS app from same Expo codebase via EAS Build. Push notifications, biometric auth, widgets. Evaluate Android.
@@ -70,7 +71,8 @@ These rules apply to all new code and refactors.
 
 | Layer | Technology | Notes |
 |-------|-----------|-------|
-| Frontend | React Native + Expo SDK | Web + iOS from one codebase |
+| Frontend | React Native + Expo SDK 54 | Web + iOS from one codebase |
+| Auth | Supabase Auth + Google OAuth | expo-auth-session on native |
 | Hosting (web) | Vercel | Free tier |
 | Routing | `App.tsx` (Iteration 1) | Expo Router in Iteration 2 |
 | State | React hooks + custom hooks | Zustand if complexity grows |
@@ -98,8 +100,8 @@ Files marked `*` exist now. Unmarked files are planned for future iterations.
 │   │   ├── main.py            * FastAPI app, CORS config
 │   │   ├── config.py          * pydantic-settings env config
 │   │   ├── dependencies.py    * Async SQLAlchemy engine + get_db
-│   │   ├── middleware/
-│   │   │   ├── auth.py          JWT validation middleware
+│   │   ├── middleware/         *
+│   │   │   ├── auth.py        * JWKS-based JWT validation (Supabase)
 │   │   │   └── rate_limit.py    Redis-based rate limiter
 │   │   ├── models/            * User, Account, Transaction
 │   │   ├── schemas/           * spending.py, transaction.py
@@ -127,13 +129,14 @@ Files marked `*` exist now. Unmarked files are planned for future iterations.
 │   │   └── _layout.tsx          Root layout
 │   └── src/
 │       ├── api/client.ts      * Centralized API client
-│       ├── components/        * TransactionRow, TellerModal
+│       ├── api/supabase.ts    * Supabase client (createClient)
+│       ├── components/        * TransactionRow, TellerModal, LoginScreen
 │       ├── hooks/             * useTellerConnect, useTransactions
 │       ├── spending/          * Feature module (SpendingSummary + sub-components)
-│       ├── styles/            * app, spending, transactionRow
+│       ├── styles/            * app, spending, transactionRow, auth
 │       ├── types/             * transaction.ts, spending.ts
 │       ├── utils/             * categoryColors.ts
-│       └── contexts/            React Context providers (auth, theme)
+│       └── contexts/          * AuthContext (Google OAuth + Supabase session)
 ```
 
 ## Key Architecture Decisions
@@ -143,6 +146,7 @@ Files marked `*` exist now. Unmarked files are planned for future iterations.
 3. **API-first** — frontend is a thin client. All business logic in FastAPI.
 4. **Teller tokens encrypted at rest** — AES-encrypted in DB. Key in env vars, never in code.
 5. **Cache-aside** — Redis is optional. App works without it (just slower).
+6. **Platform-aware auth** — Web uses Supabase `signInWithOAuth` (browser redirect). Native iOS uses `expo-auth-session` Google provider to get an ID token, then `signInWithIdToken` to create a Supabase session. Supabase's OAuth redirect flow doesn't work in Expo Go because `ASWebAuthenticationSession` can't intercept `exp://` scheme 302 redirects.
 
 ## Environment Variables
 
@@ -165,7 +169,6 @@ R2_ACCESS_KEY=
 R2_SECRET_KEY=
 R2_BUCKET_NAME=
 ENCRYPTION_KEY=        # AES key for encrypting Teller tokens at rest
-JWT_SECRET=            # For validating Supabase JWTs
 ```
 
 Frontend (`frontend/.env`):
@@ -174,6 +177,8 @@ EXPO_PUBLIC_API_URL=http://localhost:8000
 EXPO_PUBLIC_TELLER_APP_ID=
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=    # Google Cloud Console → Web OAuth client
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=    # Google Cloud Console → iOS OAuth client (bundle ID: host.exp.Exponent for Expo Go)
 ```
 
 ## Conventions
@@ -214,12 +219,27 @@ cd backend && alembic revision --autogenerate -m "description"
 
 **Deploy:** Push to `main` → Railway (backend) and Vercel (frontend) auto-deploy.
 
+## Auth Setup (Google OAuth + Supabase)
+
+**Google Cloud Console:**
+- Web OAuth client → used for browser-based sign-in
+- iOS OAuth client → bundle ID `host.exp.Exponent` (Expo Go); change to real bundle ID for production builds
+
+**Supabase Dashboard (Authentication → Providers → Google):**
+- Client IDs field: comma-separated list of both Web and iOS client IDs
+- "Skip nonce checks" enabled (required — expo-auth-session generates nonces Supabase can't verify)
+- Client Secret: from the Web OAuth client
+
+**Native auth flow:** `expo-auth-session/providers/google` → `Google.useAuthRequest` with `iosClientId` → redirect via reversed client ID scheme (`com.googleusercontent.apps.CLIENT_ID:/oauthredirect`) → ID token → `supabase.auth.signInWithIdToken()`
+
 ## Security
 
 - **Never log or expose Teller access tokens** — they grant direct bank access
 - **Teller tokens encrypted at rest** (AES) in Supabase
 - **HTTPS only** — enforced by Railway + Vercel
 - **CORS restricted** to known frontend domains
+- **Google OAuth client IDs are public** — they are not secrets (validated server-side by Google)
+- **Backend JWT validation** — JWKS-based (`middleware/auth.py`), currently guards `/api/v1/me`. Iteration 2 will apply to all routes.
 - **Planned:** Supabase RLS on all user tables, Redis-based rate limiting
 
 ## Scaling Path
