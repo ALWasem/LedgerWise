@@ -45,7 +45,7 @@ export default function CategoryAccordion({
             return updated;
           });
         });
-        return prev; // don't remove yet — wait for animation
+        return prev;
       } else {
         next.add(name);
         anim.setValue(0);
@@ -75,12 +75,14 @@ export default function CategoryAccordion({
     });
   }
 
+  const sorted = [...data.categories].sort((a, b) => b.total - a.total);
+
   const content = (
     <View style={styles.categoriesContainer}>
-      {data.categories.map((cat, i) => {
+      {sorted.map((cat, i) => {
         const isExpanded = expandedCategories.has(cat.name);
         const isUncategorized = !isRefund && cat.name === 'General';
-        const color = isRefund ? '#22c55e' : getCategoryColor(cat.name, i);
+        const color = isRefund ? '#22c55e' : getCategoryColor(cat.name, data.categories.indexOf(cat));
         const categoryTransactions = isExpanded
           ? getTransactionsForCategory(cat.name)
           : [];
@@ -92,6 +94,7 @@ export default function CategoryAccordion({
                 styles.categoryRow,
                 isUncategorized && styles.uncategorizedRow,
                 isRefund && styles.refundRow,
+                i === sorted.length - 1 && !isExpanded && { borderBottomWidth: 0 },
               ]}
               onPress={() => toggleCategory(cat.name)}
             >
@@ -99,25 +102,46 @@ export default function CategoryAccordion({
                 <View
                   style={[styles.categoryDot, { backgroundColor: color }]}
                 />
-                <Text style={styles.categoryName}>{cat.name}</Text>
-                <View style={styles.countBadge}>
-                  <Text style={styles.countBadgeText}>
-                    {cat.count} txns
-                  </Text>
-                </View>
+                <Text
+                  style={[
+                    styles.categoryName,
+                    isUncategorized && styles.uncategorizedName,
+                  ]}
+                >
+                  {cat.name === 'General' ? 'General / Uncategorized' : cat.name}
+                </Text>
+                {isUncategorized && (
+                  <View style={styles.reviewBadge}>
+                    <Text style={styles.reviewBadgeText}>Review</Text>
+                  </View>
+                )}
               </View>
               <View style={styles.categoryRight}>
-                <Text style={[styles.categoryTotal, isRefund && styles.refundTotal]}>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>{cat.count}</Text>
+                </View>
+                <Text
+                  style={[
+                    styles.categoryTotal,
+                    isUncategorized && styles.uncategorizedTotal,
+                    isRefund && styles.refundTotal,
+                  ]}
+                >
                   {isRefund ? '+' : ''}${cat.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </Text>
                 <Text style={styles.expandArrow}>
-                  {isExpanded ? '\u25B2' : '\u25BC'}
+                  {isExpanded ? '\u25BC' : '\u203A'}
                 </Text>
               </View>
             </Pressable>
 
             {isExpanded && (
-              <Animated.View style={{ opacity: getFadeAnim(cat.name) }}>
+              <Animated.View
+                style={[
+                  styles.expandedContainer,
+                  { opacity: getFadeAnim(cat.name) },
+                ]}
+              >
                 {categoryTransactions.map((txn) => {
                   const amt = parseFloat(txn.amount);
                   const isPositive = amt > 0;
@@ -128,7 +152,11 @@ export default function CategoryAccordion({
                           {txn.description}
                         </Text>
                         <Text style={styles.expandedTxnMeta}>
-                          {txn.date} · {txn.account_name}
+                          {new Date(txn.date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
                         </Text>
                       </View>
                       <Text
@@ -154,10 +182,19 @@ export default function CategoryAccordion({
     return (
       <View style={styles.refundSection}>
         <Text style={styles.refundSectionLabel}>Refunds</Text>
-        {content}
+        <View style={[styles.categoriesSection, styles.refundSectionCard]}>
+          {content}
+        </View>
       </View>
     );
   }
 
-  return content;
+  return (
+    <View style={styles.categoriesSection}>
+      <View style={styles.categoriesSectionHeader}>
+        <Text style={styles.categoriesSectionTitle}>All Categories</Text>
+      </View>
+      {content}
+    </View>
+  );
 }

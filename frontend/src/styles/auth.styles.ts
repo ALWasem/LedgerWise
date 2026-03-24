@@ -47,19 +47,4 @@ export const authStyles = StyleSheet.create({
     fontWeight: '600',
     color: '#1f2937',
   },
-  logoutButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  logoutText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#dc2626',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 32,
-  },
 });

@@ -1,4 +1,4 @@
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const spendingStyles = StyleSheet.create({
   container: {
@@ -8,96 +8,145 @@ export const spendingStyles = StyleSheet.create({
     marginTop: 40,
   },
   emptyText: {
-    color: '#64748b',
+    color: '#737373',
     marginTop: 40,
     textAlign: 'center',
     fontSize: 14,
   },
 
-  // --- Summary Strip ---
+  // --- Summary Cards ---
   summaryStrip: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
     marginBottom: 20,
   },
   summaryCard: {
     flex: 1,
     minWidth: 150,
-    backgroundColor: '#1e293b',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    padding: 20,
   },
   uncategorizedCard: {
-    borderWidth: 1.5,
-    borderColor: '#f87171',
+    backgroundColor: '#FFFBEB',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
   },
-  cardLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
+  cardIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   cardValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#f8fafc',
+    fontSize: 28,
+    fontWeight: '600',
+    color: '#0A0A0A',
+    letterSpacing: -0.5,
+    marginBottom: 2,
+  },
+  cardValueSmall: {
+    fontSize: 17,
   },
   uncategorizedValue: {
-    color: '#f87171',
+    color: '#92400E',
   },
   cardSub: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 2,
+    fontSize: 13,
+    color: '#737373',
+  },
+  uncategorizedSub: {
+    color: '#92400E',
+    fontWeight: '500',
   },
 
-  // --- Proportion Bar ---
+  // --- Proportion Bar Section ---
   proportionBarContainer: {
-    marginBottom: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    padding: 24,
+    marginBottom: 20,
+  },
+  proportionBarTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0A0A0A',
+    marginBottom: 16,
   },
   proportionBar: {
     flexDirection: 'row',
-    height: 14,
-    borderRadius: 7,
+    height: 40,
+    borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#E5E5E5',
+    marginBottom: 16,
   },
   proportionSegment: {
     height: '100%' as unknown as number,
   },
   proportionSegmentFirst: {
-    borderTopLeftRadius: 7,
-    borderBottomLeftRadius: 7,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
   },
   proportionSegmentLast: {
-    borderTopRightRadius: 7,
-    borderBottomRightRadius: 7,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
   },
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 10,
-    gap: 14,
+    gap: 12,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '45%' as unknown as number,
+    minWidth: 140,
   },
   legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 3,
+    marginRight: 8,
   },
   legendText: {
+    fontSize: 13,
+    color: '#525252',
+    flex: 1,
+  },
+  legendPercentage: {
     fontSize: 12,
-    color: '#64748b',
+    color: '#A3A3A3',
+    marginLeft: 4,
   },
 
-  // --- Accordion Categories ---
+  // --- Category List Section ---
+  categoriesSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  categoriesSectionHeader: {
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  categoriesSectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0A0A0A',
+  },
   categoriesContainer: {
     paddingBottom: 0,
   },
@@ -105,24 +154,16 @@ export const spendingStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1e293b',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    ...Platform.select({
-      web: { boxShadow: '0px 2px 4px rgba(0,0,0,0.08)' },
-      default: {
-        shadowColor: '#000',
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
-      },
-    }),
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#ffffff',
   },
   uncategorizedRow: {
-    borderWidth: 1.5,
-    borderColor: '#f87171',
+    backgroundColor: '#FFFBEB',
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
   },
   categoryLeft: {
     flexDirection: 'row',
@@ -130,27 +171,43 @@ export const spendingStyles = StyleSheet.create({
     flex: 1,
   },
   categoryDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 10,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 12,
   },
   categoryName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#f1f5f9',
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#0A0A0A',
   },
-  countBadge: {
-    backgroundColor: '#334155',
+  uncategorizedName: {
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  reviewBadge: {
+    backgroundColor: '#FEF3C7',
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 2,
+    marginLeft: 8,
+  },
+  reviewBadgeText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#92400E',
+  },
+  countBadge: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     marginLeft: 10,
   },
   countBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#525252',
   },
   categoryRight: {
     flexDirection: 'row',
@@ -159,25 +216,36 @@ export const spendingStyles = StyleSheet.create({
   categoryTotal: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#f1f5f9',
+    color: '#0A0A0A',
     marginRight: 8,
+    minWidth: 100,
+    textAlign: 'right',
+  },
+  uncategorizedTotal: {
+    color: '#92400E',
   },
   expandArrow: {
-    fontSize: 10,
-    color: '#64748b',
+    fontSize: 14,
+    color: '#A3A3A3',
   },
 
   // --- Expanded Transactions ---
+  expandedContainer: {
+    backgroundColor: '#FAFAFA',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
   expandedTxn: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    marginLeft: 20,
-    marginBottom: 2,
-    borderLeftWidth: 2,
-    borderLeftColor: '#334155',
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    marginBottom: 8,
   },
   expandedTxnLeft: {
     flex: 1,
@@ -185,17 +253,18 @@ export const spendingStyles = StyleSheet.create({
   },
   expandedTxnDesc: {
     fontSize: 13,
-    color: '#94a3b8',
+    fontWeight: '500',
+    color: '#0A0A0A',
   },
   expandedTxnMeta: {
-    fontSize: 11,
-    color: '#64748b',
+    fontSize: 12,
+    color: '#737373',
     marginTop: 2,
   },
   expandedTxnAmount: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#f87171',
+    color: '#0A0A0A',
   },
   expandedTxnRefund: {
     color: '#22c55e',
@@ -206,8 +275,7 @@ export const spendingStyles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#334155',
-    paddingBottom: 40,
+    borderTopColor: '#E5E5E5',
   },
   refundSectionLabel: {
     fontSize: 12,
@@ -217,9 +285,11 @@ export const spendingStyles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 10,
   },
-  refundRow: {
+  refundSectionCard: {
     borderWidth: 1.5,
     borderColor: '#22c55e',
+  },
+  refundRow: {
   },
   refundTotal: {
     color: '#22c55e',

@@ -1,15 +1,15 @@
 const CATEGORY_COLORS = [
-  '#22c55e', // green
-  '#3b82f6', // blue
-  '#a855f7', // purple
-  '#ec4899', // pink
-  '#84cc16', // lime
-  '#f59e0b', // amber
-  '#06b6d4', // cyan
-  '#8b5cf6', // violet
+  '#F59E0B', // amber (General / Uncategorized)
+  '#10B981', // green (Groceries)
+  '#EF4444', // red (Restaurants & Dining)
+  '#3B82F6', // blue (Transportation)
+  '#8B5CF6', // purple (Entertainment)
+  '#EC4899', // pink (Shopping)
+  '#06B6D4', // cyan (Utilities & Bills)
+  '#84CC16', // lime
 ];
 
-const UNCATEGORIZED_COLOR = '#f87171';
+const UNCATEGORIZED_COLOR = '#F59E0B';
 
 export function getCategoryColor(name: string, index: number): string {
   if (name === 'General') return UNCATEGORIZED_COLOR;

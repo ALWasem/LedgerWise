@@ -7,12 +7,92 @@ export const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 20,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 32,
+  // --- Header ---
+  headerBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+    marginBottom: 20,
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#6366F1',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerLogoText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  title: {
+    fontSize: 19,
+    fontWeight: '600',
+    color: '#0A0A0A',
+    letterSpacing: -0.2,
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 6,
+  },
+  signOutText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#525252',
+  },
+  // --- Tabs ---
+  tabStrip: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 4,
+    gap: 4,
+    marginBottom: 20,
+    alignSelf: 'flex-start',
+  },
+  tab: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  tabActive: {
+    backgroundColor: '#ffffff',
+    ...Platform.select({
+      web: { boxShadow: '0px 1px 3px rgba(0,0,0,0.08)' },
+      default: {
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
+        shadowOffset: { width: 0, height: 1 },
+        elevation: 2,
+      },
+    }),
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#737373',
+  },
+  tabTextActive: {
+    color: '#0A0A0A',
+    fontWeight: '500',
+  },
+  // --- Content ---
   button: {
     backgroundColor: '#2563eb',
     paddingVertical: 14,
@@ -37,14 +117,14 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   empty: {
-    color: '#64748b',
+    color: '#737373',
     marginTop: 40,
     textAlign: 'center',
   },
   sectionHeader: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#64748b',
+    color: '#737373',
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -69,41 +149,6 @@ export const styles = StyleSheet.create({
   },
   webView: {
     flex: 1,
-  },
-  tabStrip: {
-    flexDirection: 'row',
-    backgroundColor: '#e2e8f0',
-    borderRadius: 10,
-    padding: 3,
-    marginBottom: 16,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  tabActive: {
-    backgroundColor: '#fff',
-    ...Platform.select({
-      web: { boxShadow: '0px 1px 3px rgba(0,0,0,0.1)' },
-      default: {
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        shadowOffset: { width: 0, height: 1 },
-        elevation: 2,
-      },
-    }),
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#64748b',
-  },
-  tabTextActive: {
-    color: '#0f172a',
-    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,

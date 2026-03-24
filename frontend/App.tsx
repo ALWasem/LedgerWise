@@ -18,7 +18,6 @@ import { useTellerConnect } from './src/hooks/useTellerConnect';
 import { useTransactions } from './src/hooks/useTransactions';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { styles } from './src/styles/app.styles';
-import { authStyles } from './src/styles/auth.styles';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState<'transactions' | 'spending'>('transactions');
@@ -56,10 +55,15 @@ function MainApp() {
     <View style={styles.container}>
       <StatusBar style="dark" />
 
-      <View style={authStyles.headerRow}>
-        <Text style={styles.title}>LedgerWise</Text>
-        <Pressable style={authStyles.logoutButton} onPress={signOut}>
-          <Text style={authStyles.logoutText}>Sign Out</Text>
+      <View style={styles.headerBar}>
+        <View style={styles.headerLeft}>
+          <View style={styles.headerLogo}>
+            <Text style={styles.headerLogoText}>LW</Text>
+          </View>
+          <Text style={styles.title}>LedgerWise</Text>
+        </View>
+        <Pressable style={styles.signOutButton} onPress={signOut}>
+          <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
       </View>
 

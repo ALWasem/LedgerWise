@@ -30,28 +30,37 @@ export default function SpendingSummary({ data, transactions, loading }: Props) 
   const topCategory = data.categories[0];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
       <View style={styles.summaryStrip}>
         <SummaryChip
-          label="Total spent"
-          value={`$${data.total_spent.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+          value={`$${data.total_spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtitle="All time"
+          icon="trending-up"
+          iconColor="#6366F1"
+          iconBgColor="#EEF2FF"
         />
         <SummaryChip
-          label="Transactions"
           value={`${data.transaction_count}`}
           subtitle={`across ${data.category_count} categories`}
+          icon="receipt-outline"
+          iconColor="#10B981"
+          iconBgColor="#F0FDF4"
         />
         <SummaryChip
-          label="Top category"
           value={topCategory.name}
-          subtitle={`$${topCategory.total.toLocaleString(undefined, { minimumFractionDigits: 2 })} · ${topCategory.percentage}%`}
+          subtitle={`$${topCategory.total.toLocaleString(undefined, { minimumFractionDigits: 2 })} \u00B7 ${topCategory.percentage}% of total`}
+          icon="pie-chart-outline"
+          iconColor="#F97316"
+          iconBgColor="#FFF7ED"
+          smallValue
         />
         <SummaryChip
-          label="Uncategorized"
           value={`${data.uncategorized_percentage}%`}
-          subtitle={`${data.uncategorized_count} transactions`}
+          subtitle="Uncategorized spending"
           variant="warning"
+          icon="alert-circle-outline"
+          iconColor="#D97706"
+          iconBgColor="rgba(255,255,255,0.6)"
         />
       </View>
 
@@ -65,7 +74,7 @@ export default function SpendingSummary({ data, transactions, loading }: Props) 
           data={{
             ...data,
             categories: [{
-              name: 'Refund',
+              name: 'Refunds',
               total: data.refund_total,
               count: data.refund_count,
               percentage: 0,
