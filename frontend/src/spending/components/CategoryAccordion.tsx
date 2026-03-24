@@ -59,9 +59,10 @@ export default function CategoryAccordion({
     });
   }, []);
 
+  const paymentPattern = /pymt|payment/i;
+
   function getTransactionsForCategory(categoryName: string): Transaction[] {
     if (isRefund) {
-      const paymentPattern = /pymt|payment/i;
       return transactions.filter((t) => {
         const amt = parseFloat(t.amount);
         const isCategoryRefund = t.category?.toLowerCase() === 'refund';
@@ -71,7 +72,11 @@ export default function CategoryAccordion({
     }
     return transactions.filter((t) => {
       const txnCategory = t.category || 'General';
-      return txnCategory === categoryName;
+      if (txnCategory !== categoryName) return false;
+      if (paymentPattern.test(t.description)) return false;
+      const amt = parseFloat(t.amount);
+      if (amt < 0) return false;
+      return true;
     });
   }
 
@@ -144,7 +149,6 @@ export default function CategoryAccordion({
               >
                 {categoryTransactions.map((txn) => {
                   const amt = parseFloat(txn.amount);
-                  const isPositive = amt > 0;
                   return (
                     <View key={txn.id} style={styles.expandedTxn}>
                       <View style={styles.expandedTxnLeft}>
@@ -162,10 +166,10 @@ export default function CategoryAccordion({
                       <Text
                         style={[
                           styles.expandedTxnAmount,
-                          (isPositive || isRefund) && styles.expandedTxnRefund,
+                          isRefund && styles.expandedTxnRefund,
                         ]}
                       >
-                        {isPositive || isRefund ? '+' : ''}${Math.abs(amt).toFixed(2)}
+                        {isRefund ? '+' : ''}${Math.abs(amt).toFixed(2)}
                       </Text>
                     </View>
                   );
