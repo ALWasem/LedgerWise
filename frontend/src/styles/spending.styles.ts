@@ -4,6 +4,9 @@ export const spendingStyles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 30,
+  },
   spinner: {
     marginTop: 40,
   },
@@ -12,6 +15,11 @@ export const spendingStyles = StyleSheet.create({
     marginTop: 40,
     textAlign: 'center',
     fontSize: 14,
+  },
+  periodRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 16,
   },
 
   // --- Summary Cards ---

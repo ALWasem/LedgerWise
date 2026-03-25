@@ -2,6 +2,9 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { spendingStyles as styles } from '../styles/spending.styles';
 import type { SpendingSummaryData } from '../types/spending';
 import type { Transaction } from '../types/transaction';
+import TimePeriodSelector, {
+  type TimePeriod,
+} from '../components/TimePeriodSelector';
 import CategoryAccordion from './components/CategoryAccordion';
 import ProportionBar from './components/ProportionBar';
 import SummaryChip from './components/SummaryChip';
@@ -10,9 +13,28 @@ interface Props {
   data: SpendingSummaryData | null;
   transactions: Transaction[];
   loading: boolean;
+  selectedPeriod: TimePeriod;
+  onPeriodChange: (period: TimePeriod) => void;
 }
 
-export default function SpendingSummary({ data, transactions, loading }: Props) {
+function periodLabel(period: TimePeriod): string {
+  if (period.type === 'all') return 'All time';
+  if (period.type === 'ytd') return `YTD ${period.year}`;
+  if (period.type === 'year') return `${period.year}`;
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  return `${months[period.month!]} ${period.year}`;
+}
+
+export default function SpendingSummary({
+  data,
+  transactions,
+  loading,
+  selectedPeriod,
+  onPeriodChange,
+}: Props) {
   if (loading) {
     return (
       <ActivityIndicator
@@ -24,17 +46,34 @@ export default function SpendingSummary({ data, transactions, loading }: Props) 
   }
 
   if (!data || data.categories.length === 0) {
-    return <Text style={styles.emptyText}>No spending data available.</Text>;
+    return (
+      <View style={styles.container}>
+        <View style={styles.periodRow}>
+          <TimePeriodSelector
+            selectedPeriod={selectedPeriod}
+            onPeriodChange={onPeriodChange}
+          />
+        </View>
+        <Text style={styles.emptyText}>No spending data for this period.</Text>
+      </View>
+    );
   }
 
   const topCategory = data.categories[0];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.periodRow}>
+        <TimePeriodSelector
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={onPeriodChange}
+        />
+      </View>
+
       <View style={styles.summaryStrip}>
         <SummaryChip
           value={`$${data.total_spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          subtitle="All time"
+          subtitle={periodLabel(selectedPeriod)}
           icon="trending-up"
           iconColor="#6366F1"
           iconBgColor="#EEF2FF"
