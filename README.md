@@ -11,8 +11,10 @@ A personal finance app that connects to real bank accounts for transaction viewi
 - **Bank linking** — Connect your bank account via [Teller](https://teller.io) (supports 10,000+ US institutions)
 - **Transaction feed** — View all transactions across linked accounts in a single feed
 - **Spending summary** — Category breakdown with proportional bars and summary chips
+- **Time period filtering** — Filter transactions and spending by month, year, year-to-date, or all time
+- **Dashboard navigation** — Sidebar nav on web, bottom tabs on mobile (Overview, Spending, Analytics, Settings)
 - **Google sign-in** — OAuth authentication via Supabase Auth (works on web and iOS)
-- **Cross-platform** — Web and iOS from the same codebase
+- **Cross-platform** — Web and iOS from the same codebase via Expo Router
 
 ## Project structure
 
@@ -26,14 +28,17 @@ A personal finance app that connects to real bank accounts for transaction viewi
 │   │   └── services/     Business logic
 │   └── alembic/          Database migrations
 └── frontend/     Expo app — web + iOS
-    ├── App.tsx           Composition root
+    ├── app/              Expo Router screens (file-based routing)
+    │   ├── _layout.tsx   Root layout (providers)
+    │   ├── login.tsx     Login page
+    │   └── dashboard/    Dashboard pages (overview, spending, analytics, settings)
     └── src/
         ├── api/          API client + Supabase client
-        ├── components/   Reusable UI (TransactionRow, TellerModal, LoginScreen)
+        ├── components/   Reusable UI (TimePeriodSelector, TellerModal, LoginScreen)
         ├── contexts/     AuthContext (Google OAuth + Supabase session)
         ├── hooks/        useTellerConnect, useTransactions
         ├── spending/     Spending summary feature module
-        ├── styles/       Co-located StyleSheet files
+        ├── styles/       Per-screen/component StyleSheet files
         ├── types/        Shared TypeScript interfaces
         └── utils/        Helpers (category colors, etc.)
 ```
@@ -182,12 +187,12 @@ Google OAuth is configured through three services:
 | Layer | Technology | Notes |
 |-------|-----------|-------|
 | Frontend | React Native + Expo SDK 54 | Web + iOS from one codebase |
+| Routing | Expo Router | File-based, sidebar + bottom tabs |
 | Auth | Supabase Auth + Google OAuth | expo-auth-session on native |
 | Backend | FastAPI + Uvicorn | Python 3.11+, async |
 | Database | Supabase (PostgreSQL) | SQLAlchemy 2.0 async + Alembic |
 | Banking API | Teller | mTLS, sandbox → production |
-| Hosting (web) | Vercel | Auto-deploys from `main` |
-| Hosting (API) | Railway | Auto-deploys from `main` |
+| Hosting | Railway | Auto-deploys from `main` |
 
 ---
 

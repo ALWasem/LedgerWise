@@ -4,7 +4,7 @@
 
 Full-stack fintech app connecting to real bank accounts for transaction viewing, balances, and spending analysis. React Native Web frontend (Expo) + FastAPI backend + Supabase (PostgreSQL). Targets friends & family initially (5–50 users), designed to scale.
 
-**Current state:** Teller bank linking, transaction list, and spending summary work on web and iOS (Expo Go). Google OAuth via Supabase Auth works on both web and native iOS. Database layer in place (SQLAlchemy + Alembic + Supabase). Auth middleware guards teller + spending routes (user-scoped queries). GET endpoints fetch accounts and transactions by authenticated user. POST `/teller/transactions` still available for enrollment (uses DB fallback). Real Teller service code is ready but commented out.
+**Current state:** Teller bank linking, transaction list, and spending summary work on web and iOS (Expo Go). Google OAuth via Supabase Auth works on both web and native iOS. Database layer in place (SQLAlchemy + Alembic + Supabase). Auth middleware guards teller + spending routes (user-scoped queries). GET endpoints fetch accounts and transactions by authenticated user. POST `/teller/transactions` still available for enrollment (uses DB fallback). Real Teller service code is ready but commented out. **Expo Router** provides file-based routing with a sidebar nav on web and bottom tabs on mobile. **Time period selector** allows filtering transactions/spending by month, year, YTD, or all time. Backend endpoints support `start_date`/`end_date` query params for date-range filtering.
 
 ## Development Phases
 
@@ -12,7 +12,8 @@ Full-stack fintech app connecting to real bank accounts for transaction viewing,
 **Iteration 1 (done):** Teller Connect → transaction list on web + iOS. DB models + migrations + Supabase connection.
 **Iteration 1.5 (done):** Spending summary with category breakdown. Frontend decomposed into components, hooks, and feature modules.
 **Iteration 1.75 (done):** Google OAuth sign-in via Supabase Auth. Web uses `signInWithOAuth` redirect flow; native iOS uses `expo-auth-session` + `signInWithIdToken` (bypasses Supabase redirect, which doesn't work in Expo Go). Backend JWT validation middleware via JWKS. Auth applied to teller + spending routes with user-scoped DB queries. Accounts-first data loading flow (fetch accounts → fetch transactions + spending in parallel). CategoryAccordion animated with expand/collapse and refund variant. `Account` type + `AccountResponse` schema added.
-**Iteration 2 (next):** Re-enable live Teller data, Expo Router migration, persist enrolled tokens, native session persistence (AsyncStorage).
+**Iteration 1.9 (done):** Expo Router migration with file-based routing (`app/` directory). Dashboard layout with sidebar nav on web and bottom tabs on mobile. Pages: Overview, Spending, Analytics (placeholder), Settings (placeholder). Time period selector (month/year/YTD/all) with backend date-range filtering on spending + transaction endpoints. All inline styles extracted to StyleSheet files. Old `App.tsx` entry point removed.
+**Iteration 2 (next):** Re-enable live Teller data, persist enrolled tokens, native session persistence (AsyncStorage).
 
 ### Phase 2 — Mobile (FUTURE)
 Build iOS app from same Expo codebase via EAS Build. Push notifications, biometric auth, widgets. Evaluate Android.
@@ -26,7 +27,7 @@ These rules apply to all new code and refactors.
 
 ### No God Files
 - No file should try to do everything. When a file is getting large or handling multiple concerns, extract.
-- `App.tsx` is the composition root — wires hooks + components, minimal logic.
+- Expo Router `app/` directory handles routing. Screen files in `app/dashboard/` are thin orchestrators that wire hooks + components.
 
 ### Frontend Components
 - **One component per file.** Never define multiple components in one file.
@@ -46,7 +47,7 @@ These rules apply to all new code and refactors.
 - Extract stateful logic into `src/hooks/`. One responsibility per hook.
 
 ### Styles
-- Co-located style files in `src/styles/` (e.g. `app.styles.ts`, `spending.styles.ts`).
+- Co-located style files in `src/styles/` (e.g. `spending.styles.ts`, `dashboardLayout.styles.ts`).
 - `StyleSheet.create()` always — no inline style objects.
 
 ### Backend Layering
@@ -74,7 +75,7 @@ These rules apply to all new code and refactors.
 | Frontend | React Native + Expo SDK 54 | Web + iOS from one codebase |
 | Auth | Supabase Auth + Google OAuth | expo-auth-session on native |
 | Hosting (web) | Railway | Same platform as backend |
-| Routing | `App.tsx` (Iteration 1) | Expo Router in Iteration 2 |
+| Routing | Expo Router (file-based) | `app/` directory, sidebar + bottom tabs |
 | State | React hooks + custom hooks | Zustand if complexity grows |
 | API Client | `src/api/client.ts` | All backend calls centralized |
 | Styling | StyleSheet API | Co-located in `src/styles/` |
@@ -122,19 +123,24 @@ Files marked `*` exist now. Unmarked files are planned for future iterations.
 │   ├── requirements.txt       *
 │   └── tests/
 ├── frontend/
-│   ├── App.tsx                * Composition root
-│   ├── index.ts               * Expo entry point
-│   ├── app/                     Expo Router screens (Iteration 2)
-│   │   ├── (tabs)/              Dashboard, transactions, accounts, settings
-│   │   ├── auth/                Login, signup
-│   │   └── _layout.tsx          Root layout
+│   ├── app/                   * Expo Router screens (file-based routing)
+│   │   ├── _layout.tsx        * Root layout (SafeAreaProvider + AuthProvider)
+│   │   ├── index.tsx          * Auth gate (redirects to login or dashboard)
+│   │   ├── login.tsx          * Login screen
+│   │   └── dashboard/
+│   │       ├── _layout.tsx    * Dashboard layout (sidebar on web, bottom tabs on mobile)
+│   │       ├── index.tsx      * Redirects to /dashboard/spending
+│   │       ├── overview.tsx   * Overview page (stats, alerts)
+│   │       ├── spending.tsx   * Spending page (Teller connect, time period, summary)
+│   │       ├── analytics.tsx  * Analytics page (placeholder)
+│   │       └── settings.tsx   * Settings page (placeholder)
 │   └── src/
-│       ├── api/client.ts      * Centralized API client
+│       ├── api/client.ts      * Centralized API client (date-range params supported)
 │       ├── api/supabase.ts    * Supabase client (createClient)
-│       ├── components/        * TransactionRow, TellerModal, LoginScreen
-│       ├── hooks/             * useTellerConnect, useTransactions
+│       ├── components/        * TransactionRow, TellerModal, LoginScreen, TimePeriodSelector
+│       ├── hooks/             * useTellerConnect, useTransactions (date-range aware)
 │       ├── spending/          * Feature module (SpendingSummary + sub-components)
-│       ├── styles/            * app, spending, transactionRow, auth
+│       ├── styles/            * Per-screen/component StyleSheet files
 │       ├── types/             * transaction.ts, spending.ts, account.ts
 │       ├── utils/             * categoryColors.ts
 │       └── contexts/          * AuthContext (Google OAuth + Supabase session)
@@ -148,6 +154,8 @@ Files marked `*` exist now. Unmarked files are planned for future iterations.
 4. **Teller tokens encrypted at rest** — AES-encrypted in DB. Key in env vars, never in code.
 5. **Cache-aside** — Redis is optional. App works without it (just slower).
 6. **Platform-aware auth** — Web uses Supabase `signInWithOAuth` (browser redirect). Native iOS uses `expo-auth-session` Google provider to get an ID token, then `signInWithIdToken` to create a Supabase session. Supabase's OAuth redirect flow doesn't work in Expo Go because `ASWebAuthenticationSession` can't intercept `exp://` scheme 302 redirects.
+7. **Expo Router with platform-aware navigation** — File-based routing in `app/` directory. Dashboard layout renders a sidebar (256px) on web and bottom tabs on mobile. Auth gate at root redirects unauthenticated users to `/login`.
+8. **Date-range filtering** — Backend endpoints accept optional `start_date`/`end_date` query params. Frontend `TimePeriodSelector` converts user-friendly periods (month/year/YTD/all) to ISO date strings via `periodToDateRange()`.
 
 ## Environment Variables
 
