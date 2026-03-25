@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import LedgerWiseLogo from './src/components/LedgerWiseLogo';
 import TransactionRow from './src/components/TransactionRow';
 import TellerModal from './src/components/TellerModal';
 import LoginScreen from './src/components/LoginScreen';
@@ -57,9 +58,7 @@ function MainApp() {
 
       <View style={styles.headerBar}>
         <View style={styles.headerLeft}>
-          <View style={styles.headerLogo}>
-            <Text style={styles.headerLogoText}>LW</Text>
-          </View>
+          <LedgerWiseLogo size={32} />
           <Text style={styles.title}>LedgerWise</Text>
         </View>
         <Pressable style={styles.signOutButton} onPress={signOut}>

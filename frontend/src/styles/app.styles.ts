@@ -19,21 +19,8 @@ export const styles = StyleSheet.create({
   },
   headerLeft: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: 10,
-  },
-  headerLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#6366F1',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerLogoText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700',
   },
   title: {
     fontSize: 19,
