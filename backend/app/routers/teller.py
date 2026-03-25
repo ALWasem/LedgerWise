@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -5,6 +7,9 @@ from app.dependencies import get_db
 from app.middleware.auth import get_current_user_id
 from app.schemas import AccountResponse, TokenRequest, TransactionResponse
 from app.services import teller as teller_service
+from app.utils.logging import log_data_access
+
+logger = logging.getLogger("ledgerwise.audit")
 
 router = APIRouter(prefix="/teller", tags=["teller"])
 
@@ -15,6 +20,7 @@ async def get_my_accounts(
     db: AsyncSession = Depends(get_db),
 ) -> list[AccountResponse]:
     """Return all bank accounts linked to the authenticated user."""
+    log_data_access(user_id, "accounts")
     accounts = await teller_service.get_user_accounts(db, user_id)
     return [
         AccountResponse(
@@ -35,6 +41,7 @@ async def get_my_transactions(
     db: AsyncSession = Depends(get_db),
 ) -> list[TransactionResponse]:
     """Return transactions for the authenticated user's accounts."""
+    log_data_access(user_id, "transactions")
     return await teller_service.get_user_transactions(db, user_id)
 
 
@@ -48,4 +55,8 @@ async def enroll(
     try:
         return await teller_service.enroll_accounts(db, user_id, body.access_token)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        logger.exception("Enrollment failed for user=%s", user_id)
+        raise HTTPException(
+            status_code=502,
+            detail="Bank connection failed. Please try again later.",
+        ) from exc

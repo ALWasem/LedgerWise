@@ -1,4 +1,5 @@
 import base64
+import logging
 from datetime import date as date_type
 from decimal import Decimal
 from typing import Any
@@ -12,6 +13,10 @@ from sqlalchemy.orm import joinedload
 from app.config import settings
 from app.models import Account, Transaction
 from app.schemas import AccountResponse, TransactionResponse
+from app.utils.encryption import decrypt, encrypt
+from app.utils.logging import log_enrollment
+
+logger = logging.getLogger("ledgerwise.audit")
 
 TELLER_BASE_URL = "https://api.teller.io"
 
@@ -122,11 +127,13 @@ async def enroll_accounts(
 
     saved_accounts: list[AccountResponse] = []
 
+    encrypted_token = encrypt(access_token)
+
     for acct in teller_accounts:
         stmt = pg_insert(Account).values(
             teller_account_id=acct["id"],
             user_id=user_id,
-            teller_access_token=access_token,
+            teller_access_token=encrypted_token,
             institution_name=acct.get("institution", {}).get("name"),
             account_name=acct.get("name"),
             account_type=acct.get("type"),
@@ -134,7 +141,7 @@ async def enroll_accounts(
         ).on_conflict_do_update(
             index_elements=["teller_account_id"],
             set_={
-                "teller_access_token": access_token,
+                "teller_access_token": encrypted_token,
                 "institution_name": acct.get("institution", {}).get("name"),
                 "account_name": acct.get("name"),
                 "updated_at": func.now(),
@@ -177,4 +184,5 @@ async def enroll_accounts(
             await db.execute(txn_stmt)
 
     await db.commit()
+    log_enrollment(user_id, len(saved_accounts))
     return saved_accounts

@@ -101,8 +101,8 @@ Files marked `*` exist now. Unmarked files are planned for future iterations.
 │   │   ├── config.py          * pydantic-settings env config
 │   │   ├── dependencies.py    * Async SQLAlchemy engine + get_db
 │   │   ├── middleware/         *
-│   │   │   ├── auth.py        * JWKS-based JWT validation (Supabase)
-│   │   │   └── rate_limit.py    Redis-based rate limiter
+│   │   │   ├── auth.py        * JWKS-based JWT validation (Supabase) + issuer check
+│   │   │   └── rate_limit.py  * In-memory sliding-window rate limiter
 │   │   ├── models/            * User, Account, Transaction
 │   │   ├── schemas/           * spending.py, transaction.py
 │   │   ├── routers/           * teller.py, spending.py
@@ -113,8 +113,9 @@ Files marked `*` exist now. Unmarked files are planned for future iterations.
 │   │   ├── services/          * teller.py, spending.py
 │   │   │   ├── cache.py         Redis cache helpers
 │   │   │   └── storage.py       R2 file upload helpers
-│   │   └── utils/
-│   │       ├── encryption.py    Encrypt/decrypt Teller tokens at rest
+│   │   └── utils/             *
+│   │       ├── encryption.py  * AES-GCM encrypt/decrypt for Teller tokens
+│   │       ├── logging.py     * Structured audit logging (auth, data access, enrollment)
 │   │       └── errors.py        Standardized error responses
 │   ├── alembic/               * Database migrations
 │   ├── certs/                 * Teller mTLS certs (gitignored)
@@ -161,6 +162,8 @@ DATABASE_URL=          # Supabase Postgres connection string
 SUPABASE_URL=
 SUPABASE_KEY=
 
+ENCRYPTION_KEY=        # AES-256-GCM key (64 hex chars) — encrypts Teller tokens at rest
+
 # Planned (Iteration 2+)
 UPSTASH_REDIS_URL=
 UPSTASH_REDIS_TOKEN=
@@ -168,7 +171,6 @@ R2_ACCOUNT_ID=
 R2_ACCESS_KEY=
 R2_SECRET_KEY=
 R2_BUCKET_NAME=
-ENCRYPTION_KEY=        # AES key for encrypting Teller tokens at rest
 ```
 
 Frontend (`frontend/.env`):
@@ -232,15 +234,47 @@ cd backend && alembic revision --autogenerate -m "description"
 
 **Native auth flow:** `expo-auth-session/providers/google` → `Google.useAuthRequest` with `iosClientId` → redirect via reversed client ID scheme (`com.googleusercontent.apps.CLIENT_ID:/oauthredirect`) → ID token → `supabase.auth.signInWithIdToken()`
 
-## Security
+## Security & Compliance
 
-- **Never log or expose Teller access tokens** — they grant direct bank access
-- **Teller tokens encrypted at rest** (AES) in Supabase
-- **HTTPS only** — enforced by Railway
-- **CORS restricted** to known frontend domains
-- **Google OAuth client IDs are public** — they are not secrets (validated server-side by Google)
-- **Backend JWT validation** — JWKS-based (`middleware/auth.py`), guards teller + spending routes. All user-facing GET endpoints are user-scoped via `get_current_user_id` dependency.
-- **Planned:** Supabase RLS on all user tables, Redis-based rate limiting
+This is a **financial application** with access to real bank accounts. Security is not optional. Every change must be reviewed through a security lens. When in doubt, choose the safer option.
+
+### Security Principles
+- **Defense in depth** — never rely on a single layer. Auth middleware + user-scoped queries + (planned) RLS.
+- **Least privilege** — Teller integration is read-only (GET only). No payment/transfer endpoints.
+- **Fail closed** — if auth fails, deny access. If encryption fails, reject the operation. Never fall back to plaintext.
+- **No secrets in code** — all credentials in env vars. `.env` files gitignored. Never log tokens, passwords, or keys.
+
+### Implemented Security Controls
+- **Teller tokens encrypted at rest** — AES-256-GCM (`app/utils/encryption.py`). Key in `ENCRYPTION_KEY` env var. Tokens are encrypted before DB storage and decrypted only when needed for Teller API calls.
+- **HTTPS only** — enforced by Railway in production.
+- **CORS restricted** — only known frontend origins, explicit methods (`GET`, `POST`, `OPTIONS`), explicit headers (`Authorization`, `Content-Type`).
+- **JWT validation** — JWKS-based (`middleware/auth.py`), validates signature, audience, expiration, and **issuer** (must match Supabase project URL). Guards all teller + spending routes.
+- **User-scoped queries** — all data endpoints filter by authenticated `user_id`. No cross-user data access.
+- **Rate limiting** — in-memory sliding-window (`middleware/rate_limit.py`). 60 req/min global per IP, 5 req/min on sensitive endpoints (`/enroll`).
+- **Input validation** — Pydantic schemas with strict validators. `TokenRequest` validates token format, length, and allowed characters.
+- **Generic error responses** — internal exceptions are logged server-side but never exposed to clients. All user-facing errors return safe, generic messages.
+- **Audit logging** — structured logs (`utils/logging.py`) for: auth success/failure with IP, data access by user, enrollment events, request method/path/status/duration. Sensitive values (tokens, passwords) are **never** logged.
+- **WebView origin restriction** — `TellerModal` restricts `originWhitelist` to HTTPS origins only.
+- **Google OAuth client IDs are public** — they are not secrets (validated server-side by Google).
+
+### Security Rules for All Code Changes
+1. **Never log or expose Teller access tokens** — they grant direct bank access.
+2. **Never store sensitive data in plaintext** — encrypt at rest using `app/utils/encryption.py`.
+3. **Never return raw exception messages to clients** — log internally, return generic error.
+4. **Never use `allow_origins=["*"]`** or `allow_methods=["*"]` in CORS.
+5. **Always validate input** — use Pydantic validators with format/length/charset checks.
+6. **Always scope queries by user_id** — no endpoint should return another user's data.
+7. **Always add audit logging** to new endpoints — use `log_data_access()` for reads, `log_security_event()` for sensitive operations.
+8. **Never commit `.env` files or certificates** — verify `.gitignore` covers new secret files.
+9. **Never disable JWT validation** — not even temporarily for testing. Use test fixtures instead.
+10. **Review all new dependencies** for known CVEs before adding.
+
+### Planned Security Enhancements
+- Supabase RLS on all user tables (defense in depth at DB level)
+- Migrate rate limiter to Redis (Upstash) for multi-instance support
+- Teller token rotation mechanism
+- CSP headers on WebView content
+- `npm audit` / `pip audit` in CI pipeline
 
 ## Scaling Path
 
