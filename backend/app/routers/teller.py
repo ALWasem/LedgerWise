@@ -1,6 +1,7 @@
 import logging
+from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from httpx import HTTPStatusError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,12 +39,16 @@ async def get_my_accounts(
 
 @router.get("/transactions", response_model=list[TransactionResponse])
 async def get_my_transactions(
+    start_date: date | None = Query(None, description="Filter from this date (inclusive)"),
+    end_date: date | None = Query(None, description="Filter up to this date (inclusive)"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> list[TransactionResponse]:
     """Return transactions for the authenticated user's accounts."""
     log_data_access(user_id, "transactions")
-    return await teller_service.get_user_transactions(db, user_id)
+    return await teller_service.get_user_transactions(
+        db, user_id, start_date, end_date
+    )
 
 
 @router.post("/enroll", response_model=list[AccountResponse])

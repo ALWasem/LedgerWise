@@ -1,5 +1,7 @@
 """Spending summary aggregation service."""
 
+from datetime import date
+
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,7 +38,12 @@ def _spending_filter():
 
 
 async def _query_category_totals(
-    db: AsyncSession, category_label, spending_filter, user_id: str
+    db: AsyncSession,
+    category_label,
+    spending_filter,
+    user_id: str,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ):
     """Query spending totals grouped by category, scoped to a user."""
     base = (
@@ -48,6 +55,11 @@ async def _query_category_totals(
         .join(Account, Transaction.account_id == Account.id)
         .where(Account.user_id == user_id)
     )
+
+    if start_date:
+        base = base.where(Transaction.date >= start_date)
+    if end_date:
+        base = base.where(Transaction.date <= end_date)
 
     stmt = (
         base.where(Transaction.amount > 0, spending_filter)
@@ -61,7 +73,10 @@ async def _query_category_totals(
 
 
 async def _query_refund_totals(
-    db: AsyncSession, user_id: str
+    db: AsyncSession,
+    user_id: str,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> tuple[float, int]:
     """Query aggregate refund total and count (negative amounts that aren't CC payments)."""
     refund_by_category = func.lower(func.coalesce(Transaction.category, "")) == "refund"
@@ -76,6 +91,12 @@ async def _query_refund_totals(
         .join(Account, Transaction.account_id == Account.id)
         .where(Account.user_id == user_id)
     )
+
+    if start_date:
+        base = base.where(Transaction.date >= start_date)
+    if end_date:
+        base = base.where(Transaction.date <= end_date)
+
     stmt = base.where(refund_filter)
     result = await db.execute(stmt)
     row = result.one()
@@ -109,12 +130,15 @@ def _build_categories(
 
 
 async def get_spending_summary(
-    db: AsyncSession, user_id: str
+    db: AsyncSession,
+    user_id: str,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> SpendingSummaryResponse:
-    """Aggregate spending data by category, optionally scoped to a user."""
+    """Aggregate spending data by category, optionally scoped to a user and date range."""
     category_label = _build_category_label()
     rows = await _query_category_totals(
-        db, category_label, _spending_filter(), user_id
+        db, category_label, _spending_filter(), user_id, start_date, end_date
     )
 
     total_spent = sum(float(r.total) for r in rows)
@@ -123,7 +147,9 @@ async def get_spending_summary(
     categories, uncategorized_count, uncategorized_pct = _build_categories(
         rows, total_spent
     )
-    refund_total, refund_count = await _query_refund_totals(db, user_id)
+    refund_total, refund_count = await _query_refund_totals(
+        db, user_id, start_date, end_date
+    )
 
     return SpendingSummaryResponse(
         total_spent=round(total_spent, 2),

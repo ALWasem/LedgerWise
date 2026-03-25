@@ -32,17 +32,35 @@ export async function fetchAccounts(token: string): Promise<Account[]> {
   return handleResponse<Account[]>(res);
 }
 
-export async function fetchTransactions(token: string): Promise<Transaction[]> {
-  const res = await fetch(`${API_URL}/api/v1/teller/transactions`, {
-    headers: authHeaders(token),
-  });
+export async function fetchTransactions(
+  token: string,
+  startDate?: string,
+  endDate?: string,
+): Promise<Transaction[]> {
+  const params = new URLSearchParams();
+  if (startDate) params.set('start_date', startDate);
+  if (endDate) params.set('end_date', endDate);
+  const qs = params.toString();
+  const res = await fetch(
+    `${API_URL}/api/v1/teller/transactions${qs ? `?${qs}` : ''}`,
+    { headers: authHeaders(token) },
+  );
   return handleResponse<Transaction[]>(res);
 }
 
-export async function fetchSpendingSummary(token: string): Promise<SpendingSummaryData> {
-  const res = await fetch(`${API_URL}/api/v1/spending/summary`, {
-    headers: authHeaders(token),
-  });
+export async function fetchSpendingSummary(
+  token: string,
+  startDate?: string,
+  endDate?: string,
+): Promise<SpendingSummaryData> {
+  const params = new URLSearchParams();
+  if (startDate) params.set('start_date', startDate);
+  if (endDate) params.set('end_date', endDate);
+  const qs = params.toString();
+  const res = await fetch(
+    `${API_URL}/api/v1/spending/summary${qs ? `?${qs}` : ''}`,
+    { headers: authHeaders(token) },
+  );
   return handleResponse<SpendingSummaryData>(res);
 }
 

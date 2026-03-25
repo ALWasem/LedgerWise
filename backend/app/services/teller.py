@@ -86,16 +86,26 @@ async def get_user_accounts(db: AsyncSession, user_id: str) -> list[Account]:
 
 
 async def get_user_transactions(
-    db: AsyncSession, user_id: str
+    db: AsyncSession,
+    user_id: str,
+    start_date: date_type | None = None,
+    end_date: date_type | None = None,
 ) -> list[TransactionResponse]:
     """Fetch transactions for a specific user, joined with account info."""
-    result = await db.execute(
+    stmt = (
         select(Transaction)
         .join(Account)
         .where(Account.user_id == user_id)
         .options(joinedload(Transaction.account))
         .order_by(Transaction.date.desc())
     )
+
+    if start_date:
+        stmt = stmt.where(Transaction.date >= start_date)
+    if end_date:
+        stmt = stmt.where(Transaction.date <= end_date)
+
+    result = await db.execute(stmt)
     rows = result.scalars().all()
     return _map_transactions(rows)
 

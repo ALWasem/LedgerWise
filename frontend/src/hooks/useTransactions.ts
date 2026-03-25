@@ -10,6 +10,11 @@ import type { Account } from '../types/account';
 import type { SpendingSummaryData } from '../types/spending';
 import type { Transaction } from '../types/transaction';
 
+interface DateRange {
+  startDate?: string;
+  endDate?: string;
+}
+
 interface UseTransactionsReturn {
   transactions: Transaction[];
   accounts: Account[];
@@ -21,7 +26,10 @@ interface UseTransactionsReturn {
   refresh: () => void;
 }
 
-export function useTransactions(token: string | null): UseTransactionsReturn {
+export function useTransactions(
+  token: string | null,
+  dateRange?: DateRange,
+): UseTransactionsReturn {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,8 +65,8 @@ export function useTransactions(token: string | null): UseTransactionsReturn {
 
         setSummaryLoading(true);
         const [txns, summary] = await Promise.allSettled([
-          fetchTransactions(token!),
-          fetchSpendingSummary(token!),
+          fetchTransactions(token!, dateRange?.startDate, dateRange?.endDate),
+          fetchSpendingSummary(token!, dateRange?.startDate, dateRange?.endDate),
         ]);
         if (cancelled) return;
 
@@ -99,7 +107,7 @@ export function useTransactions(token: string | null): UseTransactionsReturn {
     return () => {
       cancelled = true;
     };
-  }, [token, refreshKey]);
+  }, [token, refreshKey, dateRange?.startDate, dateRange?.endDate]);
 
   return {
     transactions,
