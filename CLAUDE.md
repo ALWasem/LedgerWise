@@ -73,7 +73,7 @@ These rules apply to all new code and refactors.
 |-------|-----------|-------|
 | Frontend | React Native + Expo SDK 54 | Web + iOS from one codebase |
 | Auth | Supabase Auth + Google OAuth | expo-auth-session on native |
-| Hosting (web) | Vercel | Free tier |
+| Hosting (web) | Railway | Same platform as backend |
 | Routing | `App.tsx` (Iteration 1) | Expo Router in Iteration 2 |
 | State | React hooks + custom hooks | Zustand if complexity grows |
 | API Client | `src/api/client.ts` | All backend calls centralized |
@@ -217,7 +217,7 @@ cd backend && alembic revision --autogenerate -m "description"
 # After editing .env, restart with: npx expo start --web --clear
 ```
 
-**Deploy:** Push to `main` → Railway (backend) and Vercel (frontend) auto-deploy.
+**Deploy:** Push to `main` → Railway auto-deploys both backend and frontend services.
 
 ## Auth Setup (Google OAuth + Supabase)
 
@@ -236,7 +236,7 @@ cd backend && alembic revision --autogenerate -m "description"
 
 - **Never log or expose Teller access tokens** — they grant direct bank access
 - **Teller tokens encrypted at rest** (AES) in Supabase
-- **HTTPS only** — enforced by Railway + Vercel
+- **HTTPS only** — enforced by Railway
 - **CORS restricted** to known frontend domains
 - **Google OAuth client IDs are public** — they are not secrets (validated server-side by Google)
 - **Backend JWT validation** — JWKS-based (`middleware/auth.py`), guards teller + spending routes. All user-facing GET endpoints are user-scoped via `get_current_user_id` dependency.
