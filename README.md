@@ -85,13 +85,24 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your-google-ios-client-id
 make install
 ```
 
-### 3. Run database migrations
+### 3. Set up pre-commit hooks (REQUIRED)
+
+This enables [gitleaks](https://github.com/gitleaks/gitleaks) to scan every commit for accidentally included secrets (API keys, passwords, tokens). **All contributors must run this.**
+
+```bash
+brew install pre-commit   # if not already installed
+pre-commit install
+```
+
+> **Why?** This is a financial app with access to real bank accounts. A single committed secret could expose user data. The hook will block your commit if it detects anything that looks like a credential.
+
+### 4. Run database migrations
 
 ```bash
 cd backend && source venv/bin/activate && alembic upgrade head
 ```
 
-### 4. Run
+### 5. Run
 
 ```bash
 make backend   # FastAPI on http://localhost:8000
