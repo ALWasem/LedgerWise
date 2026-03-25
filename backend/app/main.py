@@ -1,4 +1,6 @@
-from fastapi import Depends, FastAPI
+from collections.abc import Awaitable, Callable
+
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
@@ -24,6 +26,22 @@ app.middleware("http")(rate_limit_middleware)
 
 # 3. Audit logging (method, path, status, duration, user)
 app.middleware("http")(audit_logging_middleware)
+
+
+# 4. Security headers
+@app.middleware("http")
+async def security_headers_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    response = await call_next(request)
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000; includeSubDomains"
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 app.include_router(teller.router, prefix="/api/v1")
 app.include_router(spending.router, prefix="/api/v1")

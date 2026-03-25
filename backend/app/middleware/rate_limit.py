@@ -14,12 +14,19 @@ from fastapi.responses import JSONResponse
 # window_seconds: length of sliding window, max_requests: allowed per window
 GLOBAL_RATE_LIMIT = {"window_seconds": 60, "max_requests": 60}
 SENSITIVE_RATE_LIMIT = {"window_seconds": 60, "max_requests": 5}
+DATA_RATE_LIMIT = {"window_seconds": 60, "max_requests": 30}
 
 SENSITIVE_PATHS = {"/api/v1/teller/enroll"}
+DATA_PATHS = {
+    "/api/v1/teller/accounts",
+    "/api/v1/teller/transactions",
+    "/api/v1/spending/summary",
+}
 
 # In-memory stores — keyed by (ip,) or (ip, path)
 _global_hits: dict[str, list[float]] = defaultdict(list)
 _sensitive_hits: dict[str, list[float]] = defaultdict(list)
+_data_hits: dict[str, list[float]] = defaultdict(list)
 
 
 def _prune(hits: list[float], window: float, now: float) -> list[float]:
@@ -45,7 +52,7 @@ async def rate_limit_middleware(
         )
     _global_hits[client_ip].append(now)
 
-    # --- sensitive endpoint per-IP check ---
+    # --- per-endpoint rate checks ---
     path = request.url.path
     if path in SENSITIVE_PATHS:
         sw = SENSITIVE_RATE_LIMIT["window_seconds"]
@@ -58,5 +65,16 @@ async def rate_limit_middleware(
                 content={"detail": "Rate limit exceeded for this action. Please wait."},
             )
         _sensitive_hits[key].append(now)
+    elif path in DATA_PATHS:
+        dw = DATA_RATE_LIMIT["window_seconds"]
+        dmax = DATA_RATE_LIMIT["max_requests"]
+        key = f"{client_ip}:{path}"
+        _data_hits[key] = _prune(_data_hits[key], dw, now)
+        if len(_data_hits[key]) >= dmax:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests. Please try again later."},
+            )
+        _data_hits[key].append(now)
 
     return await call_next(request)

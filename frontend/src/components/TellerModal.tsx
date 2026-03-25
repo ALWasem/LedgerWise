@@ -22,7 +22,7 @@ export default function TellerModal({ visible, tellerSource, onMessage, onClose 
             source={tellerSource}
             onMessage={onMessage}
             javaScriptEnabled
-            originWhitelist={['https://*']}
+            originWhitelist={['https://teller.io', 'https://*.teller.io']}
             style={styles.webView}
           />
         </SafeAreaView>

@@ -36,18 +36,18 @@ def _spending_filter():
 
 
 async def _query_category_totals(
-    db: AsyncSession, category_label, spending_filter, user_id: str | None = None
+    db: AsyncSession, category_label, spending_filter, user_id: str
 ):
-    """Query spending totals grouped by category. Tries debits first, falls back to all."""
-    base = select(
-        category_label.label("category"),
-        func.sum(Transaction.amount).label("total"),
-        func.count().label("count"),
-    )
-    if user_id:
-        base = base.join(Account, Transaction.account_id == Account.id).where(
-            Account.user_id == user_id
+    """Query spending totals grouped by category, scoped to a user."""
+    base = (
+        select(
+            category_label.label("category"),
+            func.sum(Transaction.amount).label("total"),
+            func.count().label("count"),
         )
+        .join(Account, Transaction.account_id == Account.id)
+        .where(Account.user_id == user_id)
+    )
 
     stmt = (
         base.where(Transaction.amount > 0, spending_filter)
@@ -61,21 +61,21 @@ async def _query_category_totals(
 
 
 async def _query_refund_totals(
-    db: AsyncSession, user_id: str | None = None
+    db: AsyncSession, user_id: str
 ) -> tuple[float, int]:
     """Query aggregate refund total and count (negative amounts that aren't CC payments)."""
     refund_by_category = func.lower(func.coalesce(Transaction.category, "")) == "refund"
     refund_by_amount = (Transaction.amount < 0) & ~_is_payment()
     refund_filter = refund_by_category | refund_by_amount
 
-    base = select(
-        func.sum(func.abs(Transaction.amount)).label("total"),
-        func.count().label("count"),
-    )
-    if user_id:
-        base = base.join(Account, Transaction.account_id == Account.id).where(
-            Account.user_id == user_id
+    base = (
+        select(
+            func.sum(func.abs(Transaction.amount)).label("total"),
+            func.count().label("count"),
         )
+        .join(Account, Transaction.account_id == Account.id)
+        .where(Account.user_id == user_id)
+    )
     stmt = base.where(refund_filter)
     result = await db.execute(stmt)
     row = result.one()
@@ -109,7 +109,7 @@ def _build_categories(
 
 
 async def get_spending_summary(
-    db: AsyncSession, user_id: str | None = None
+    db: AsyncSession, user_id: str
 ) -> SpendingSummaryResponse:
     """Aggregate spending data by category, optionally scoped to a user."""
     category_label = _build_category_label()

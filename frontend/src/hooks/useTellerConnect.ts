@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import type { WebViewMessageEvent } from 'react-native-webview';
 
 const TELLER_APP_ID = process.env.EXPO_PUBLIC_TELLER_APP_ID ?? '';
+const TELLER_ENV = process.env.EXPO_PUBLIC_TELLER_ENV ?? 'development';
 
 declare global {
   interface Window {
@@ -17,7 +18,7 @@ declare global {
   }
 }
 
-function buildTellerHtml(appId: string): string {
+function buildTellerHtml(appId: string, env: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -29,7 +30,7 @@ function buildTellerHtml(appId: string): string {
   window.onload = function() {
     var connect = TellerConnect.setup({
       applicationId: '${appId}',
-      environment: 'development',
+      environment: '${env}',
       onSuccess: function(enrollment) {
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'success',
@@ -67,7 +68,7 @@ export function useTellerConnect(
   onErrorRef.current = onError;
 
   const tellerSource = useMemo(
-    () => ({ html: buildTellerHtml(TELLER_APP_ID), baseUrl: 'https://teller.io' }),
+    () => ({ html: buildTellerHtml(TELLER_APP_ID, TELLER_ENV), baseUrl: 'https://teller.io' }),
     []
   );
 
@@ -94,7 +95,7 @@ export function useTellerConnect(
       try {
         const connect = window.TellerConnect.setup({
           applicationId: TELLER_APP_ID,
-          environment: 'development',
+          environment: TELLER_ENV,
           onSuccess: (enrollment) => onSuccessRef.current(enrollment.accessToken),
         });
         connect.open();

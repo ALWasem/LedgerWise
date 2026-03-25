@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
+from httpx import HTTPStatusError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
@@ -54,9 +55,21 @@ async def enroll(
     """Connect a bank via Teller: pull accounts + transactions and save to DB."""
     try:
         return await teller_service.enroll_accounts(db, user_id, body.access_token)
-    except Exception as exc:
-        logger.exception("Enrollment failed for user=%s", user_id)
+    except HTTPStatusError:
+        logger.warning("Teller API error during enrollment for user=%s", user_id)
         raise HTTPException(
             status_code=502,
             detail="Bank connection failed. Please try again later.",
-        ) from exc
+        )
+    except ValueError:
+        logger.warning("Invalid data during enrollment for user=%s", user_id)
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid enrollment data.",
+        )
+    except Exception:
+        logger.warning("Unexpected enrollment error for user=%s", user_id)
+        raise HTTPException(
+            status_code=502,
+            detail="Bank connection failed. Please try again later.",
+        )

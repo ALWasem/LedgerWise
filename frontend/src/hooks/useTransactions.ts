@@ -3,7 +3,9 @@ import {
   fetchAccounts,
   fetchTransactions,
   fetchSpendingSummary,
+  UnauthorizedError,
 } from '../api/client';
+import { supabase } from '../api/supabase';
 import type { Account } from '../types/account';
 import type { SpendingSummaryData } from '../types/spending';
 import type { Transaction } from '../types/transaction';
@@ -77,6 +79,10 @@ export function useTransactions(token: string | null): UseTransactionsReturn {
         }
       } catch (err) {
         if (!cancelled) {
+          if (err instanceof UnauthorizedError) {
+            await supabase.auth.signOut();
+            return;
+          }
           setError(
             err instanceof Error ? err.message : 'Failed to load accounts',
           );

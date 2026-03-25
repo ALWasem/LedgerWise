@@ -1,5 +1,6 @@
 import base64
 import os
+import stat
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -30,10 +31,12 @@ class Settings(BaseSettings):
             os.makedirs(os.path.dirname(self.teller_cert_path), exist_ok=True)
             with open(self.teller_cert_path, "wb") as f:
                 f.write(base64.b64decode(self.teller_cert_b64))
+            os.chmod(self.teller_cert_path, stat.S_IRUSR | stat.S_IWUSR)
         if self.teller_key_b64 and not os.path.exists(self.teller_key_path):
             os.makedirs(os.path.dirname(self.teller_key_path), exist_ok=True)
             with open(self.teller_key_path, "wb") as f:
                 f.write(base64.b64decode(self.teller_key_b64))
+            os.chmod(self.teller_key_path, stat.S_IRUSR | stat.S_IWUSR)
 
 
 settings = Settings()

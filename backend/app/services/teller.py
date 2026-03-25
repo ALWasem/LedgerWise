@@ -27,16 +27,16 @@ def _auth_header(access_token: str) -> str:
     return f"Basic {encoded}"
 
 
-def _client() -> httpx.Client:
-    return httpx.Client(
+def _client() -> httpx.AsyncClient:
+    return httpx.AsyncClient(
         cert=(settings.teller_cert_path, settings.teller_key_path),
         timeout=30.0,
     )
 
 
-def get_accounts(access_token: str) -> list[dict[str, Any]]:
-    with _client() as client:
-        response = client.get(
+async def get_accounts(access_token: str) -> list[dict[str, Any]]:
+    async with _client() as client:
+        response = await client.get(
             f"{TELLER_BASE_URL}/accounts",
             headers={"Authorization": _auth_header(access_token)},
         )
@@ -44,9 +44,9 @@ def get_accounts(access_token: str) -> list[dict[str, Any]]:
         return response.json()
 
 
-def get_transactions(access_token: str, account_id: str) -> list[dict[str, Any]]:
-    with _client() as client:
-        response = client.get(
+async def get_transactions(access_token: str, account_id: str) -> list[dict[str, Any]]:
+    async with _client() as client:
+        response = await client.get(
             f"{TELLER_BASE_URL}/accounts/{account_id}/transactions",
             headers={"Authorization": _auth_header(access_token)},
         )
@@ -54,11 +54,11 @@ def get_transactions(access_token: str, account_id: str) -> list[dict[str, Any]]
         return response.json()
 
 
-def get_all_transactions(access_token: str) -> list[dict[str, Any]]:
-    accounts = get_accounts(access_token)
+async def get_all_transactions(access_token: str) -> list[dict[str, Any]]:
+    accounts = await get_accounts(access_token)
     all_transactions: list[dict[str, Any]] = []
     for account in accounts:
-        txns = get_transactions(access_token, account["id"])
+        txns = await get_transactions(access_token, account["id"])
         for txn in txns:
             txn["account_name"] = account.get("name", "Unknown")
         all_transactions.extend(txns)
@@ -123,7 +123,7 @@ async def enroll_accounts(
     db: AsyncSession, user_id: str, access_token: str
 ) -> list[AccountResponse]:
     """Pull accounts and transactions from Teller API and persist to DB."""
-    teller_accounts = get_accounts(access_token)
+    teller_accounts = await get_accounts(access_token)
 
     saved_accounts: list[AccountResponse] = []
 
@@ -161,7 +161,7 @@ async def enroll_accounts(
             account_subtype=acct.get("subtype"),
         ))
 
-        teller_txns = get_transactions(access_token, acct["id"])
+        teller_txns = await get_transactions(access_token, acct["id"])
         for txn in teller_txns:
             txn_stmt = pg_insert(Transaction).values(
                 account_id=account_db_id,
