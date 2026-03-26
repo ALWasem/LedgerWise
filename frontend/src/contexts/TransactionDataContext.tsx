@@ -4,7 +4,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
@@ -12,10 +11,10 @@ import {
   clearApiCache,
   fetchAccounts,
   fetchTransactions,
-  fetchSpendingSummary,
   UnauthorizedError,
 } from '../api/client';
 import { supabase } from '../api/supabase';
+import { computeSpendingSummary } from '../utils/spendingSummary';
 import type { Account } from '../types/account';
 import type { SpendingSummaryData } from '../types/spending';
 import type { Transaction } from '../types/transaction';
@@ -25,27 +24,17 @@ interface DateRange {
   endDate?: string;
 }
 
-interface DataSlice {
-  transactions: Transaction[];
-  summaryData: SpendingSummaryData | null;
-}
-
 interface TransactionDataContextValue {
   accounts: Account[];
+  allTransactions: Transaction[];
   hasAccounts: boolean;
   accountsLoading: boolean;
+  transactionsLoading: boolean;
   error: string | null;
-  sliceCache: Record<string, DataSlice>;
-  loadingSlices: Set<string>;
-  requestSlice: (dateRange?: DateRange) => void;
   refresh: () => void;
 }
 
 const TransactionDataContext = createContext<TransactionDataContextValue | null>(null);
-
-function dateRangeKey(dr?: DateRange): string {
-  return `${dr?.startDate ?? ''}_${dr?.endDate ?? ''}`;
-}
 
 interface ProviderProps {
   token: string | null;
@@ -54,25 +43,16 @@ interface ProviderProps {
 
 export function TransactionDataProvider({ token, children }: ProviderProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [hasAccounts, setHasAccounts] = useState(false);
   const [accountsLoading, setAccountsLoading] = useState(false);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const [sliceCache, setSliceCache] = useState<Record<string, DataSlice>>({});
-  const [loadingSlices, setLoadingSlices] = useState<Set<string>>(new Set());
-
-  // Track in-flight requests to avoid duplicates
-  const inFlightRef = useRef<Set<string>>(new Set());
-  // Ref mirror of sliceCache so requestSlice doesn't depend on sliceCache state
-  const sliceCacheRef = useRef(sliceCache);
-  sliceCacheRef.current = sliceCache;
-
   const refresh = useCallback(() => {
     clearApiCache();
-    setSliceCache({});
-    setLoadingSlices(new Set());
-    inFlightRef.current.clear();
+    setAllTransactions([]);
     setRefreshKey((k) => k + 1);
   }, []);
 
@@ -106,70 +86,45 @@ export function TransactionDataProvider({ token, children }: ProviderProps) {
     return () => { cancelled = true; };
   }, [token, refreshKey]);
 
-  // Request a data slice — safe to call from useEffect
-  const requestSlice = useCallback(
-    (dateRange?: DateRange) => {
-      if (!token || !hasAccounts) return;
-      const key = dateRangeKey(dateRange);
+  // Fetch ALL transactions once (after accounts are loaded)
+  useEffect(() => {
+    if (!token || !hasAccounts) return;
 
-      // Already cached or in-flight
-      if (sliceCacheRef.current[key] || inFlightRef.current.has(key)) return;
+    let cancelled = false;
+    setTransactionsLoading(true);
 
-      inFlightRef.current.add(key);
-      setLoadingSlices((prev) => new Set(prev).add(key));
-
-      (async () => {
-        try {
-          const [txns, summary] = await Promise.allSettled([
-            fetchTransactions(token, dateRange?.startDate, dateRange?.endDate),
-            fetchSpendingSummary(token, dateRange?.startDate, dateRange?.endDate),
-          ]);
-
-          const slice: DataSlice = {
-            transactions: txns.status === 'fulfilled' ? txns.value : [],
-            summaryData: summary.status === 'fulfilled' ? summary.value : null,
-          };
-
-          if (txns.status === 'rejected') {
-            setError(
-              txns.reason instanceof Error
-                ? txns.reason.message
-                : 'Failed to load transactions',
-            );
-          }
-
-          setSliceCache((prev) => ({ ...prev, [key]: slice }));
-        } catch (err) {
-          if (err instanceof UnauthorizedError) {
-            await supabase.auth.signOut();
-            return;
-          }
-          setError(err instanceof Error ? err.message : 'Failed to load data');
-        } finally {
-          inFlightRef.current.delete(key);
-          setLoadingSlices((prev) => {
-            const next = new Set(prev);
-            next.delete(key);
-            return next;
-          });
+    async function loadTransactions() {
+      try {
+        const txns = await fetchTransactions(token!);
+        if (cancelled) return;
+        setAllTransactions(txns);
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof UnauthorizedError) {
+          await supabase.auth.signOut();
+          return;
         }
-      })();
-    },
-    [token, hasAccounts],
-  );
+        setError(err instanceof Error ? err.message : 'Failed to load transactions');
+      } finally {
+        if (!cancelled) setTransactionsLoading(false);
+      }
+    }
+
+    void loadTransactions();
+    return () => { cancelled = true; };
+  }, [token, hasAccounts, refreshKey]);
 
   const value = useMemo(
     () => ({
       accounts,
+      allTransactions,
       hasAccounts,
       accountsLoading,
+      transactionsLoading,
       error,
-      sliceCache,
-      loadingSlices,
-      requestSlice,
       refresh,
     }),
-    [accounts, hasAccounts, accountsLoading, error, sliceCache, loadingSlices, requestSlice, refresh],
+    [accounts, allTransactions, hasAccounts, accountsLoading, transactionsLoading, error, refresh],
   );
 
   return (
@@ -187,22 +142,33 @@ export function useTransactionData() {
   return ctx;
 }
 
-/** Hook to get a data slice for a specific date range. Triggers fetch if not cached. */
+/** Filter transactions by date range and compute spending summary — pure client-side, instant. */
 export function useDataSlice(dateRange?: DateRange) {
-  const { sliceCache, loadingSlices, requestSlice, hasAccounts } = useTransactionData();
-  const key = dateRangeKey(dateRange);
+  const { allTransactions, transactionsLoading } = useTransactionData();
 
-  useEffect(() => {
-    if (hasAccounts) {
-      requestSlice(dateRange);
-    }
-  // key is derived from dateRange — no need to include dateRange as a dep
-  }, [hasAccounts, key, requestSlice]);
+  return useMemo(() => {
+    const filtered = filterByDateRange(allTransactions, dateRange);
+    const summaryData = allTransactions.length > 0
+      ? computeSpendingSummary(filtered)
+      : null;
 
-  const cached = sliceCache[key];
-  return {
-    transactions: cached?.transactions ?? [],
-    summaryData: cached?.summaryData ?? null,
-    loading: loadingSlices.has(key),
-  };
+    return {
+      transactions: filtered,
+      summaryData,
+      loading: transactionsLoading,
+    };
+  }, [allTransactions, dateRange?.startDate, dateRange?.endDate, transactionsLoading]);
+}
+
+function filterByDateRange(
+  transactions: Transaction[],
+  dateRange?: DateRange,
+): Transaction[] {
+  if (!dateRange?.startDate && !dateRange?.endDate) return transactions;
+
+  return transactions.filter((tx) => {
+    if (dateRange.startDate && tx.date < dateRange.startDate) return false;
+    if (dateRange.endDate && tx.date > dateRange.endDate) return false;
+    return true;
+  });
 }

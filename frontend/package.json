@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:web": "npx expo export --platform web",
-    "serve": "npx serve dist"
+    "serve": "npx serve dist -s"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1",
