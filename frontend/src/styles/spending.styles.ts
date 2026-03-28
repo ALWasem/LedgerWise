@@ -164,16 +164,15 @@ export const spendingStyles = StyleSheet.create({
   },
   legend: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    gap: 16,
+  },
+  legendColumn: {
+    flex: 1,
+    gap: 10,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    ...(Platform.OS === 'web'
-      ? { width: isNarrow ? '100%' : '45%' }
-      : { width: isNarrow ? undefined : 140, flexGrow: isNarrow ? 1 : 0 }),
-    minWidth: isNarrow ? 0 : 140,
   },
   legendDot: {
     width: 14,

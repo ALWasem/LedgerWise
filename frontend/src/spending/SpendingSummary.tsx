@@ -7,6 +7,7 @@ import TimePeriodSelector, {
   type TimePeriod,
   getDisplayText,
 } from '../components/TimePeriodSelector';
+import StaggeredView from '../components/StaggeredView';
 import CategoryAccordion from './components/CategoryAccordion';
 import ProportionBar from './components/ProportionBar';
 import SummaryChip from './components/SummaryChip';
@@ -33,17 +34,19 @@ export default function SpendingSummary({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <View style={styles.pageHeaderRow}>
-        <View style={styles.pageHeaderLeft}>
-          <Text style={styles.pageTitle}>Spending Summary</Text>
-          <Text style={styles.pageSubtitle}>Track and categorize your expenses</Text>
+      <StaggeredView index={0}>
+        <View style={styles.pageHeaderRow}>
+          <View style={styles.pageHeaderLeft}>
+            <Text style={styles.pageTitle}>Spending Summary</Text>
+            <Text style={styles.pageSubtitle}>Track and categorize your expenses</Text>
+          </View>
+          <TimePeriodSelector
+            selectedPeriod={selectedPeriod}
+            onPeriodChange={onPeriodChange}
+            availableYears={availableYears}
+          />
         </View>
-        <TimePeriodSelector
-          selectedPeriod={selectedPeriod}
-          onPeriodChange={onPeriodChange}
-          availableYears={availableYears}
-        />
-      </View>
+      </StaggeredView>
 
       {loading && (
         <ActivityIndicator
@@ -59,57 +62,65 @@ export default function SpendingSummary({
 
       {hasData && topCategory && (
         <>
-          <View style={styles.summaryStrip}>
-            <SummaryChip
-              value={`$${data.total_spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              subtitle={getDisplayText(selectedPeriod)}
-              icon="trending-up"
-              iconColor={purple[700]}
-              iconBgColor={purple[100]}
-            />
-            <SummaryChip
-              value={`${data.transaction_count}`}
-              subtitle={`across ${data.category_count} categories`}
-              icon="receipt-outline"
-              iconColor={purple[700]}
-              iconBgColor={purple[100]}
-            />
-            <SummaryChip
-              value={topCategory.name}
-              subtitle={`$${topCategory.total.toLocaleString(undefined, { minimumFractionDigits: 2 })} \u00B7 ${topCategory.percentage}% of total`}
-              icon="pie-chart-outline"
-              iconColor={purple[700]}
-              iconBgColor={purple[100]}
-              smallValue
-            />
-            <SummaryChip
-              value={`${data.uncategorized_percentage}%`}
-              subtitle="Uncategorized spending"
-              variant="warning"
-              icon="alert-circle-outline"
-              iconColor={gold[700]}
-              iconBgColor={gold[100]}
-            />
-          </View>
+          <StaggeredView index={1}>
+            <View style={styles.summaryStrip}>
+              <SummaryChip
+                value={`$${data.total_spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                subtitle={getDisplayText(selectedPeriod)}
+                icon="trending-up"
+                iconColor={purple[700]}
+                iconBgColor={purple[100]}
+              />
+              <SummaryChip
+                value={`${data.transaction_count}`}
+                subtitle={`across ${data.category_count} categories`}
+                icon="receipt-outline"
+                iconColor={purple[700]}
+                iconBgColor={purple[100]}
+              />
+              <SummaryChip
+                value={topCategory.name}
+                subtitle={`$${topCategory.total.toLocaleString(undefined, { minimumFractionDigits: 2 })} \u00B7 ${topCategory.percentage}% of total`}
+                icon="pie-chart-outline"
+                iconColor={purple[700]}
+                iconBgColor={purple[100]}
+                smallValue
+              />
+              <SummaryChip
+                value={`${data.uncategorized_percentage}%`}
+                subtitle="Uncategorized spending"
+                variant="warning"
+                icon="alert-circle-outline"
+                iconColor={gold[700]}
+                iconBgColor={gold[100]}
+              />
+            </View>
+          </StaggeredView>
 
-          <ProportionBar categories={data.categories} />
+          <StaggeredView index={2}>
+            <ProportionBar categories={data.categories} />
+          </StaggeredView>
 
-          <CategoryAccordion data={data} transactions={transactions} />
+          <StaggeredView index={3}>
+            <CategoryAccordion data={data} transactions={transactions} />
+          </StaggeredView>
 
           {data.refund_count > 0 && (
-            <CategoryAccordion
-              variant="refund"
-              data={{
-                ...data,
-                categories: [{
-                  name: 'Refunds',
-                  total: data.refund_total,
-                  count: data.refund_count,
-                  percentage: 0,
-                }],
-              }}
-              transactions={transactions}
-            />
+            <StaggeredView index={4}>
+              <CategoryAccordion
+                variant="refund"
+                data={{
+                  ...data,
+                  categories: [{
+                    name: 'Refunds',
+                    total: data.refund_total,
+                    count: data.refund_count,
+                    percentage: 0,
+                  }],
+                }}
+                transactions={transactions}
+              />
+            </StaggeredView>
           )}
         </>
       )}

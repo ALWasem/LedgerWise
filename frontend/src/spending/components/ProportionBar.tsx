@@ -18,6 +18,32 @@ export default function ProportionBar({ categories }: ProportionBarProps) {
   const rankMap = useMemo(() => buildCategoryRankMap(sorted), [sorted]);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
+  const midpoint = Math.ceil(sorted.length / 2);
+  const leftColumn = sorted.slice(0, midpoint);
+  const rightColumn = sorted.slice(midpoint);
+
+  const renderLegendItem = (cat: CategoryData, i: number) => (
+    <Pressable
+      key={cat.name}
+      onHoverIn={() => setHoveredIndex(i)}
+      onHoverOut={() => setHoveredIndex(null)}
+      style={styles.legendItem}
+    >
+      <View
+        style={[
+          styles.legendDot,
+          { backgroundColor: getCategoryColor(cat.name, rankMap.get(cat.name) ?? 0) },
+        ]}
+      />
+      <Text style={styles.legendText} numberOfLines={1}>
+        {cat.name === 'General' ? 'General / Uncategorized' : cat.name}
+      </Text>
+      <Text style={styles.legendPercentage}>
+        {Math.round(cat.percentage)}%
+      </Text>
+    </Pressable>
+  );
+
   return (
     <View style={styles.proportionBarContainer}>
       <Text style={styles.proportionBarTitle}>Spending by Category</Text>
@@ -74,22 +100,12 @@ export default function ProportionBar({ categories }: ProportionBarProps) {
       </View>
 
       <View style={styles.legend}>
-        {sorted.map((cat, i) => (
-          <View key={cat.name} style={styles.legendItem}>
-            <View
-              style={[
-                styles.legendDot,
-                { backgroundColor: getCategoryColor(cat.name, rankMap.get(cat.name) ?? 0) },
-              ]}
-            />
-            <Text style={styles.legendText} numberOfLines={1}>
-              {cat.name === 'General' ? 'General / Uncategorized' : cat.name}
-            </Text>
-            <Text style={styles.legendPercentage}>
-              {Math.round(cat.percentage)}%
-            </Text>
-          </View>
-        ))}
+        <View style={styles.legendColumn}>
+          {leftColumn.map((cat) => renderLegendItem(cat, sorted.indexOf(cat)))}
+        </View>
+        <View style={styles.legendColumn}>
+          {rightColumn.map((cat) => renderLegendItem(cat, sorted.indexOf(cat)))}
+        </View>
       </View>
     </View>
   );
