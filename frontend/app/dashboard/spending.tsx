@@ -13,7 +13,8 @@ export default function SpendingScreen() {
   const [enrolling, setEnrolling] = useState(false);
   const [tellerError, setTellerError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>({
-    type: 'all',
+    type: 'month',
+    month: new Date().getMonth(),
     year: new Date().getFullYear(),
   });
   const { session } = useAuth();

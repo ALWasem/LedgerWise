@@ -18,8 +18,7 @@ interface Props {
 }
 
 function periodLabel(period: TimePeriod): string {
-  if (period.type === 'all') return 'All time';
-  if (period.type === 'ytd') return `YTD ${period.year}`;
+  if (period.type === 'alltime') return 'All time';
   if (period.type === 'year') return `${period.year}`;
   const months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',

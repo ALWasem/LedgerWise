@@ -1,15 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { timePeriodStyles as styles } from '../styles/timePeriod.styles';
 
-export type TimePeriodType = 'month' | 'year' | 'ytd' | 'all';
+export type TimePeriodType = 'month' | 'year' | 'alltime';
 
 export interface TimePeriod {
   type: TimePeriodType;
   month?: number; // 0-11
-  year: number;
+  year?: number;
 }
 
 interface TimePeriodSelectorProps {
@@ -18,8 +18,8 @@ interface TimePeriodSelectorProps {
 }
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
 /** Convert a TimePeriod to start/end ISO date strings (YYYY-MM-DD). */
@@ -27,15 +27,8 @@ export function periodToDateRange(period: TimePeriod): {
   startDate?: string;
   endDate?: string;
 } {
-  if (period.type === 'all') {
+  if (period.type === 'alltime') {
     return {};
-  }
-
-  if (period.type === 'ytd') {
-    const start = `${period.year}-01-01`;
-    const now = new Date();
-    const end = now.toISOString().split('T')[0];
-    return { startDate: start, endDate: end };
   }
 
   if (period.type === 'year') {
@@ -46,45 +39,62 @@ export function periodToDateRange(period: TimePeriod): {
   }
 
   // month
+  const y = period.year!;
   const m = (period.month ?? 0) + 1;
   const mm = String(m).padStart(2, '0');
-  const lastDay = new Date(period.year, m, 0).getDate();
+  const lastDay = new Date(y, m, 0).getDate();
   return {
-    startDate: `${period.year}-${mm}-01`,
-    endDate: `${period.year}-${mm}-${String(lastDay).padStart(2, '0')}`,
+    startDate: `${y}-${mm}-01`,
+    endDate: `${y}-${mm}-${String(lastDay).padStart(2, '0')}`,
   };
 }
+
+const getDisplayText = (period: TimePeriod): string => {
+  if (period.type === 'alltime') return 'All time';
+  if (period.type === 'year') return `${period.year}`;
+  return `${MONTHS[period.month!]} ${period.year}`;
+};
 
 export default function TimePeriodSelector({
   selectedPeriod,
   onPeriodChange,
 }: TimePeriodSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeMode, setActiveMode] = useState<TimePeriodType>(selectedPeriod.type);
+  const [viewYear, setViewYear] = useState(selectedPeriod.year || new Date().getFullYear());
 
-  const currentYear = new Date().getFullYear();
-  const years = useMemo(() => [currentYear, currentYear - 1, currentYear - 2], [currentYear]);
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth();
+  const years = useMemo(() => [currentYear - 2, currentYear - 1, currentYear], [currentYear]);
 
-  const displayText = useMemo(() => {
-    if (selectedPeriod.type === 'all') return 'All Time';
-    if (selectedPeriod.type === 'ytd') return `YTD ${selectedPeriod.year}`;
-    if (selectedPeriod.type === 'year') return `${selectedPeriod.year}`;
-    return `${MONTHS[selectedPeriod.month!]} ${selectedPeriod.year}`;
-  }, [selectedPeriod]);
-
-  const select = useCallback(
-    (period: TimePeriod) => {
-      onPeriodChange(period);
+  const handleYearSelect = useCallback((year: number) => {
+    if (activeMode === 'year') {
+      onPeriodChange({ type: 'year', year });
       setIsOpen(false);
-    },
-    [onPeriodChange],
-  );
+    } else {
+      setViewYear(year);
+    }
+  }, [activeMode, onPeriodChange]);
 
-  function isSelected(type: TimePeriodType, year: number, month?: number): boolean {
-    if (selectedPeriod.type !== type) return false;
-    if (selectedPeriod.year !== year) return false;
-    if (type === 'month' && selectedPeriod.month !== month) return false;
-    return true;
-  }
+  const handleMonthSelect = useCallback((monthIndex: number) => {
+    if (viewYear === currentYear && monthIndex > currentMonth) return;
+    onPeriodChange({ type: 'month', month: monthIndex, year: viewYear });
+    setIsOpen(false);
+  }, [viewYear, currentYear, currentMonth, onPeriodChange]);
+
+  const handleApplyAllTime = useCallback(() => {
+    onPeriodChange({ type: 'alltime' });
+    setIsOpen(false);
+  }, [onPeriodChange]);
+
+  const isMonthDisabled = (monthIndex: number) =>
+    viewYear === currentYear && monthIndex > currentMonth;
+
+  const isMonthSelected = (monthIndex: number) =>
+    selectedPeriod.type === 'month' &&
+    selectedPeriod.month === monthIndex &&
+    selectedPeriod.year === viewYear;
 
   return (
     <>
@@ -93,8 +103,7 @@ export default function TimePeriodSelector({
         onPress={() => setIsOpen(true)}
       >
         <Ionicons name="calendar-outline" size={16} color="#6366F1" />
-        <Text style={styles.triggerText}>{displayText}</Text>
-        <Ionicons name="chevron-down" size={14} color="#737373" />
+        <Text style={styles.triggerText}>{getDisplayText(selectedPeriod)}</Text>
       </Pressable>
 
       <Modal visible={isOpen} transparent animationType="fade">
@@ -102,113 +111,140 @@ export default function TimePeriodSelector({
           <SafeAreaView style={styles.modalOverlay}>
             <Pressable style={styles.modalBackdrop} onPress={() => setIsOpen(false)} />
             <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Period</Text>
-                <Pressable onPress={() => setIsOpen(false)}>
-                  <Ionicons name="close" size={22} color="#737373" />
-                </Pressable>
+              {/* Segmented Control */}
+              <View style={styles.segmentedControlWrapper}>
+                <View style={styles.segmentedControl}>
+                  {(['alltime', 'year', 'month'] as const).map((mode) => (
+                    <Pressable
+                      key={mode}
+                      style={[
+                        styles.segmentButton,
+                        activeMode === mode && styles.segmentButtonActive,
+                      ]}
+                      onPress={() => setActiveMode(mode)}
+                    >
+                      <Text
+                        style={[
+                          styles.segmentButtonText,
+                          activeMode === mode && styles.segmentButtonTextActive,
+                        ]}
+                      >
+                        {mode === 'alltime' ? 'All time' : mode === 'year' ? 'Year' : 'Month'}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
 
-              <ScrollView
-                style={styles.optionsList}
-                showsVerticalScrollIndicator={false}
-              >
-                {/* All Time */}
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionHeaderText}>Quick Select</Text>
-                </View>
-                <Pressable
-                  style={[
-                    styles.option,
-                    isSelected('all', currentYear) && styles.optionActive,
-                  ]}
-                  onPress={() => select({ type: 'all', year: currentYear })}
-                >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      isSelected('all', currentYear) && styles.optionTextActive,
-                    ]}
-                  >
-                    All Time
-                  </Text>
-                </Pressable>
-
-                {/* YTD options */}
-                {years.map((year) => (
-                  <Pressable
-                    key={`ytd-${year}`}
-                    style={[
-                      styles.option,
-                      isSelected('ytd', year) && styles.optionActive,
-                    ]}
-                    onPress={() => select({ type: 'ytd', year })}
-                  >
-                    <Text
-                      style={[
-                        styles.optionText,
-                        isSelected('ytd', year) && styles.optionTextActive,
-                      ]}
-                    >
-                      Year to Date {year}
-                    </Text>
-                  </Pressable>
-                ))}
-
-                {/* Full Year */}
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionHeaderText}>Full Year</Text>
-                </View>
-                {years.map((year) => (
-                  <Pressable
-                    key={`year-${year}`}
-                    style={[
-                      styles.option,
-                      isSelected('year', year) && styles.optionActive,
-                    ]}
-                    onPress={() => select({ type: 'year', year })}
-                  >
-                    <Text
-                      style={[
-                        styles.optionText,
-                        isSelected('year', year) && styles.optionTextActive,
-                      ]}
-                    >
-                      {year}
-                    </Text>
-                  </Pressable>
-                ))}
-
-                {/* Monthly by year */}
-                {years.map((year) => (
-                  <View key={`months-${year}`}>
-                    <View style={styles.sectionHeader}>
-                      <Text style={styles.sectionHeaderText}>{year}</Text>
-                    </View>
-                    {MONTHS.map((monthName, idx) => (
-                      <Pressable
-                        key={`${year}-${idx}`}
-                        style={[
-                          styles.option,
-                          isSelected('month', year, idx) && styles.optionActive,
-                        ]}
-                        onPress={() =>
-                          select({ type: 'month', month: idx, year })
-                        }
-                      >
-                        <Text
-                          style={[
-                            styles.optionText,
-                            isSelected('month', year, idx) && styles.optionTextActive,
-                          ]}
-                        >
-                          {monthName}
-                        </Text>
-                      </Pressable>
-                    ))}
+              {/* All Time Mode */}
+              {activeMode === 'alltime' && (
+                <View style={styles.allTimeContainer}>
+                  <View style={styles.allTimeIconWrapper}>
+                    <Ionicons name="calendar-outline" size={28} color="#6366F1" />
                   </View>
-                ))}
-              </ScrollView>
+                  <Text style={styles.allTimeTitle}>All Transactions</Text>
+                  <Text style={styles.allTimeSubtitle}>Jan 2024 – Present</Text>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.applyButton,
+                      pressed && styles.applyButtonPressed,
+                    ]}
+                    onPress={handleApplyAllTime}
+                  >
+                    <Text style={styles.applyButtonText}>Apply</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {/* Year Mode */}
+              {activeMode === 'year' && (
+                <View style={styles.gridContainer}>
+                  <View style={styles.yearGrid}>
+                    {years.map((year) => {
+                      const selected = selectedPeriod.type === 'year' && selectedPeriod.year === year;
+                      return (
+                        <Pressable
+                          key={year}
+                          style={[styles.gridItem, selected && styles.gridItemActive]}
+                          onPress={() => handleYearSelect(year)}
+                        >
+                          <Text style={[styles.gridItemText, selected && styles.gridItemTextActive]}>
+                            {year}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+
+              {/* Month Mode */}
+              {activeMode === 'month' && (
+                <View style={styles.gridContainer}>
+                  {/* Year Navigation */}
+                  <View style={styles.yearNav}>
+                    <Pressable
+                      style={[
+                        styles.yearNavButton,
+                        viewYear <= currentYear - 2 && styles.yearNavButtonDisabled,
+                      ]}
+                      onPress={() => viewYear > currentYear - 2 && setViewYear(viewYear - 1)}
+                      disabled={viewYear <= currentYear - 2}
+                    >
+                      <Ionicons
+                        name="chevron-back"
+                        size={20}
+                        color={viewYear <= currentYear - 2 ? '#D4D4D4' : '#0A0A0A'}
+                      />
+                    </Pressable>
+                    <Text style={styles.yearNavText}>{viewYear}</Text>
+                    <Pressable
+                      style={[
+                        styles.yearNavButton,
+                        viewYear >= currentYear && styles.yearNavButtonDisabled,
+                      ]}
+                      onPress={() => viewYear < currentYear && setViewYear(viewYear + 1)}
+                      disabled={viewYear >= currentYear}
+                    >
+                      <Ionicons
+                        name="chevron-forward"
+                        size={20}
+                        color={viewYear >= currentYear ? '#D4D4D4' : '#0A0A0A'}
+                      />
+                    </Pressable>
+                  </View>
+
+                  {/* Month Grid */}
+                  <View style={styles.monthGrid}>
+                    {MONTHS.map((month, index) => {
+                      const disabled = isMonthDisabled(index);
+                      const selected = isMonthSelected(index);
+                      return (
+                        <Pressable
+                          key={month}
+                          style={[
+                            styles.gridItem,
+                            selected && styles.gridItemActive,
+                            disabled && styles.gridItemDisabled,
+                          ]}
+                          onPress={() => !disabled && handleMonthSelect(index)}
+                          disabled={disabled}
+                        >
+                          <Text
+                            style={[
+                              styles.gridItemText,
+                              selected && styles.gridItemTextActive,
+                              disabled && styles.gridItemTextDisabled,
+                            ]}
+                          >
+                            {month}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
             </View>
           </SafeAreaView>
         </SafeAreaProvider>

@@ -1,6 +1,7 @@
 import { Platform, StyleSheet } from 'react-native';
 
 export const timePeriodStyles = StyleSheet.create({
+  // Trigger button
   trigger: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -43,71 +44,189 @@ export const timePeriodStyles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   modalContent: {
-    width: '85%',
-    maxWidth: 340,
-    maxHeight: '70%',
+    width: '90%',
+    maxWidth: 400,
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     ...Platform.select({
-      web: { boxShadow: '0px 8px 30px rgba(0,0,0,0.15)' },
+      web: { boxShadow: '0px 8px 30px rgba(0,0,0,0.18)' },
       default: {
         shadowColor: '#000',
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.18,
         shadowRadius: 30,
         shadowOffset: { width: 0, height: 8 },
-        elevation: 10,
+        elevation: 12,
       },
     }),
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+
+  // Segmented control
+  segmentedControlWrapper: {
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
   },
-  modalTitle: {
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
+  },
+  segmentButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  segmentButtonActive: {
+    backgroundColor: '#6366F1',
+    ...Platform.select({
+      web: { boxShadow: '0px 2px 8px rgba(99,102,241,0.3)' },
+      default: {
+        shadowColor: '#6366F1',
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
+      },
+    }),
+  },
+  segmentButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#737373',
+  },
+  segmentButtonTextActive: {
+    color: '#ffffff',
+  },
+
+  // All time mode
+  allTimeContainer: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  allTimeIconWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(99,102,241,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  allTimeTitle: {
     fontSize: 17,
+    fontWeight: '600',
+    color: '#0A0A0A',
+    marginBottom: 8,
+  },
+  allTimeSubtitle: {
+    fontSize: 14,
+    color: '#737373',
+    marginBottom: 24,
+  },
+  applyButton: {
+    width: '100%',
+    paddingVertical: 14,
+    backgroundColor: '#6366F1',
+    borderRadius: 12,
+    alignItems: 'center',
+    ...Platform.select({
+      web: { boxShadow: '0px 4px 12px rgba(99,102,241,0.3)' },
+      default: {
+        shadowColor: '#6366F1',
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 6,
+      },
+    }),
+  },
+  applyButtonPressed: {
+    backgroundColor: '#5558E3',
+  },
+  applyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+
+  // Grid container (year + month modes)
+  gridContainer: {
+    padding: 20,
+  },
+
+  // Year navigation (month mode)
+  yearNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  yearNavButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  yearNavButtonDisabled: {
+    opacity: 0.3,
+  },
+  yearNavText: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#0A0A0A',
   },
 
-  // Options
-  optionsList: {
-    flex: 1,
+  // Grids
+  yearGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
-  sectionHeader: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+  monthGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+
+  // Grid items
+  gridItem: {
+    width: '30%',
+    flexGrow: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+  },
+  gridItemActive: {
+    backgroundColor: '#6366F1',
+    ...Platform.select({
+      web: { boxShadow: '0px 4px 12px rgba(99,102,241,0.3)' },
+      default: {
+        shadowColor: '#6366F1',
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 6,
+      },
+    }),
+  },
+  gridItemDisabled: {
     backgroundColor: '#FAFAFA',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
   },
-  sectionHeaderText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#A3A3A3',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  option: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F0F0F0',
-  },
-  optionActive: {
-    backgroundColor: '#EEF2FF',
-  },
-  optionText: {
+  gridItemText: {
     fontSize: 14,
+    fontWeight: '600',
     color: '#0A0A0A',
   },
-  optionTextActive: {
-    color: '#6366F1',
-    fontWeight: '600',
+  gridItemTextActive: {
+    color: '#ffffff',
+  },
+  gridItemTextDisabled: {
+    color: '#D4D4D4',
   },
 });
