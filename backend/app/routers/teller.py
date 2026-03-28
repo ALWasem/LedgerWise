@@ -18,12 +18,13 @@ router = APIRouter(prefix="/teller", tags=["teller"])
 
 @router.get("/accounts", response_model=list[AccountResponse])
 async def get_my_accounts(
+    account_type: str | None = Query(None, description="Filter by account type (e.g. credit)"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> list[AccountResponse]:
     """Return all bank accounts linked to the authenticated user."""
     log_data_access(user_id, "accounts")
-    accounts = await teller_service.get_user_accounts(db, user_id)
+    accounts = await teller_service.get_user_accounts(db, user_id, account_type)
     return [
         AccountResponse(
             id=str(acct.id),
@@ -41,13 +42,14 @@ async def get_my_accounts(
 async def get_my_transactions(
     start_date: date | None = Query(None, description="Filter from this date (inclusive)"),
     end_date: date | None = Query(None, description="Filter up to this date (inclusive)"),
+    account_type: str | None = Query(None, description="Filter by account type (e.g. credit)"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> list[TransactionResponse]:
     """Return transactions for the authenticated user's accounts."""
     log_data_access(user_id, "transactions")
     return await teller_service.get_user_transactions(
-        db, user_id, start_date, end_date
+        db, user_id, start_date, end_date, account_type
     )
 
 

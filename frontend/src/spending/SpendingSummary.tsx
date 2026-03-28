@@ -89,7 +89,6 @@ export default function SpendingSummary({
                 icon="pie-chart-outline"
                 iconColor={purple[700]}
                 iconBgColor={purple[100]}
-                smallValue
               />
               <SummaryChip
                 value={`${data.uncategorized_percentage}%`}

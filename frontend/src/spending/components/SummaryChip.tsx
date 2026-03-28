@@ -10,7 +10,6 @@ interface SummaryChipProps {
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   iconBgColor: string;
-  smallValue?: boolean;
 }
 
 export default function SummaryChip({
@@ -20,7 +19,6 @@ export default function SummaryChip({
   icon,
   iconColor,
   iconBgColor,
-  smallValue = false,
 }: SummaryChipProps) {
   const isWarning = variant === 'warning';
 
@@ -32,9 +30,10 @@ export default function SummaryChip({
       <Text
         style={[
           styles.cardValue,
-          smallValue && styles.cardValueSmall,
           isWarning && styles.uncategorizedValue,
         ]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
       >
         {value}
       </Text>

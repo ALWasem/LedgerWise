@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { isNarrow } from '../utils/responsive';
 import { pageHeaderDefs, placeholderDefs } from './shared.styles';
-import { surface, gold, shadows, radius } from '../theme';
+import { surface, gold, shadows, radius, typography } from '../theme';
 
 export const overviewStyles = StyleSheet.create({
   container: {
@@ -46,13 +46,15 @@ export const overviewStyles = StyleSheet.create({
     flex: 1,
   },
   alertTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 18,
+    fontWeight: '700',
     color: gold[900],
     marginBottom: 4,
   },
   alertText: {
-    fontSize: 14,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 15,
     color: gold[800],
     lineHeight: 22,
   },

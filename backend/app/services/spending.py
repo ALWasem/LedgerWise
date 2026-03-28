@@ -47,6 +47,7 @@ async def _query_category_totals(
     user_id: str,
     start_date: date | None = None,
     end_date: date | None = None,
+    account_type: str | None = None,
 ) -> list[Row[Any]]:
     """Query spending totals grouped by category, scoped to a user."""
     base = (
@@ -58,6 +59,8 @@ async def _query_category_totals(
         .join(Account, Transaction.account_id == Account.id)
         .where(Account.user_id == user_id)
     )
+    if account_type:
+        base = base.where(Account.account_type == account_type)
 
     if start_date:
         base = base.where(Transaction.date >= start_date)
@@ -80,6 +83,7 @@ async def _query_refund_totals(
     user_id: str,
     start_date: date | None = None,
     end_date: date | None = None,
+    account_type: str | None = None,
 ) -> tuple[float, int]:
     """Query aggregate refund total and count (negative amounts that aren't CC payments)."""
     refund_by_category = func.lower(func.coalesce(Transaction.category, "")) == "refund"
@@ -94,6 +98,8 @@ async def _query_refund_totals(
         .join(Account, Transaction.account_id == Account.id)
         .where(Account.user_id == user_id)
     )
+    if account_type:
+        base = base.where(Account.account_type == account_type)
 
     if start_date:
         base = base.where(Transaction.date >= start_date)
@@ -137,11 +143,12 @@ async def get_spending_summary(
     user_id: str,
     start_date: date | None = None,
     end_date: date | None = None,
+    account_type: str | None = None,
 ) -> SpendingSummaryResponse:
     """Aggregate spending data by category, optionally scoped to a user and date range."""
     category_label = _build_category_label()
     rows = await _query_category_totals(
-        db, category_label, _spending_filter(), user_id, start_date, end_date
+        db, category_label, _spending_filter(), user_id, start_date, end_date, account_type
     )
 
     total_spent = sum(float(r.total) for r in rows)
@@ -151,7 +158,7 @@ async def get_spending_summary(
         rows, total_spent
     )
     refund_total, refund_count = await _query_refund_totals(
-        db, user_id, start_date, end_date
+        db, user_id, start_date, end_date, account_type
     )
 
     return SpendingSummaryResponse(

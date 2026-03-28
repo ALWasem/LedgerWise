@@ -1,5 +1,5 @@
 import { isNarrow } from '../utils/responsive';
-import { text, surface, border, purple, shadows, radius } from '../theme';
+import { text, surface, border, purple, shadows, radius, typography } from '../theme';
 
 // Raw style definitions — spread into StyleSheet.create() calls
 export const pageHeaderDefs = {
@@ -7,13 +7,15 @@ export const pageHeaderDefs = {
     marginBottom: isNarrow ? 16 : 24,
   },
   pageTitle: {
-    fontSize: isNarrow ? 22 : 28,
-    fontWeight: '600' as const,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: isNarrow ? 22 : 32,
+    fontWeight: '700' as const,
     color: text.primary,
-    letterSpacing: -0.56,
+    letterSpacing: -0.96,
     marginBottom: 4,
   },
   pageSubtitle: {
+    fontFamily: typography.fontFamily.regular,
     fontSize: isNarrow ? 13 : 15,
     color: text.secondary,
   },
@@ -41,12 +43,14 @@ export const placeholderDefs = {
     ...shadows.purple,
   },
   placeholderTitle: {
-    fontSize: 19,
-    fontWeight: '600' as const,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 18,
+    fontWeight: '700' as const,
     color: text.primary,
     marginBottom: 8,
   },
   placeholderText: {
+    fontFamily: typography.fontFamily.regular,
     fontSize: 15,
     color: text.secondary,
     textAlign: 'center' as const,

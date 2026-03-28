@@ -54,11 +54,14 @@ async def get_transactions(access_token: str, account_id: str) -> list[dict[str,
         return response.json()
 
 
-async def get_user_accounts(db: AsyncSession, user_id: str) -> list[Account]:
-    """Fetch all accounts belonging to a user."""
-    result = await db.execute(
-        select(Account).where(Account.user_id == user_id)
-    )
+async def get_user_accounts(
+    db: AsyncSession, user_id: str, account_type: str | None = None
+) -> list[Account]:
+    """Fetch all accounts belonging to a user, optionally filtered by type."""
+    stmt = select(Account).where(Account.user_id == user_id)
+    if account_type:
+        stmt = stmt.where(Account.account_type == account_type)
+    result = await db.execute(stmt)
     return list(result.scalars().all())
 
 
@@ -67,6 +70,7 @@ async def get_user_transactions(
     user_id: str,
     start_date: date_type | None = None,
     end_date: date_type | None = None,
+    account_type: str | None = None,
 ) -> list[TransactionResponse]:
     """Fetch transactions for a specific user, joined with account info."""
     stmt = (
@@ -76,6 +80,8 @@ async def get_user_transactions(
         .options(joinedload(Transaction.account))
         .order_by(Transaction.date.desc())
     )
+    if account_type:
+        stmt = stmt.where(Account.account_type == account_type)
 
     if start_date:
         stmt = stmt.where(Transaction.date >= start_date)

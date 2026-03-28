@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { surface, brand, text } from '../theme';
+import { surface, brand, text, typography } from '../theme';
 
 export const tellerModalStyles = StyleSheet.create({
   container: {
@@ -11,8 +11,10 @@ export const tellerModalStyles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   closeButtonText: {
+    fontFamily: typography.fontFamily.semiBold,
     color: brand.primary,
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '600',
   },
   webView: {
     flex: 1,

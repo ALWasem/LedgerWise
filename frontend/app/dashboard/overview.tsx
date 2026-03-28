@@ -50,7 +50,6 @@ export default function OverviewScreen() {
                   icon="pie-chart-outline"
                   iconColor={gold[700]}
                   iconBgColor={gold[100]}
-                  smallValue
                 />
               )}
             </View>

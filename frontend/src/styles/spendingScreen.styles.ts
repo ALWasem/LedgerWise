@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { isNarrow } from '../utils/responsive';
-import { text, brand, purple, border, surface, semantic, shadows, radius } from '../theme';
+import { text, brand, purple, border, surface, semantic, shadows, radius, typography } from '../theme';
 
 export const spendingScreenStyles = StyleSheet.create({
   container: {
@@ -13,7 +13,8 @@ export const spendingScreenStyles = StyleSheet.create({
     marginTop: 40,
   },
   emptyText: {
-    fontSize: 16,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 15,
     color: text.secondary,
     marginBottom: 16,
   },
@@ -28,8 +29,9 @@ export const spendingScreenStyles = StyleSheet.create({
     backgroundColor: purple[700],
   },
   connectButtonText: {
+    fontFamily: typography.fontFamily.semiBold,
     color: text.inverse,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   spinner: {
@@ -65,6 +67,7 @@ export const spendingScreenStyles = StyleSheet.create({
     backgroundColor: purple[100],
   },
   addAccountText: {
+    fontFamily: typography.fontFamily.semiBold,
     color: brand.primary,
     fontSize: 14,
     fontWeight: '600',

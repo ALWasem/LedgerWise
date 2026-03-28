@@ -74,7 +74,7 @@ async function cachedGet<T>(url: string, token: string): Promise<T> {
 // --- API functions ---
 
 export async function fetchAccounts(token: string): Promise<Account[]> {
-  return cachedGet<Account[]>(`${API_URL}/api/v1/teller/accounts`, token);
+  return cachedGet<Account[]>(`${API_URL}/api/v1/teller/accounts?account_type=credit`, token);
 }
 
 export async function fetchTransactions(
@@ -83,11 +83,11 @@ export async function fetchTransactions(
   endDate?: string,
 ): Promise<Transaction[]> {
   const params = new URLSearchParams();
+  params.set('account_type', 'credit');
   if (startDate) params.set('start_date', startDate);
   if (endDate) params.set('end_date', endDate);
-  const qs = params.toString();
   return cachedGet<Transaction[]>(
-    `${API_URL}/api/v1/teller/transactions${qs ? `?${qs}` : ''}`,
+    `${API_URL}/api/v1/teller/transactions?${params.toString()}`,
     token,
   );
 }
@@ -98,11 +98,11 @@ export async function fetchSpendingSummary(
   endDate?: string,
 ): Promise<SpendingSummaryData> {
   const params = new URLSearchParams();
+  params.set('account_type', 'credit');
   if (startDate) params.set('start_date', startDate);
   if (endDate) params.set('end_date', endDate);
-  const qs = params.toString();
   return cachedGet<SpendingSummaryData>(
-    `${API_URL}/api/v1/spending/summary${qs ? `?${qs}` : ''}`,
+    `${API_URL}/api/v1/spending/summary?${params.toString()}`,
     token,
   );
 }

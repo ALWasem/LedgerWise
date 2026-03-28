@@ -1,7 +1,7 @@
 import { Platform, StyleSheet } from 'react-native';
 import { isNarrow } from '../utils/responsive';
 import { pageHeaderDefs } from './shared.styles';
-import { surface, text, border, purple, gold, semantic, shadows, radius } from '../theme';
+import { surface, text, border, purple, gold, semantic, shadows, radius, typography } from '../theme';
 
 export const spendingStyles = StyleSheet.create({
   container: {
@@ -14,10 +14,11 @@ export const spendingStyles = StyleSheet.create({
     marginTop: 40,
   },
   emptyText: {
+    fontFamily: typography.fontFamily.regular,
     color: text.secondary,
     marginTop: 40,
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: 15,
   },
   ...pageHeaderDefs,
   pageHeaderRow: {
@@ -63,19 +64,17 @@ export const spendingStyles = StyleSheet.create({
     marginBottom: isNarrow ? 8 : 12,
   },
   cardValue: {
+    ...typography.amount,
     fontSize: isNarrow ? 20 : 32,
-    fontWeight: '600',
     color: text.primary,
     letterSpacing: -0.5,
     marginBottom: 2,
-  },
-  cardValueSmall: {
-    fontSize: isNarrow ? 14 : 19,
   },
   uncategorizedValue: {
     color: gold[900],
   },
   cardSub: {
+    fontFamily: typography.fontFamily.medium,
     fontSize: isNarrow ? 11 : 13,
     fontWeight: '500',
     color: text.tertiary,
@@ -96,8 +95,9 @@ export const spendingStyles = StyleSheet.create({
     ...shadows.md,
   },
   proportionBarTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 18,
+    fontWeight: '700',
     color: text.primary,
     marginBottom: 24,
   },
@@ -135,6 +135,7 @@ export const spendingStyles = StyleSheet.create({
     alignItems: 'center',
   },
   proportionLabelText: {
+    fontFamily: typography.fontFamily.semiBold,
     color: text.inverse,
     fontSize: 12,
     fontWeight: '600',
@@ -157,6 +158,7 @@ export const spendingStyles = StyleSheet.create({
     zIndex: 10,
   },
   proportionTooltipText: {
+    fontFamily: typography.fontFamily.medium,
     color: text.inverse,
     fontSize: 12,
     fontWeight: '500',
@@ -181,12 +183,14 @@ export const spendingStyles = StyleSheet.create({
     marginRight: 8,
   },
   legendText: {
+    fontFamily: typography.fontFamily.medium,
     fontSize: 13,
     fontWeight: '500',
     color: text.secondary,
     flex: 1,
   },
   legendPercentage: {
+    fontFamily: typography.fontFamily.regular,
     fontSize: 12,
     color: text.tertiary,
     marginLeft: 4,
@@ -209,8 +213,9 @@ export const spendingStyles = StyleSheet.create({
     borderBottomColor: border.default,
   },
   categoriesSectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 18,
+    fontWeight: '700',
     color: text.primary,
   },
   categoriesContainer: {
@@ -243,12 +248,14 @@ export const spendingStyles = StyleSheet.create({
     marginRight: 12,
   },
   categoryName: {
+    fontFamily: typography.fontFamily.medium,
     fontSize: 14,
     fontWeight: '500',
     color: text.primary,
     flexShrink: 1,
   },
   uncategorizedName: {
+    fontFamily: typography.fontFamily.semiBold,
     fontWeight: '600',
     color: gold[900],
   },
@@ -262,6 +269,7 @@ export const spendingStyles = StyleSheet.create({
     marginLeft: 8,
   },
   reviewBadgeText: {
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: 11,
     fontWeight: '600',
     color: gold[900],
@@ -274,6 +282,7 @@ export const spendingStyles = StyleSheet.create({
     marginLeft: 10,
   },
   countBadgeText: {
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: 12,
     fontWeight: '600',
     color: purple[700],
@@ -289,8 +298,8 @@ export const spendingStyles = StyleSheet.create({
     alignItems: 'center',
   },
   categoryTotal: {
+    ...typography.amount,
     fontSize: 15,
-    fontWeight: '600',
     color: text.primary,
     marginRight: 8,
     minWidth: 100,
@@ -322,19 +331,21 @@ export const spendingStyles = StyleSheet.create({
     marginRight: 12,
   },
   expandedTxnDesc: {
+    fontFamily: typography.fontFamily.medium,
     fontSize: 13,
     fontWeight: '500',
     color: text.primary,
   },
   expandedTxnMeta: {
+    fontFamily: typography.fontFamily.medium,
     fontSize: 12,
     fontWeight: '500',
     color: text.tertiary,
     marginTop: 2,
   },
   expandedTxnAmount: {
+    ...typography.amount,
     fontSize: 14,
-    fontWeight: '600',
     color: text.primary,
   },
   expandedTxnRefund: {
@@ -349,6 +360,7 @@ export const spendingStyles = StyleSheet.create({
     borderTopColor: border.default,
   },
   refundSectionLabel: {
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: 12,
     fontWeight: '600',
     color: semantic.success,

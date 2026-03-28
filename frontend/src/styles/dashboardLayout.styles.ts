@@ -1,6 +1,6 @@
 import { Platform, StyleSheet } from 'react-native';
 import { isNarrow } from '../utils/responsive';
-import { surface, text, border, purple, gold, brand, shadows, radius } from '../theme';
+import { surface, text, border, purple, gold, brand, shadows, radius, typography } from '../theme';
 
 export const dashboardLayoutStyles = StyleSheet.create({
   root: {
@@ -26,13 +26,14 @@ export const dashboardLayoutStyles = StyleSheet.create({
     gap: 12,
   },
   headerTitle: {
-    fontSize: 19,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 21,
+    fontWeight: '700',
     color: text.primary,
     letterSpacing: -0.2,
   },
   headerTitleMobile: {
-    fontSize: 16,
+    fontSize: 18,
   },
   signOutButton: {
     flexDirection: 'row',
@@ -46,6 +47,7 @@ export const dashboardLayoutStyles = StyleSheet.create({
     backgroundColor: purple[50],
   },
   signOutText: {
+    fontFamily: typography.fontFamily.medium,
     fontSize: 14,
     fontWeight: '500',
     color: text.secondary,
@@ -98,11 +100,13 @@ export const dashboardLayoutStyles = StyleSheet.create({
     ...shadows.purple,
   },
   navText: {
+    fontFamily: typography.fontFamily.medium,
     fontSize: 14,
     fontWeight: '500',
     color: text.secondary,
   },
   navTextActive: {
+    fontFamily: typography.fontFamily.semiBold,
     color: purple[700],
     fontWeight: '600',
   },
@@ -120,12 +124,14 @@ export const dashboardLayoutStyles = StyleSheet.create({
     ...shadows.sm,
   },
   proTipTitle: {
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: 13,
     fontWeight: '600',
     color: gold[900],
     marginBottom: 2,
   },
   proTipText: {
+    fontFamily: typography.fontFamily.regular,
     fontSize: 12,
     color: gold[800],
     lineHeight: 18,
@@ -142,8 +148,8 @@ export const dashboardLayoutStyles = StyleSheet.create({
     backgroundColor: surface.card,
     borderTopWidth: 1,
     borderTopColor: border.default,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 12,
+    paddingTop: 10,
   },
   bottomTab: {
     flex: 1,
@@ -152,11 +158,13 @@ export const dashboardLayoutStyles = StyleSheet.create({
     paddingVertical: 4,
   },
   bottomTabText: {
+    fontFamily: typography.fontFamily.medium,
     fontSize: 11,
     fontWeight: '500',
     color: text.tertiary,
   },
   bottomTabTextActive: {
+    fontFamily: typography.fontFamily.semiBold,
     color: brand.primary,
     fontWeight: '600',
   },

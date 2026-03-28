@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { LayoutAnimation, Platform, Pressable, Text, UIManager, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { spendingStyles as styles } from '../../styles/spending.styles';
 import type { SpendingSummaryData } from '../../types/spending';
@@ -8,8 +8,29 @@ import { getCategoryColor } from '../../utils/categoryColors';
 import { buildCategoryRankMap } from '../../utils/categoryRanking';
 import { text, semantic } from '../../theme';
 import { isHovered } from '../../utils/pressable';
+import StaggeredView from '../../components/StaggeredView';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const ACCORDION_ANIM = LayoutAnimation.create(
+  250,
+  LayoutAnimation.Types.easeInEaseOut,
+  LayoutAnimation.Properties.opacity,
+);
 
 const PAYMENT_PATTERN = /pymt|payment/i;
+
+/** Parse "YYYY-MM-DD" as local time (not UTC) and format for display. */
+function formatLocalDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
 
 interface CategoryAccordionProps {
   data: SpendingSummaryData;
@@ -25,43 +46,18 @@ export default function CategoryAccordion({
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(),
   );
-  const fadeAnims = useRef<Record<string, Animated.Value>>({});
   const isRefund = variant === 'refund';
 
-  function getFadeAnim(name: string): Animated.Value {
-    if (!fadeAnims.current[name]) {
-      fadeAnims.current[name] = new Animated.Value(0);
-    }
-    return fadeAnims.current[name];
-  }
-
   const toggleCategory = useCallback((name: string) => {
+    LayoutAnimation.configureNext(ACCORDION_ANIM);
     setExpandedCategories((prev) => {
       const next = new Set(prev);
-      const anim = getFadeAnim(name);
       if (next.has(name)) {
-        Animated.timing(anim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }).start(() => {
-          setExpandedCategories((curr) => {
-            const updated = new Set(curr);
-            updated.delete(name);
-            return updated;
-          });
-        });
-        return prev;
+        next.delete(name);
       } else {
         next.add(name);
-        anim.setValue(0);
-        Animated.timing(anim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }).start();
-        return next;
       }
+      return next;
     });
   }, []);
 
@@ -154,40 +150,39 @@ export default function CategoryAccordion({
             </Pressable>
 
             {isExpanded && (
-              <Animated.View
-                style={[
-                  styles.expandedContainer,
-                  { opacity: getFadeAnim(cat.name) },
-                ]}
-              >
-                {categoryTransactions.map((txn) => {
+              <View style={styles.expandedContainer}>
+                {categoryTransactions.map((txn, txnIndex) => {
                   const amt = parseFloat(txn.amount);
                   return (
-                    <View key={txn.id} style={styles.expandedTxn}>
-                      <View style={styles.expandedTxnLeft}>
-                        <Text style={styles.expandedTxnDesc} numberOfLines={1}>
-                          {txn.description}
-                        </Text>
-                        <Text style={styles.expandedTxnMeta}>
-                          {new Date(txn.date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                    <StaggeredView
+                      key={txn.id}
+                      index={txnIndex}
+                      delay={40}
+                      duration={200}
+                      trigger={cat.name}
+                    >
+                      <View style={styles.expandedTxn}>
+                        <View style={styles.expandedTxnLeft}>
+                          <Text style={styles.expandedTxnDesc} numberOfLines={1}>
+                            {txn.description}
+                          </Text>
+                          <Text style={styles.expandedTxnMeta}>
+                            {formatLocalDate(txn.date)}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.expandedTxnAmount,
+                            isRefund && styles.expandedTxnRefund,
+                          ]}
+                        >
+                          {isRefund ? '+' : ''}${Math.abs(amt).toFixed(2)}
                         </Text>
                       </View>
-                      <Text
-                        style={[
-                          styles.expandedTxnAmount,
-                          isRefund && styles.expandedTxnRefund,
-                        ]}
-                      >
-                        {isRefund ? '+' : ''}${Math.abs(amt).toFixed(2)}
-                      </Text>
-                    </View>
+                    </StaggeredView>
                   );
                 })}
-              </Animated.View>
+              </View>
             )}
           </View>
         );

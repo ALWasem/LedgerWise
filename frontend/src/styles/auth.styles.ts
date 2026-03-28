@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { surface, text, border, purple, brand, shadows, radius } from '../theme';
+import { surface, text, border, purple, brand, shadows, radius, typography } from '../theme';
 
 // Decorative background element colors — derived from brand purple with low opacity
 const bgPurpleFaint = purple[600] + '12'; // ~7% opacity
@@ -109,13 +109,15 @@ export const authStyles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 32,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 21,
     fontWeight: '700',
     color: text.primary,
-    letterSpacing: -0.64,
+    letterSpacing: -0.63,
     marginBottom: 8,
   },
   subtitle: {
+    fontFamily: typography.fontFamily.regular,
     fontSize: 15,
     color: text.secondary,
   },
@@ -139,6 +141,7 @@ export const authStyles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   dividerText: {
+    fontFamily: typography.fontFamily.regular,
     fontSize: 13,
     color: text.tertiary,
   },
@@ -166,6 +169,7 @@ export const authStyles = StyleSheet.create({
     backgroundColor: purple[50],
   },
   googleButtonText: {
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: 15,
     fontWeight: '600',
     color: text.primary,
@@ -177,6 +181,7 @@ export const authStyles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
+    fontFamily: typography.fontFamily.regular,
     fontSize: 13,
     color: text.tertiary,
     textAlign: 'center',
@@ -192,6 +197,7 @@ export const authStyles = StyleSheet.create({
     alignItems: 'center',
   },
   taglineText: {
+    fontFamily: typography.fontFamily.regular,
     fontSize: 13,
     color: text.tertiary,
   },

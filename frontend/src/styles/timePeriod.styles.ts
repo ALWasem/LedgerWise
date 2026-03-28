@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { surface, text, border, purple, gold, brand, shadows, radius, overlay } from '../theme';
+import { surface, text, border, purple, gold, brand, shadows, radius, overlay, typography } from '../theme';
 
 export const timePeriodStyles = StyleSheet.create({
   // Trigger button
@@ -25,6 +25,7 @@ export const timePeriodStyles = StyleSheet.create({
     backgroundColor: purple[100],
   },
   triggerText: {
+    fontFamily: typography.fontFamily.medium,
     fontSize: 14,
     fontWeight: '500',
     color: text.primary,
@@ -76,6 +77,7 @@ export const timePeriodStyles = StyleSheet.create({
     backgroundColor: gold[100],
   },
   segmentButtonText: {
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: 14,
     fontWeight: '600',
     color: text.tertiary,
@@ -103,13 +105,15 @@ export const timePeriodStyles = StyleSheet.create({
     ...shadows.purple,
   },
   allTimeTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 18,
+    fontWeight: '700',
     color: text.primary,
     marginBottom: 8,
   },
   allTimeSubtitle: {
-    fontSize: 14,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 15,
     color: text.secondary,
     marginBottom: 24,
   },
@@ -125,6 +129,7 @@ export const timePeriodStyles = StyleSheet.create({
     backgroundColor: purple[700],
   },
   applyButtonText: {
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: 14,
     fontWeight: '600',
     color: text.inverse,
@@ -156,8 +161,9 @@ export const timePeriodStyles = StyleSheet.create({
     opacity: 0.3,
   },
   yearNavText: {
+    fontFamily: typography.fontFamily.bold,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: text.primary,
   },
 
@@ -189,6 +195,7 @@ export const timePeriodStyles = StyleSheet.create({
     opacity: 0.4,
   },
   gridItemText: {
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: 14,
     fontWeight: '600',
     color: text.primary,
