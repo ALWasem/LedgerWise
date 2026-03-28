@@ -15,6 +15,7 @@ export interface TimePeriod {
 interface TimePeriodSelectorProps {
   selectedPeriod: TimePeriod;
   onPeriodChange: (period: TimePeriod) => void;
+  availableYears?: number[];
 }
 
 const MONTHS = [
@@ -58,6 +59,7 @@ const getDisplayText = (period: TimePeriod): string => {
 export default function TimePeriodSelector({
   selectedPeriod,
   onPeriodChange,
+  availableYears,
 }: TimePeriodSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeMode, setActiveMode] = useState<TimePeriodType>(selectedPeriod.type);
@@ -66,7 +68,16 @@ export default function TimePeriodSelector({
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
-  const years = useMemo(() => [currentYear - 2, currentYear - 1, currentYear], [currentYear]);
+
+  const years = useMemo(() => {
+    if (availableYears && availableYears.length > 0) {
+      return [...availableYears].sort((a, b) => a - b);
+    }
+    return [currentYear];
+  }, [availableYears, currentYear]);
+
+  const minYear = years[0];
+  const maxYear = years[years.length - 1];
 
   const handleYearSelect = useCallback((year: number) => {
     if (activeMode === 'year') {
@@ -143,7 +154,9 @@ export default function TimePeriodSelector({
                     <Ionicons name="calendar-outline" size={28} color="#6366F1" />
                   </View>
                   <Text style={styles.allTimeTitle}>All Transactions</Text>
-                  <Text style={styles.allTimeSubtitle}>Jan 2024 – Present</Text>
+                  <Text style={styles.allTimeSubtitle}>
+                    {minYear === currentYear ? `${currentYear}` : `${minYear} – Present`}
+                  </Text>
                   <Pressable
                     style={({ pressed }) => [
                       styles.applyButton,
@@ -186,15 +199,15 @@ export default function TimePeriodSelector({
                     <Pressable
                       style={[
                         styles.yearNavButton,
-                        viewYear <= currentYear - 2 && styles.yearNavButtonDisabled,
+                        viewYear <= minYear && styles.yearNavButtonDisabled,
                       ]}
-                      onPress={() => viewYear > currentYear - 2 && setViewYear(viewYear - 1)}
-                      disabled={viewYear <= currentYear - 2}
+                      onPress={() => viewYear > minYear && setViewYear(viewYear - 1)}
+                      disabled={viewYear <= minYear}
                     >
                       <Ionicons
                         name="chevron-back"
                         size={20}
-                        color={viewYear <= currentYear - 2 ? '#D4D4D4' : '#0A0A0A'}
+                        color={viewYear <= minYear ? '#D4D4D4' : '#0A0A0A'}
                       />
                     </Pressable>
                     <Text style={styles.yearNavText}>{viewYear}</Text>

@@ -15,6 +15,7 @@ interface Props {
   loading: boolean;
   selectedPeriod: TimePeriod;
   onPeriodChange: (period: TimePeriod) => void;
+  availableYears?: number[];
 }
 
 function periodLabel(period: TimePeriod): string {
@@ -33,6 +34,7 @@ export default function SpendingSummary({
   loading,
   selectedPeriod,
   onPeriodChange,
+  availableYears,
 }: Props) {
   const hasData = data && data.categories.length > 0;
   const topCategory = hasData ? data.categories[0] : null;
@@ -47,6 +49,7 @@ export default function SpendingSummary({
         <TimePeriodSelector
           selectedPeriod={selectedPeriod}
           onPeriodChange={onPeriodChange}
+          availableYears={availableYears}
         />
       </View>
 

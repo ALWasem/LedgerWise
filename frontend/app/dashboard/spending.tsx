@@ -21,8 +21,17 @@ export default function SpendingScreen() {
   const token = session?.access_token ?? null;
   const dateRange = useMemo(() => periodToDateRange(selectedPeriod), [selectedPeriod]);
 
-  const { hasAccounts, accountsLoading, error: dataError, refresh } = useTransactionData();
+  const { hasAccounts, accountsLoading, allTransactions, error: dataError, refresh } = useTransactionData();
   const { transactions, summaryData, loading: sliceLoading } = useDataSlice(dateRange);
+
+  const availableYears = useMemo(() => {
+    const yearSet = new Set<number>();
+    for (const tx of allTransactions) {
+      const year = parseInt(tx.date.substring(0, 4), 10);
+      if (!isNaN(year)) yearSet.add(year);
+    }
+    return Array.from(yearSet).sort((a, b) => a - b);
+  }, [allTransactions]);
 
   const {
     showWebView, tellerSource,
@@ -80,6 +89,7 @@ export default function SpendingScreen() {
           loading={sliceLoading}
           selectedPeriod={selectedPeriod}
           onPeriodChange={setSelectedPeriod}
+          availableYears={availableYears}
         />
       )}
 
