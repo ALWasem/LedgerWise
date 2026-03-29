@@ -34,38 +34,6 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
     gap: isNarrow ? 8 : 12,
     marginBottom: isNarrow ? 16 : 24,
   },
-  statCard: {
-    flexBasis: isNarrow ? '47%' : 'auto',
-    flexGrow: 1,
-    minWidth: isNarrow ? 0 : 150,
-    backgroundColor: deps.colors.surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: deps.colors.border.default,
-    padding: isNarrow ? 14 : 20,
-    ...deps.shadows.md,
-  },
-  statIconContainer: {
-    width: isNarrow ? 32 : 40,
-    height: isNarrow ? 32 : 40,
-    borderRadius: radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: isNarrow ? 8 : 12,
-  },
-  statValue: {
-    ...typography.amount,
-    fontSize: isNarrow ? 20 : 28,
-    color: deps.colors.text.primary,
-    letterSpacing: -0.5,
-    marginBottom: 2,
-  },
-  statSub: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: isNarrow ? 11 : 13,
-    fontWeight: '500',
-    color: deps.colors.text.tertiary,
-  },
 
   // --- Category Filter Pills ---
   pillsCard: {

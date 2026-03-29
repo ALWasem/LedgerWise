@@ -10,10 +10,10 @@ import TimePeriodSelector, {
   type TimePeriod,
   getDisplayText,
 } from '../components/TimePeriodSelector';
+import StatCard from '../components/StatCard';
 import StaggeredView from '../components/StaggeredView';
 import CategoryAccordion from './components/CategoryAccordion';
 import ProportionBar from './components/ProportionBar';
-import SummaryChip from './components/SummaryChip';
 
 interface Props {
   data: SpendingSummaryData | null;
@@ -91,28 +91,28 @@ export default function SpendingSummary({
           <>
             <StaggeredView index={1} trigger={periodKey}>
               <View style={styles.summaryStrip}>
-                <SummaryChip
+                <StatCard
                   value={`$${data.total_spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   subtitle={getDisplayText(selectedPeriod)}
                   icon="trending-up"
                   iconColor={colors.purple[700]}
                   iconBgColor={iconBgPurple}
                 />
-                <SummaryChip
+                <StatCard
                   value={`${data.transaction_count}`}
                   subtitle={`across ${data.category_count} categories`}
                   icon="receipt-outline"
                   iconColor={colors.purple[700]}
                   iconBgColor={iconBgPurple}
                 />
-                <SummaryChip
+                <StatCard
                   value={topCategory.name}
                   subtitle={`$${topCategory.total.toLocaleString(undefined, { minimumFractionDigits: 2 })} \u00B7 ${topCategory.percentage}% of total`}
                   icon="pie-chart-outline"
                   iconColor={colors.purple[700]}
                   iconBgColor={iconBgPurple}
                 />
-                <SummaryChip
+                <StatCard
                   value={`${data.uncategorized_percentage}%`}
                   subtitle="Uncategorized spending"
                   variant="warning"

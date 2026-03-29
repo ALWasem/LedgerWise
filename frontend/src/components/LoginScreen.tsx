@@ -3,8 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useThemeStyles } from '../hooks/useThemeStyles';
 import { createAuthStyles } from '../styles/auth.styles';
 import { isHovered } from '../utils/pressable';
-import LedgerWiseLogo from './LedgerWiseLogo';
-import GoogleIcon from './GoogleIcon';
+import LedgerWiseLogo from './icons/LedgerWiseLogo';
+import GoogleIcon from './icons/GoogleIcon';
 
 export default function LoginScreen() {
   const { signInWithGoogle } = useAuth();

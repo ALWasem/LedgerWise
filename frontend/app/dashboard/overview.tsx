@@ -4,7 +4,7 @@ import { useTransactionData, useDataSlice } from '../../src/contexts/Transaction
 import { useColors } from '../../src/contexts/ThemeContext';
 import { useThemeStyles } from '../../src/hooks/useThemeStyles';
 import { createOverviewStyles } from '../../src/styles/overview.styles';
-import SummaryChip from '../../src/spending/components/SummaryChip';
+import StatCard from '../../src/components/StatCard';
 import StaggeredView from '../../src/components/StaggeredView';
 
 export default function OverviewScreen() {
@@ -35,14 +35,14 @@ export default function OverviewScreen() {
         <>
           <StaggeredView index={1}>
             <View style={styles.statsGrid}>
-              <SummaryChip
+              <StatCard
                 value={`$${summaryData.total_spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 subtitle="Total Expenses"
                 icon="trending-up"
                 iconColor={colors.purple[700]}
                 iconBgColor={iconBgPurple}
               />
-              <SummaryChip
+              <StatCard
                 value={`${summaryData.transaction_count}`}
                 subtitle="Transactions"
                 icon="receipt-outline"
@@ -50,7 +50,7 @@ export default function OverviewScreen() {
                 iconBgColor={iconBgPurple}
               />
               {topCategory && (
-                <SummaryChip
+                <StatCard
                   value={topCategory.name}
                   subtitle={`$${topCategory.total.toLocaleString(undefined, { minimumFractionDigits: 2 })} \u00B7 ${topCategory.percentage}% of total`}
                   icon="pie-chart-outline"

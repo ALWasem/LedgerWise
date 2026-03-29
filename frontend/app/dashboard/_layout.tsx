@@ -8,7 +8,7 @@ import { useColors } from '../../src/contexts/ThemeContext';
 import { TransactionDataProvider } from '../../src/contexts/TransactionDataContext';
 import { useThemeStyles } from '../../src/hooks/useThemeStyles';
 import { createDashboardLayoutStyles } from '../../src/styles/dashboardLayout.styles';
-import LedgerWiseLogo from '../../src/components/LedgerWiseLogo';
+import LedgerWiseLogo from '../../src/components/icons/LedgerWiseLogo';
 import ThemeToggle from '../../src/components/ThemeToggle';
 import { isHovered } from '../../src/utils/pressable';
 
