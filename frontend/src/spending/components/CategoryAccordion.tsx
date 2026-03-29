@@ -6,7 +6,7 @@ import type { SpendingSummaryData } from '../../types/spending';
 import type { Transaction } from '../../types/transaction';
 import { getCategoryColor } from '../../utils/categoryColors';
 import { buildCategoryRankMap } from '../../utils/categoryRanking';
-import { text, semantic } from '../../theme';
+import { text, semantic, gold, purple } from '../../theme';
 import { isHovered } from '../../utils/pressable';
 import AccordionReveal from '../../components/AccordionReveal';
 import useAccordionHeight from '../../hooks/useAccordionHeight';
@@ -36,6 +36,11 @@ export default function CategoryAccordion({
 }: CategoryAccordionProps) {
   const { toggle, getState, handleMeasure } = useAccordionHeight();
   const isRefund = variant === 'refund';
+
+  const totalAmount = useMemo(
+    () => data.categories.reduce((sum, c) => sum + c.total, 0),
+    [data.categories],
+  );
 
   function getTransactionsForCategory(categoryName: string): Transaction[] {
     if (isRefund) {
@@ -73,6 +78,9 @@ export default function CategoryAccordion({
         const categoryTransactions = showContent
           ? getTransactionsForCategory(cat.name)
           : [];
+        const percentage = totalAmount > 0
+          ? ((cat.total / totalAmount) * 100).toFixed(0)
+          : '0';
 
         return (
           <View key={cat.name}>
@@ -88,27 +96,42 @@ export default function CategoryAccordion({
               onPress={() => toggle(cat.name)}
             >
               <View style={styles.categoryLeft}>
-                <View
-                  style={[styles.categoryDot, { backgroundColor: color }]}
-                />
-                <Text
-                  style={[
-                    styles.categoryName,
-                    isUncategorized && styles.uncategorizedName,
-                  ]}
-                >
-                  {cat.name === 'General' ? 'General / Uncategorized' : cat.name}
-                </Text>
-                {isUncategorized && (
-                  <View style={styles.reviewBadge}>
-                    <Text style={styles.reviewBadgeText}>Review</Text>
+                <View style={styles.categoryDotWrapper}>
+                  <View
+                    style={[styles.categoryDot, { backgroundColor: color }]}
+                  />
+                  {isExpanded && !isClosing && (
+                    <View
+                      style={[styles.categoryDotGlow, { backgroundColor: color }]}
+                    />
+                  )}
+                </View>
+                <View style={styles.categoryNameBlock}>
+                  <View style={styles.categoryNameRow}>
+                    <Text
+                      style={[
+                        styles.categoryName,
+                        isUncategorized && styles.uncategorizedName,
+                      ]}
+                    >
+                      {cat.name === 'General' ? 'General / Uncategorized' : cat.name}
+                    </Text>
+                    {isUncategorized && (
+                      <View style={styles.reviewBadge}>
+                        <Text style={styles.reviewBadgeText}>Review</Text>
+                      </View>
+                    )}
                   </View>
-                )}
+                  <View style={styles.categorySubRow}>
+                    <Text style={styles.categorySubText}>{percentage}% of spending</Text>
+                    <Text style={styles.categorySubDot}>·</Text>
+                    <Text style={styles.categorySubText}>
+                      {cat.count} {cat.count === 1 ? 'transaction' : 'transactions'}
+                    </Text>
+                  </View>
+                </View>
               </View>
               <View style={styles.categoryRight}>
-                <View style={[styles.countBadge, isRefund && styles.countBadgeRefund]}>
-                  <Text style={[styles.countBadgeText, isRefund && styles.countBadgeTextRefund]}>{cat.count}</Text>
-                </View>
                 <Text
                   style={[
                     styles.categoryTotal,
@@ -118,11 +141,24 @@ export default function CategoryAccordion({
                 >
                   {isRefund ? '+' : ''}${cat.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </Text>
-                <Ionicons
-                  name={isExpanded && !isClosing ? 'chevron-down' : 'chevron-forward'}
-                  size={16}
-                  color={text.tertiary}
-                />
+                <View
+                  style={[
+                    styles.chevronBox,
+                    (isExpanded && !isClosing) && (
+                      isUncategorized ? styles.chevronBoxGoldActive : styles.chevronBoxPurpleActive
+                    ),
+                  ]}
+                >
+                  <Ionicons
+                    name={isExpanded && !isClosing ? 'chevron-down' : 'chevron-forward'}
+                    size={14}
+                    color={
+                      isExpanded && !isClosing
+                        ? (isUncategorized ? gold[700] : purple[700])
+                        : text.tertiary
+                    }
+                  />
+                </View>
               </View>
             </Pressable>
 
@@ -135,8 +171,22 @@ export default function CategoryAccordion({
                   onLayout={(e) => handleMeasure(cat.name, e.nativeEvent.layout.height)}
                 >
                   <View style={styles.expandedContainer}>
+                    <View style={styles.expandedHeader}>
+                      <Ionicons name="card-outline" size={13} color={text.tertiary} />
+                      <Text style={styles.expandedHeaderText}>Recent Transactions</Text>
+                    </View>
                     {categoryTransactions.map((txn) => (
                       <View key={txn.id} style={styles.expandedTxn}>
+                        <View style={[
+                          styles.txnIconBox,
+                          isUncategorized ? styles.txnIconBoxGold : styles.txnIconBoxPurple,
+                        ]}>
+                          <Ionicons
+                            name="card-outline"
+                            size={14}
+                            color={isUncategorized ? gold[600] : purple[600]}
+                          />
+                        </View>
                         <View style={styles.expandedTxnLeft}>
                           <Text style={styles.expandedTxnDesc} numberOfLines={1}>
                             {txn.description}
@@ -150,6 +200,19 @@ export default function CategoryAccordion({
                         </Text>
                       </View>
                     ))}
+                    <View style={[
+                      styles.expandedFooter,
+                      isUncategorized && styles.expandedFooterGold,
+                    ]}>
+                      <Text style={styles.expandedFooterLabel}>Category Total</Text>
+                      <Text style={[
+                        styles.expandedFooterAmount,
+                        isUncategorized && styles.expandedFooterAmountGold,
+                        isRefund && styles.expandedFooterAmountRefund,
+                      ]}>
+                        {isRefund ? '+' : ''}${cat.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
@@ -161,8 +224,13 @@ export default function CategoryAccordion({
                   }}
                 >
                   <View style={[styles.expandedContainer, !isSettled && styles.expandedContainerAnimating]}>
+                    <View style={styles.expandedHeader}>
+                      <Ionicons name="card-outline" size={13} color={text.tertiary} />
+                      <Text style={styles.expandedHeaderText}>Recent Transactions</Text>
+                    </View>
                     {categoryTransactions.map((txn, txnIndex) => {
                       const amt = parseFloat(txn.amount);
+                      const isLarge = Math.abs(amt) > 100;
                       return (
                         <AccordionReveal
                           key={txn.id}
@@ -172,10 +240,27 @@ export default function CategoryAccordion({
                           visible={!isClosing}
                         >
                           <View style={styles.expandedTxn}>
+                            <View style={[
+                              styles.txnIconBox,
+                              isUncategorized ? styles.txnIconBoxGold : styles.txnIconBoxPurple,
+                            ]}>
+                              <Ionicons
+                                name="card-outline"
+                                size={14}
+                                color={isUncategorized ? gold[600] : purple[600]}
+                              />
+                            </View>
                             <View style={styles.expandedTxnLeft}>
-                              <Text style={styles.expandedTxnDesc} numberOfLines={1}>
-                                {txn.description}
-                              </Text>
+                              <View style={styles.expandedTxnDescRow}>
+                                <Text style={styles.expandedTxnDesc} numberOfLines={1}>
+                                  {txn.description}
+                                </Text>
+                                {isLarge && !isRefund && (
+                                  <View style={styles.largeBadge}>
+                                    <Text style={styles.largeBadgeText}>Large</Text>
+                                  </View>
+                                )}
+                              </View>
                               <Text style={styles.expandedTxnMeta}>
                                 {formatLocalDate(txn.date)}
                               </Text>
@@ -192,6 +277,26 @@ export default function CategoryAccordion({
                         </AccordionReveal>
                       );
                     })}
+                    <AccordionReveal
+                      index={categoryTransactions.length}
+                      total={categoryTransactions.length + 1}
+                      trigger={cat.name}
+                      visible={!isClosing}
+                    >
+                      <View style={[
+                        styles.expandedFooter,
+                        isUncategorized && styles.expandedFooterGold,
+                      ]}>
+                        <Text style={styles.expandedFooterLabel}>Category Total</Text>
+                        <Text style={[
+                          styles.expandedFooterAmount,
+                          isUncategorized && styles.expandedFooterAmountGold,
+                          isRefund && styles.expandedFooterAmountRefund,
+                        ]}>
+                          {isRefund ? '+' : ''}${cat.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </Text>
+                      </View>
+                    </AccordionReveal>
                   </View>
                 </Animated.View>
               </>
