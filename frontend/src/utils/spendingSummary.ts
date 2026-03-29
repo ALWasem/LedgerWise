@@ -18,7 +18,7 @@ function isPayment(description: string): boolean {
   return lower.includes('pymt') || lower.includes('payment');
 }
 
-function isSpending(tx: Transaction): boolean {
+export function isSpending(tx: Transaction): boolean {
   const amount = parseFloat(tx.amount);
   if (amount <= 0) return false;
 
@@ -29,7 +29,7 @@ function isSpending(tx: Transaction): boolean {
   return true;
 }
 
-function isRefund(tx: Transaction): boolean {
+export function isRefund(tx: Transaction): boolean {
   const category = (tx.category ?? '').toLowerCase();
   if (category === 'refund') return true;
 
