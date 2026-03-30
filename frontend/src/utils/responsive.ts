@@ -1,6 +1,8 @@
 import { Dimensions, Platform } from 'react-native';
 
-const NARROW_BREAKPOINT = 600;
+export const NARROW_BREAKPOINT = 600;
+export const SIDEBAR_BREAKPOINT = 768;
+export const COMPACT_BREAKPOINT = 1080;
 
 // On web SSR, Dimensions returns a default width. Use window.innerWidth for accuracy.
 export const windowWidth = Platform.OS === 'web'

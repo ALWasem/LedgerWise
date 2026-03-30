@@ -44,12 +44,15 @@ export default function useDragSource(options: DragSourceOptions) {
       setIsDragging(true);
 
       const rect = node.getBoundingClientRect();
-      const ghost = buildDragGhost(description, amount, date, rect.width, colors);
+      // Keep ghost compact — roughly matches a single category card in the 2-column grid
+      const ghostWidth = Math.min(rect.width, 320);
+      const ghost = buildDragGhost(description, amount, date, ghostWidth, colors);
 
       document.body.appendChild(ghost);
       ghostRef.current = ghost;
 
-      e.dataTransfer.setDragImage(ghost, e.clientX - rect.left, e.clientY - rect.top);
+      const offsetX = Math.min(e.clientX - rect.left, ghostWidth - 1);
+      e.dataTransfer.setDragImage(ghost, offsetX, e.clientY - rect.top);
     };
 
     const handleDragEnd = () => {

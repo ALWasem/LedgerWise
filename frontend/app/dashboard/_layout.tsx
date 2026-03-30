@@ -11,6 +11,7 @@ import { createDashboardLayoutStyles } from '../../src/styles/dashboardLayout.st
 import LedgerWiseLogo from '../../src/components/icons/LedgerWiseLogo';
 import ThemeToggle from '../../src/components/ThemeToggle';
 import { isHovered } from '../../src/utils/pressable';
+import { SIDEBAR_BREAKPOINT, COMPACT_BREAKPOINT } from '../../src/utils/responsive';
 
 interface NavItem {
   name: string;
@@ -27,7 +28,6 @@ const navItems: NavItem[] = [
   { name: 'Settings', path: '/dashboard/settings', icon: 'settings-outline', activeIcon: 'settings' },
 ];
 
-const SIDEBAR_BREAKPOINT = 768;
 
 export default function DashboardLayout() {
   const { session, signOut } = useAuth();
@@ -48,6 +48,7 @@ export default function DashboardLayout() {
   }
 
   const showSidebar = mounted && width >= SIDEBAR_BREAKPOINT;
+  const collapsedSidebar = showSidebar && width < COMPACT_BREAKPOINT;
   const token = session.access_token ?? null;
 
   const isActive = (path: string) =>
@@ -82,7 +83,7 @@ export default function DashboardLayout() {
       <View style={styles.body}>
         {/* Sidebar (wide screens only) */}
         {showSidebar && (
-          <View style={styles.sidebar}>
+          <View style={[styles.sidebar, collapsedSidebar && styles.sidebarCollapsed]}>
             <ScrollView style={styles.sidebarNav} showsVerticalScrollIndicator={false}>
               {navItems.map((item) => {
                 const active = isActive(item.path);
@@ -91,6 +92,7 @@ export default function DashboardLayout() {
                     key={item.path}
                     style={(state) => [
                       styles.navItem,
+                      collapsedSidebar && styles.navItemCollapsed,
                       active && styles.navItemActive,
                       isHovered(state) && !active && styles.navItemHovered,
                     ]}
@@ -102,24 +104,28 @@ export default function DashboardLayout() {
                     {active && <View style={styles.navActiveIndicator} />}
                     <Ionicons
                       name={item.icon}
-                      size={20}
+                      size={collapsedSidebar ? 22 : 20}
                       color={active ? colors.brand.primary : colors.text.tertiary}
                     />
-                    <Text style={[styles.navText, active && styles.navTextActive]}>
-                      {item.name}
-                    </Text>
+                    {!collapsedSidebar && (
+                      <Text style={[styles.navText, active && styles.navTextActive]}>
+                        {item.name}
+                      </Text>
+                    )}
                   </Pressable>
                 );
               })}
             </ScrollView>
 
             {/* Pro Tip card */}
-            <View style={styles.proTipCard}>
-              <Text style={styles.proTipTitle}>Pro Tip</Text>
-              <Text style={styles.proTipText}>
-                Categorize all transactions to get better insights
-              </Text>
-            </View>
+            {!collapsedSidebar && (
+              <View style={styles.proTipCard}>
+                <Text style={styles.proTipTitle}>Pro Tip</Text>
+                <Text style={styles.proTipText}>
+                  Categorize all transactions to get better insights
+                </Text>
+              </View>
+            )}
           </View>
         )}
 

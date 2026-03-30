@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
+import { formatCurrency, formatLocalDate } from '../../../utils/formatters';
 import { createCategorizeStyles } from '../styles/categorize.styles';
 import useDragSource from '../useDragSource';
 import type { Transaction } from '../../../types/transaction';
@@ -15,14 +16,9 @@ export default function TransactionRow({ transaction }: Props) {
   const colors = useColors();
   const styles = useThemeStyles(createCategorizeStyles);
 
-  const formattedDate = new Date(transaction.date + 'T00:00:00').toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-
+  const formattedDate = formatLocalDate(transaction.date, { includeYear: true });
   const amount = parseFloat(transaction.amount);
-  const formattedAmount = `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  const formattedAmount = formatCurrency(amount);
 
   const ghostColors = useMemo(() => ({
     bg: colors.surface.card,

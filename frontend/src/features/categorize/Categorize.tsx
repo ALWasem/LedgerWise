@@ -1,10 +1,11 @@
-import { useCallback } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { useCallback, useMemo } from 'react';
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../contexts/ThemeContext';
 import { useThemeStyles } from '../../hooks/useThemeStyles';
 import { createCategorizeStyles } from './styles/categorize.styles';
 import { isHovered } from '../../utils/pressable';
+import { COMPACT_BREAKPOINT } from '../../utils/responsive';
 import useCategorizeData from './useCategorizeData';
 import TransactionRow from './components/TransactionRow';
 import CategoryTarget from './components/CategoryTarget';
@@ -12,15 +13,25 @@ import ProgressHeader from './components/ProgressHeader';
 import type { Transaction } from '../../types/transaction';
 import type { CategoryInfo } from '../../types/categorize';
 
+type CategoryListItem = CategoryInfo | { id: '__spacer__'; _spacer: true };
+const SPACER: CategoryListItem = { id: '__spacer__', _spacer: true };
+
+function isSpacer(item: CategoryListItem): item is typeof SPACER {
+  return '_spacer' in item;
+}
+
 export default function Categorize() {
   const colors = useColors();
   const styles = useThemeStyles(createCategorizeStyles);
+  const { width: windowWidth } = useWindowDimensions();
+  const compactCards = windowWidth < COMPACT_BREAKPOINT;
 
   const {
     transactions,
     categories,
     categorizedCount,
     totalTransactions,
+    totalSpendingAmount,
     loading,
     transactionSearch,
     categorySearch,
@@ -34,15 +45,30 @@ export default function Categorize() {
     [],
   );
 
+  const categoryData: CategoryListItem[] = useMemo(() => {
+    if (categories.length % 2 === 0) return categories;
+    return [...categories, SPACER];
+  }, [categories]);
+
   const renderCategory = useCallback(
-    ({ item }: { item: CategoryInfo }) => (
-      <CategoryTarget category={item} onDrop={assignToCategory} />
-    ),
-    [assignToCategory],
+    ({ item }: { item: CategoryListItem }) => {
+      if (isSpacer(item)) {
+        return <View style={styles.categoryCardSpacer} />;
+      }
+      return (
+        <CategoryTarget
+          category={item}
+          totalSpending={totalSpendingAmount}
+          onDrop={assignToCategory}
+          compact={compactCards}
+        />
+      );
+    },
+    [assignToCategory, totalSpendingAmount, compactCards, styles.categoryCardSpacer],
   );
 
   const keyExtractorTx = useCallback((item: Transaction) => item.id, []);
-  const keyExtractorCat = useCallback((item: CategoryInfo) => item.id, []);
+  const keyExtractorCat = useCallback((item: CategoryListItem) => item.id, []);
 
   const transactionEmptyState = (
     <View style={styles.emptyContainer}>
@@ -75,7 +101,7 @@ export default function Categorize() {
             <View>
               <Text style={styles.pageTitle}>Categorize Transactions</Text>
               <Text style={styles.pageSubtitle}>
-                Drag transactions to a category to organize your spending
+                Organize your uncategorized transactions to improve insights
               </Text>
             </View>
           </View>
@@ -165,11 +191,13 @@ export default function Categorize() {
           </View>
 
           <FlatList
-            data={categories}
+            data={categoryData}
             renderItem={renderCategory}
             keyExtractor={keyExtractorCat}
+            numColumns={2}
             style={styles.categoryList}
             contentContainerStyle={styles.categoryListContent}
+            columnWrapperStyle={styles.categoryColumnWrapper}
             showsVerticalScrollIndicator={true}
           />
 

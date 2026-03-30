@@ -3,4 +3,7 @@ export interface CategoryInfo {
   name: string;
   color: string;
   transactionCount: number;
+  totalAmount: number;
+  lastAssignedMerchant?: string;
+  lastAssignedDate?: string;
 }

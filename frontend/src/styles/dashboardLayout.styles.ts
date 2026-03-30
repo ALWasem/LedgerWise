@@ -87,6 +87,10 @@ export const createDashboardLayoutStyles = (deps: StyleDeps) => StyleSheet.creat
     borderRightColor: deps.colors.border.subtle,
     justifyContent: 'space-between',
   },
+  sidebarCollapsed: {
+    width: 72,
+    alignItems: 'center',
+  },
   sidebarNav: {
     paddingHorizontal: 16,
     paddingTop: 24,
@@ -99,6 +103,12 @@ export const createDashboardLayoutStyles = (deps: StyleDeps) => StyleSheet.creat
     paddingVertical: 12,
     borderRadius: radius.md,
     marginBottom: 6,
+  },
+  navItemCollapsed: {
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    width: 44,
+    height: 44,
   },
   navItemActive: {
     backgroundColor: deps.colors.isDark

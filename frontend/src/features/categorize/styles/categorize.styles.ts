@@ -88,7 +88,8 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
 
   // --- Left Panel (Transactions) ---
   transactionsPanel: {
-    flex: 1,
+    flex: isNarrow ? undefined : 2,
+    width: isNarrow ? '100%' : undefined,
     backgroundColor: deps.colors.surface.card,
     borderRadius: radius.xl,
     borderWidth: 1,
@@ -99,7 +100,8 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
   },
   panelHeader: {
     paddingHorizontal: isNarrow ? 14 : 20,
-    paddingVertical: isNarrow ? 12 : 16,
+    paddingTop: isNarrow ? 12 : 16,
+    paddingBottom: isNarrow ? 12 : 16,
     borderBottomWidth: 1,
     borderBottomColor: deps.colors.border.default,
     backgroundColor: deps.colors.surface.elevated,
@@ -108,6 +110,7 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    height: 32,
     marginBottom: 12,
   },
   panelTitle: {
@@ -162,7 +165,7 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: deps.colors.border.default,
     backgroundColor: deps.colors.surface.card,
-    gap: 12,
+    gap: 8,
     ...(Platform.OS === 'web' ? { cursor: 'grab' } as Record<string, unknown> : {}),
   },
   transactionRowDragging: {
@@ -207,7 +210,8 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
 
   // --- Right Panel (Categories) ---
   categoriesPanel: {
-    width: isNarrow ? '100%' : 380,
+    flex: isNarrow ? undefined : 3,
+    width: isNarrow ? '100%' : undefined,
     backgroundColor: deps.colors.surface.card,
     borderRadius: radius.xl,
     borderWidth: 1,
@@ -227,47 +231,102 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     flex: 1,
   },
   categoryListContent: {
+    paddingTop: 16,
     paddingBottom: 8,
+    paddingHorizontal: 12,
+  },
+  categoryColumnWrapper: {
+    gap: 12,
+    marginBottom: 12,
   },
 
-  // --- Category Row ---
-  categoryRow: {
+  // --- Category Card ---
+  categoryCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 12,
+    backgroundColor: deps.colors.surface.elevated,
+    borderWidth: 2,
+    borderColor: deps.colors.border.default,
+    borderRadius: radius.lg,
+    gap: 10,
+    ...deps.shadows.sm,
+  },
+  categoryCardSpacer: {
+    flex: 1,
+    padding: 12,
+  },
+  categoryCardHighlighted: {
+    borderColor: deps.colors.purple[500],
+    backgroundColor: deps.colors.isDark
+      ? deps.colors.purple[900] + '30'
+      : deps.colors.purple[50],
+    ...deps.shadows.md,
+    ...(Platform.OS === 'web' ? {
+      transform: [{ scale: 1.02 }],
+      transition: 'background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease',
+    } as Record<string, unknown> : {}),
+  },
+  categoryCardInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  categoryNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: isNarrow ? 14 : 20,
-    paddingVertical: isNarrow ? 12 : 16,
-    borderBottomWidth: 1,
-    borderBottomColor: deps.colors.border.default,
-    gap: 12,
-  },
-  categoryRowHighlighted: {
-    backgroundColor: deps.colors.isDark
-      ? deps.colors.purple[900] + '50'
-      : deps.colors.purple[100],
-    borderWidth: 2,
-    borderColor: deps.colors.purple[500],
-    borderBottomWidth: 2,
-    borderRadius: radius.md,
-    ...(Platform.OS === 'web' ? { transition: 'background-color 0.15s ease, border-color 0.15s ease' } as Record<string, unknown> : {}),
+    gap: 8,
+    marginBottom: 4,
   },
   categoryDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    ...deps.shadows.sm,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   categoryName: {
     flex: 1,
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: 15,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 13,
+    fontWeight: '700',
     color: deps.colors.text.primary,
   },
-  categoryCount: {
+  categoryAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    marginBottom: 6,
+  },
+  categoryAmount: {
     ...typography.amount,
-    fontSize: 13,
+    fontSize: 15,
+    fontWeight: '700',
+    color: deps.colors.text.primary,
+  },
+  categoryPercentage: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 11,
+    fontWeight: '600',
     color: deps.colors.text.tertiary,
-    backgroundColor: deps.colors.surface.bg,
+  },
+  categoryLastAssigned: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  categoryLastAssignedText: {
+    flex: 1,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 12,
+    color: deps.colors.text.tertiary,
+  },
+  categoryCountBadge: {
+    ...typography.amount,
+    fontSize: 12,
+    fontWeight: '700',
+    color: deps.colors.text.primary,
+    backgroundColor: deps.colors.surface.card,
+    borderWidth: 1,
+    borderColor: deps.colors.border.default,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: radius.sm,

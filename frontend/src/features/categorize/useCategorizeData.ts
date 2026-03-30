@@ -36,8 +36,8 @@ export default function useCategorizeData() {
     [spendingTransactions, reassigned],
   );
 
-  const categories = useMemo(() => {
-    const catMap = new Map<string, number>();
+  const { categories, totalSpendingAmount } = useMemo(() => {
+    const catMap = new Map<string, { count: number; totalAmount: number; lastTx?: Transaction }>();
 
     for (const tx of spendingTransactions) {
       const name = reassigned.has(tx.id)
@@ -45,17 +45,39 @@ export default function useCategorizeData() {
         : normalizeCategory(tx.category);
 
       if (name === 'General') continue;
-      catMap.set(name, (catMap.get(name) ?? 0) + 1);
+
+      const existing = catMap.get(name);
+      const txAmount = Math.abs(parseFloat(tx.amount));
+      const txDate = tx.date;
+
+      if (existing) {
+        existing.count += 1;
+        existing.totalAmount += txAmount;
+        if (!existing.lastTx || txDate > existing.lastTx.date) {
+          existing.lastTx = tx;
+        }
+      } else {
+        catMap.set(name, { count: 1, totalAmount: txAmount, lastTx: tx });
+      }
     }
 
-    const sorted = [...catMap.entries()].sort((a, b) => b[1] - a[1]);
+    const sorted = [...catMap.entries()].sort((a, b) => b[1].totalAmount - a[1].totalAmount);
+    let spendingTotal = 0;
 
-    return sorted.map(([name, count], rank): CategoryInfo => ({
-      id: name.toLowerCase().replace(/\s+/g, '-'),
-      name,
-      color: getCategoryColor(name, rank),
-      transactionCount: count,
-    }));
+    const cats = sorted.map(([name, info], rank): CategoryInfo => {
+      spendingTotal += info.totalAmount;
+      return {
+        id: name.toLowerCase().replace(/\s+/g, '-'),
+        name,
+        color: getCategoryColor(name, rank),
+        transactionCount: info.count,
+        totalAmount: info.totalAmount,
+        lastAssignedMerchant: info.lastTx?.description,
+        lastAssignedDate: info.lastTx?.date,
+      };
+    });
+
+    return { categories: cats, totalSpendingAmount: spendingTotal };
   }, [spendingTransactions, reassigned]);
 
   const totalSpending = spendingTransactions.length;
@@ -114,6 +136,7 @@ export default function useCategorizeData() {
     categories: filteredCategories,
     categorizedCount,
     totalTransactions: totalSpending,
+    totalSpendingAmount,
     loading: transactionsLoading,
     transactionSearch,
     categorySearch,
