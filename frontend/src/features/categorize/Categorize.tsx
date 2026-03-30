@@ -97,13 +97,11 @@ export default function Categorize() {
     <View style={styles.container}>
       {/* Page Header */}
       <StaggeredView index={0}>
-        <View style={styles.headerSection}>
-          <View style={styles.headerContent}>
-            <Text style={styles.pageTitle}>Categorize Transactions</Text>
-            <Text style={styles.pageSubtitle}>
-              Organize your uncategorized transactions to improve insights
-            </Text>
-          </View>
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageTitle}>Categorize Transactions</Text>
+          <Text style={styles.pageSubtitle}>
+            Organize your uncategorized transactions to improve insights
+          </Text>
         </View>
       </StaggeredView>
 
@@ -149,7 +147,7 @@ export default function Categorize() {
                 keyExtractor={keyExtractorTx}
                 style={styles.transactionList}
                 contentContainerStyle={
-                  transactions.length === 0 ? { flex: 1 } : styles.transactionListContent
+                  transactions.length === 0 ? styles.transactionListEmpty : styles.transactionListContent
                 }
                 ListEmptyComponent={transactionEmptyState}
                 showsVerticalScrollIndicator={true}

@@ -4,19 +4,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { updateTransactionCategory } from '../../api/client';
 import { isSpending } from '../spending/utils/spendingSummary';
 import { getCategoryColor } from '../../utils/categoryColors';
+import { normalizeCategory } from './utils/normalizeCategory';
 import type { Transaction } from '../../types/transaction';
 import type { CategoryInfo } from '../../types/categorize';
 
-function normalizeCategory(category: string | null | undefined): string {
-  if (!category || category.trim() === '') return 'General';
-  return category
-    .split(' ')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
-}
-
 export default function useCategorizeData() {
-  const { allTransactions, transactionsLoading, refresh } = useTransactionData();
+  const { allTransactions, transactionsLoading } = useTransactionData();
   const { session } = useAuth();
   const token = session?.access_token ?? null;
 
@@ -92,23 +85,19 @@ export default function useCategorizeData() {
         return next;
       });
 
-      // Persist to backend
+      // Persist to backend (no refresh — optimistic state is sufficient)
       if (token) {
-        updateTransactionCategory(token, transactionId, categoryName)
-          .then(() => {
-            refresh();
-          })
-          .catch(() => {
-            // Revert optimistic update on failure
-            setReassigned((prev) => {
-              const next = new Map(prev);
-              next.delete(transactionId);
-              return next;
-            });
+        updateTransactionCategory(token, transactionId, categoryName).catch(() => {
+          // Revert optimistic update on failure
+          setReassigned((prev) => {
+            const next = new Map(prev);
+            next.delete(transactionId);
+            return next;
           });
+        });
       }
     },
-    [token, refresh],
+    [token],
   );
 
   // Search/filter

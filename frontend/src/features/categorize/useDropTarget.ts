@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import type { View } from 'react-native';
 import { getDraggedTransaction } from './utils/dragState';
@@ -9,8 +9,8 @@ export default function useDropTarget(onDrop: (transactionId: string) => void) {
   const ref = useRef<View>(null);
   const [isOver, setIsOver] = useState(false);
   const counterRef = useRef(0);
-
-  const stableOnDrop = useCallback(onDrop, [onDrop]);
+  const onDropRef = useRef(onDrop);
+  onDropRef.current = onDrop;
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -46,7 +46,7 @@ export default function useDropTarget(onDrop: (transactionId: string) => void) {
       setIsOver(false);
       const transactionId = getDraggedTransaction();
       if (transactionId) {
-        stableOnDrop(transactionId);
+        onDropRef.current(transactionId);
       }
     };
 
@@ -61,7 +61,7 @@ export default function useDropTarget(onDrop: (transactionId: string) => void) {
       node.removeEventListener('dragleave', onDragLeave);
       node.removeEventListener('drop', onDropEvent);
     };
-  }, [stableOnDrop]);
+  }, []);
 
   return { ref, isOver };
 }

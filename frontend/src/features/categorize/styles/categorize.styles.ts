@@ -8,6 +8,8 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: deps.colors.surface.bg,
+    paddingHorizontal: isNarrow ? 16 : 24,
+    paddingTop: isNarrow ? 16 : 24,
   },
   loadingContainer: {
     flex: 1,
@@ -18,21 +20,11 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
 
   // --- Page Header ---
   ...pageHeaderDefs(deps),
-  headerSection: {
-    paddingHorizontal: isNarrow ? 16 : 24,
-    paddingTop: isNarrow ? 16 : 24,
-    paddingBottom: isNarrow ? 8 : 12,
-  },
-  headerContent: {
-    maxWidth: 1600,
-    width: '100%',
-    alignSelf: 'center',
-  },
 
   // --- Progress Bar ---
   progressContainer: {
     gap: 8,
-    paddingHorizontal: isNarrow ? 15 : 21,
+    paddingHorizontal: isNarrow ? 14 : 20,
   },
   progressLabelRow: {
     flexDirection: 'row',
@@ -70,9 +62,7 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
   // --- Two Panel Layout ---
   panelOuterContainer: {
     flex: 1,
-    paddingHorizontal: isNarrow ? 16 : 24,
-    paddingTop: isNarrow ? 4 : 8,
-    paddingBottom: isNarrow ? 12 : 24,
+    paddingBottom: 40,
     gap: isNarrow ? 12 : 16,
   },
   panelRow: {
@@ -158,6 +148,9 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
   },
   transactionListContent: {
     paddingBottom: 8,
+  },
+  transactionListEmpty: {
+    flex: 1,
   },
 
   // --- Transaction Row ---
