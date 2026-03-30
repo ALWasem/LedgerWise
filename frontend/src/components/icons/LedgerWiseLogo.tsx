@@ -5,11 +5,15 @@ interface LedgerWiseLogoProps {
 }
 
 export default function LedgerWiseLogo({ size = 32 }: LedgerWiseLogoProps) {
+  const aspectRatio = 16 / 26;
+  const width = size * aspectRatio;
+  const height = size;
+
   return (
     <Svg
-      width={size}
-      height={size}
-      viewBox="7 2 18 28"
+      width={width}
+      height={height}
+      viewBox="8 3 16 26"
       fill="none"
     >
       {/* Ledger Book Base */}

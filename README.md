@@ -11,17 +11,20 @@ A personal finance app that connects to real bank accounts for transaction viewi
 - **Bank linking** — Connect your bank account via [Teller](https://teller.io) (supports 10,000+ US institutions)
 - **Transaction feed** — View all transactions across linked accounts in a single feed
 - **Spending summary** — Category breakdown with proportional bars, summary chips, and expandable category detail
+- **Analytics** — Monthly spending trend bar chart, category filter pills, and summary stats
 - **Overview dashboard** — At-a-glance stats with top category highlight and uncategorized transaction alerts
 - **Time period filtering** — Filter transactions and spending by month, year, year-to-date, or all time
+- **Dark mode** — Theme toggle with dark/light palettes, persisted across the app
 - **Dashboard navigation** — Sidebar nav on web, bottom tabs on mobile (Overview, Spending, Analytics, Settings)
 - **Google sign-in** — OAuth authentication via Supabase Auth (works on web and iOS)
 - **Cross-platform** — Web and iOS from the same codebase via Expo Router
+- **Accessibility** — All interactive elements have screen reader labels, roles, and state
 - **Client-side caching** — In-memory API response cache (5-min TTL) with client-side spending computation for instant date-range filtering
 
 ## Project structure
 
 ```
-├── backend/      FastAPI — auth, Teller proxy, spending analysis, database
+├── backend/          FastAPI — auth, Teller proxy, spending analysis, database
 │   ├── app/
 │   │   ├── middleware/   JWT validation (Supabase JWKS), rate limiting
 │   │   ├── models/       SQLAlchemy models (User, Account, Transaction)
@@ -30,20 +33,23 @@ A personal finance app that connects to real bank accounts for transaction viewi
 │   │   ├── services/     Business logic (teller, spending)
 │   │   └── utils/        Encryption, audit logging
 │   └── alembic/          Database migrations
-└── frontend/     Expo app — web + iOS
+└── frontend/         Expo app — web + iOS
     ├── app/              Expo Router screens (file-based routing)
-    │   ├── _layout.tsx   Root layout (providers)
+    │   ├── _layout.tsx   Root layout (ErrorBoundary + providers)
     │   ├── login.tsx     Login page
     │   └── dashboard/    Dashboard pages (overview, spending, analytics, settings)
     └── src/
         ├── api/          API client + Supabase client
-        ├── components/   Reusable UI (TimePeriodSelector, TellerModal, LoginScreen, etc.)
-        ├── contexts/     AuthContext, TransactionDataContext
-        ├── hooks/        useTellerConnect
-        ├── spending/     Spending summary feature module
-        ├── styles/       Per-screen/component StyleSheet files
+        ├── components/   Shared UI (ErrorBoundary, ThemeToggle, TimePeriodSelector, etc.)
+        ├── contexts/     AuthContext, ThemeContext, TransactionDataContext
+        ├── features/
+        │   ├── analytics/   Analytics feature (BarChart, CategoryFilterPills, SummaryStatsRow)
+        │   └── spending/    Spending feature (SpendingSummary, CategoryAccordion, ProportionBar)
+        ├── hooks/        useTellerConnect, useThemeStyles
+        ├── styles/       Shared/layout StyleSheet files
+        ├── theme/        Design tokens (colors, dark colors, spacing, typography, shadows)
         ├── types/        Shared TypeScript interfaces
-        └── utils/        Category colors, responsive helpers, spending computation
+        └── utils/        Category colors, responsive helpers, pressable utils
 ```
 
 ---

@@ -4,23 +4,27 @@
 
 Full-stack fintech app connecting to real bank accounts for transaction viewing, balances, and spending analysis. React Native Web frontend (Expo) + FastAPI backend + Supabase (PostgreSQL). Targets friends & family initially (5–50 users), designed to scale.
 
-**Current state:** Teller bank linking, transaction list, and spending summary work on web and iOS (Expo Go). Google OAuth via Supabase Auth works on both web and native iOS. Database layer in place (SQLAlchemy + Alembic + Supabase). Auth middleware guards teller + spending routes (user-scoped queries). GET endpoints fetch accounts and transactions by authenticated user. POST `/api/v1/teller/enroll` persists accounts + transactions to DB with encrypted Teller tokens. **Expo Router** provides file-based routing with a sidebar nav on web and bottom tabs on mobile. **TransactionDataContext** fetches all transactions once, then `useDataSlice()` filters by date range and computes spending summaries client-side for instant period switching. **Time period selector** allows filtering by month, year, YTD, or all time. Backend endpoints support `start_date`/`end_date` query params for server-side date-range filtering. **Overview page** shows at-a-glance stats with top category and uncategorized alerts. **In-memory API cache** (5-min TTL) reduces redundant network calls.
+**Current state:**
+- Teller bank linking, transaction list, spending summary, analytics — working on web + iOS (Expo Go)
+- Google OAuth via Supabase Auth (web redirect flow + native `expo-auth-session` + `signInWithIdToken`)
+- Database: SQLAlchemy + Alembic + Supabase PostgreSQL, auth middleware with user-scoped queries
+- Expo Router file-based routing — sidebar nav (web), bottom tabs (mobile)
+- Client-side data: `TransactionDataContext` fetches once, `useDataSlice()` filters by date range for instant period switching
+- Dark mode via `ThemeContext` + `useThemeStyles` hook, design tokens in `src/theme/`
+- ErrorBoundary wraps entire app, accessibility props on all interactive elements
+- In-memory API cache (5-min TTL), Railway deployment (backend + frontend)
 
 ## Development Phases
 
 ### Phase 1 — Web App (CURRENT)
-**Iteration 1 (done):** Teller Connect → transaction list on web + iOS. DB models + migrations + Supabase connection.
-**Iteration 1.5 (done):** Spending summary with category breakdown. Frontend decomposed into components, hooks, and feature modules.
-**Iteration 1.75 (done):** Google OAuth sign-in via Supabase Auth. Web uses `signInWithOAuth` redirect flow; native iOS uses `expo-auth-session` + `signInWithIdToken` (bypasses Supabase redirect, which doesn't work in Expo Go). Backend JWT validation middleware via JWKS. Auth applied to teller + spending routes with user-scoped DB queries. Accounts-first data loading flow (fetch accounts → fetch transactions + spending in parallel). CategoryAccordion animated with expand/collapse and refund variant. `Account` type + `AccountResponse` schema added.
-**Iteration 1.9 (done):** Expo Router migration with file-based routing (`app/` directory). Dashboard layout with sidebar nav on web and bottom tabs on mobile. Pages: Overview, Spending, Analytics (placeholder), Settings (placeholder). Time period selector (month/year/YTD/all) with backend date-range filtering on spending + transaction endpoints. All inline styles extracted to StyleSheet files. Old `App.tsx` entry point removed.
-**Iteration 1.95 (done):** TransactionDataContext provider pattern — fetches all transactions once, `useDataSlice()` hook filters by date range and computes spending summaries client-side for instant period switching. In-memory API response cache (5-min TTL). Overview page with at-a-glance stats (total expenses, transaction count, top category) and uncategorized transaction alerts. Railway deployment for both backend and frontend. Security headers middleware (HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy).
-**Iteration 2 (next):** Re-enable live Teller data, persist enrolled tokens, native session persistence (AsyncStorage).
+**Done:** Teller Connect + transaction list (1.0) → spending summary + feature modules (1.5) → Google OAuth + JWT auth + user-scoped queries (1.75) → Expo Router + dashboard layout + time period selector (1.9) → TransactionDataContext + overview page + Railway deploy + security headers (1.95) → analytics page + dark mode + theme system + ErrorBoundary + accessibility + frontend cleanup (1.96).
+**Next (Iteration 2):** Re-enable live Teller data, persist enrolled tokens, native session persistence (AsyncStorage).
 
 ### Phase 2 — Mobile (FUTURE)
 Build iOS app from same Expo codebase via EAS Build. Push notifications, biometric auth, widgets. Evaluate Android.
 
 ### Phase 3 — Scale (FUTURE)
-Migrate Teller → Plaid if > 100 connections. Add Celery + Redis for background jobs. Cloudflare for caching + DDoS.
+Migrate Teller → Plaid if >100 connections. Celery + Redis for background jobs. Cloudflare for caching + DDoS. Supabase Pro if DB >500MB. Push notifications via Expo/FCM.
 
 ## Code Organization & Best Practices
 
@@ -34,22 +38,33 @@ These rules apply to all new code and refactors.
 - **One component per file.** Never define multiple components in one file.
 - **Components are single units.** Render ONE thing. Need multiple instances (e.g. 4 summary chips)? The component renders one, the parent creates 4. Need variants (e.g. a refund accordion)? Use a `variant` prop.
 - **Composition at the parent/screen level.** The screen component (e.g. `SpendingSummary.tsx`) decides what to render, how many, and in what order. Sub-components don't compose sibling sub-components.
-- **Screen-level components** → feature root (e.g. `src/spending/SpendingSummary.tsx`)
+- **Screen-level components** → feature root (e.g. `src/features/spending/SpendingSummary.tsx`)
 - **Reusable UI components** → `src/components/`
-- **Feature sub-components** → `src/spending/components/`
+- **Feature sub-components** → `src/features/<feature>/components/`
+- **Feature styles** → `src/features/<feature>/styles/`
+- **Feature utils** → `src/features/<feature>/utils/`
 - Extract only when it improves readability, enables reuse, or the parent is too long.
 - **CRITICAL:** Use only React Native primitives (`View`, `Text`, `Pressable`, `ScrollView`, etc.). Never HTML elements. This ensures mobile compatibility.
+- **Accessibility:** All interactive elements (`Pressable`, tab-like controls) must have `accessibilityRole`, `accessibilityLabel`, and where applicable `accessibilityState` props.
+- **ErrorBoundary** wraps the app as the outermost component in `app/_layout.tsx` (outside all providers). Uses hardcoded styles since it renders outside ThemeProvider.
 
 ### Feature Modules
-- Group related code by feature (e.g. `src/spending/`).
+- Group related code by feature under `src/features/` (e.g. `src/features/spending/`, `src/features/analytics/`).
+- Each feature module has: root component, `components/`, `styles/`, `utils/`, and `index.ts` barrel export.
 - Barrel export (`index.ts`) for the public API. Keep internals private.
+- Feature-specific hooks live in the feature root (e.g. `useAccordionHeight.ts`, `useAnalyticsData.ts`).
 
 ### Custom Hooks
-- Extract stateful logic into `src/hooks/`. One responsibility per hook.
+- Shared/cross-feature hooks → `src/hooks/` (e.g. `useTellerConnect.ts`, `useThemeStyles.ts`).
+- Feature-specific hooks → feature root (e.g. `src/features/analytics/useAnalyticsData.ts`).
+- One responsibility per hook.
 
 ### Styles
-- Co-located style files in `src/styles/` (e.g. `spending.styles.ts`, `dashboardLayout.styles.ts`).
+- Shared/layout styles → `src/styles/` (e.g. `dashboardLayout.styles.ts`, `auth.styles.ts`).
+- Feature-specific styles → `src/features/<feature>/styles/` (e.g. `spending.styles.ts`, `analytics.styles.ts`).
 - `StyleSheet.create()` always — no inline style objects.
+- Theme-aware styles use factory functions: `createXStyles(colors)` → passed to `useThemeStyles()` hook.
+- Design tokens (colors, spacing, typography, shadows) in `src/theme/`.
 
 ### Backend Layering
 - **Router → Service → Model** — strict call hierarchy, never skip layers.
@@ -59,10 +74,11 @@ These rules apply to all new code and refactors.
 - Schemas: Pydantic request/response validation, one file per domain.
 
 ### Helpers & Types
-- Extract to `src/utils/` or `app/utils/` when **reused across files**. Inline is fine for one-off logic.
+- Shared utils → `src/utils/`. Feature-specific utils → `src/features/<feature>/utils/`.
 - Name utility files by domain (`categoryColors.ts`), not generic (`helpers.ts`).
-- Shared TypeScript interfaces → `src/types/`, one file per domain. Keep single-use types in the component file.
+- **All shared TypeScript interfaces → `src/types/`, one file per domain.** Never put types inside feature folders. Keep single-use types in the component file.
 - Prefer `interface` over `type`. Never use `any`.
+- Deduplicate shared logic — if the same pattern exists in multiple files, extract to a single source of truth and import.
 
 ### General
 - Prefer readable functions with clear names over clever one-liners.
@@ -79,7 +95,7 @@ These rules apply to all new code and refactors.
 | Routing | Expo Router (file-based) | `app/` directory, sidebar + bottom tabs |
 | State | React Context + custom hooks | TransactionDataContext + useDataSlice |
 | API Client | `src/api/client.ts` | All backend calls centralized |
-| Styling | StyleSheet API | Co-located in `src/styles/` |
+| Styling | StyleSheet API + theme factories | `src/styles/` (shared) + `src/features/*/styles/` |
 | Backend | FastAPI + Uvicorn | Python 3.11+, pip |
 | Hosting (API) | Railway | Free tier ($5/mo credit) |
 | Database | Supabase (PostgreSQL) | SQLAlchemy 2.0 async + Alembic |
@@ -119,7 +135,7 @@ Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
 │   └── requirements.txt
 ├── frontend/
 │   ├── app/                      Expo Router screens (file-based routing)
-│   │   ├── _layout.tsx           Root layout (SafeAreaProvider + AuthProvider)
+│   │   ├── _layout.tsx           Root layout (ErrorBoundary + SafeAreaProvider + providers)
 │   │   ├── index.tsx             Auth gate (redirects to login or dashboard)
 │   │   ├── login.tsx             Login screen
 │   │   └── dashboard/
@@ -127,22 +143,81 @@ Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
 │   │       ├── index.tsx         Redirects to /dashboard/spending
 │   │       ├── overview.tsx      Overview page (stats, alerts)
 │   │       ├── spending.tsx      Spending page (Teller connect, time period, summary)
-│   │       ├── analytics.tsx     Analytics page (placeholder)
+│   │       ├── analytics.tsx     Analytics page (bar chart, category filters, stats)
 │   │       └── settings.tsx      Settings page (placeholder)
 │   └── src/
 │       ├── api/
 │       │   ├── client.ts         Centralized API client with in-memory cache (5-min TTL)
 │       │   └── supabase.ts       Supabase client (createClient)
-│       ├── components/           LedgerWiseLogo, GoogleIcon, LoginScreen, TellerModal, TimePeriodSelector, TransactionRow
+│       ├── components/           Shared UI components
+│       │   ├── AccordionReveal.tsx
+│       │   ├── ErrorBoundary.tsx  App-wide error boundary (class component)
+│       │   ├── LoginScreen.tsx
+│       │   ├── StaggeredView.tsx
+│       │   ├── StatCard.tsx
+│       │   ├── TellerModal.tsx
+│       │   ├── ThemeToggle.tsx
+│       │   ├── TimePeriodSelector.tsx
+│       │   └── icons/            LedgerWiseLogo, GoogleIcon
 │       ├── contexts/
 │       │   ├── AuthContext.tsx    Google OAuth + Supabase session management
-│       │   └── TransactionDataContext.tsx  Data fetching + client-side filtering/computation
+│       │   ├── ThemeContext.tsx   Dark/light mode provider + useColors hook
+│       │   └── TransactionDataContext.tsx  Data fetching + client-side filtering
+│       ├── features/
+│       │   ├── analytics/        Analytics feature module
+│       │   │   ├── Analytics.tsx         Screen-level component
+│       │   │   ├── useAnalyticsData.ts   Data hook (aggregation, filtering)
+│       │   │   ├── index.ts              Barrel export
+│       │   │   ├── components/
+│       │   │   │   ├── BarChart.tsx       Monthly spending trend chart
+│       │   │   │   ├── CategoryFilterPills.tsx
+│       │   │   │   └── SummaryStatsRow.tsx
+│       │   │   ├── styles/
+│       │   │   │   └── analytics.styles.ts
+│       │   │   └── utils/
+│       │   │       └── analyticsAggregation.ts
+│       │   └── spending/         Spending feature module
+│       │       ├── SpendingSummary.tsx    Screen-level component
+│       │       ├── useAccordionHeight.ts
+│       │       ├── index.ts              Barrel export
+│       │       ├── components/
+│       │       │   ├── CategoryAccordion.tsx
+│       │       │   └── ProportionBar.tsx
+│       │       ├── styles/
+│       │       │   ├── spending.styles.ts
+│       │       │   └── spendingScreen.styles.ts
+│       │       └── utils/
+│       │           ├── categoryRanking.ts
+│       │           └── spendingSummary.ts  Includes shared isPayment()
 │       ├── hooks/
-│       │   └── useTellerConnect.ts  Teller Connect widget integration
-│       ├── spending/             Feature module (SpendingSummary + sub-components)
-│       ├── styles/               Per-screen/component StyleSheet files
-│       ├── types/                transaction.ts, spending.ts, account.ts
-│       └── utils/                categoryColors.ts, responsive.ts, spendingSummary.ts
+│       │   ├── useTellerConnect.ts  Teller Connect widget integration
+│       │   └── useThemeStyles.ts   Theme-aware StyleSheet factory hook
+│       ├── styles/               Shared/layout StyleSheet files
+│       │   ├── auth.styles.ts
+│       │   ├── authGate.styles.ts
+│       │   ├── dashboardLayout.styles.ts
+│       │   ├── overview.styles.ts
+│       │   ├── placeholder.styles.ts
+│       │   ├── shared.styles.ts
+│       │   ├── statCard.styles.ts
+│       │   ├── tellerModal.styles.ts
+│       │   └── timePeriod.styles.ts
+│       ├── theme/                Design tokens
+│       │   ├── colors.ts         Light mode palette
+│       │   ├── darkColors.ts     Dark mode palette
+│       │   ├── spacing.ts
+│       │   ├── typography.ts
+│       │   ├── shadows.ts
+│       │   └── index.ts          Barrel export
+│       ├── types/                Shared TypeScript interfaces (one file per domain)
+│       │   ├── account.ts
+│       │   ├── analytics.ts
+│       │   ├── spending.ts
+│       │   └── transaction.ts
+│       └── utils/                Shared utilities
+│           ├── categoryColors.ts
+│           ├── pressable.ts      Platform-safe hover state helper
+│           └── responsive.ts     Screen width breakpoint utilities
 ```
 
 ## Key Architecture Decisions
@@ -157,6 +232,7 @@ Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
 8. **Date-range filtering** — Backend endpoints accept optional `start_date`/`end_date` query params. Frontend `TimePeriodSelector` converts user-friendly periods (month/year/YTD/all) to ISO date strings via `periodToDateRange()`.
 9. **TransactionDataContext** — Provider fetches all transactions once on mount. `useDataSlice(dateRange?)` filters by date range and computes spending summaries client-side via `computeSpendingSummary()`. This enables instant period switching without additional API calls. The context is mounted in the dashboard layout so data persists across tab navigation.
 10. **In-memory API cache** — `client.ts` caches GET responses for 5 minutes (keyed by URL). `clearApiCache()` invalidates on refresh or enrollment. Eliminates redundant fetches during tab switching.
+11. **Theme system** — `ThemeContext` provides `isDark`, `toggleTheme`, and `colors`. Style files export factory functions (`createXStyles(colors)`) consumed by `useThemeStyles()` hook, which re-creates styles when theme changes. Design tokens (colors, spacing, typography, shadows) live in `src/theme/`.
 
 ## Environment Variables
 
@@ -172,14 +248,6 @@ SUPABASE_URL=
 SUPABASE_KEY=
 
 ENCRYPTION_KEY=        # AES-256-GCM key (64 hex chars) — encrypts Teller tokens at rest
-
-# Planned (Iteration 2+)
-UPSTASH_REDIS_URL=
-UPSTASH_REDIS_TOKEN=
-R2_ACCOUNT_ID=
-R2_ACCESS_KEY=
-R2_SECRET_KEY=
-R2_BUCKET_NAME=
 ```
 
 Frontend (`frontend/.env`):
@@ -200,9 +268,12 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=    # Google Cloud Console → iOS OAuth client
 - `HTTPException` with standardized schemas — never raw exceptions
 
 ### TypeScript
-- Prettier, ESLint (Expo config), functional components only
+- Prettier, ESLint (Expo config), functional components only (except ErrorBoundary)
 - camelCase for functions/variables, PascalCase for components/files
 - Barrel exports for feature modules, direct imports otherwise
+- Pure helper functions extracted to module scope (not recreated inside components)
+- Render callbacks that depend on component scope wrapped in `useCallback`
+- `useEffect` cleanup functions for DOM side effects (e.g. script injection)
 
 ### Git
 - Branch: `feature/`, `fix/`, `chore/`
@@ -229,19 +300,6 @@ cd backend && alembic revision --autogenerate -m "description"
 ```
 
 **Deploy:** Push to `main` → Railway auto-deploys both backend and frontend services.
-
-## Auth Setup (Google OAuth + Supabase)
-
-**Google Cloud Console:**
-- Web OAuth client → used for browser-based sign-in
-- iOS OAuth client → bundle ID `host.exp.Exponent` (Expo Go); change to real bundle ID for production builds
-
-**Supabase Dashboard (Authentication → Providers → Google):**
-- Client IDs field: comma-separated list of both Web and iOS client IDs
-- "Skip nonce checks" enabled (required — expo-auth-session generates nonces Supabase can't verify)
-- Client Secret: from the Web OAuth client
-
-**Native auth flow:** `expo-auth-session/providers/google` → `Google.useAuthRequest` with `iosClientId` → redirect via reversed client ID scheme (`com.googleusercontent.apps.CLIENT_ID:/oauthredirect`) → ID token → `supabase.auth.signInWithIdToken()`
 
 ## Security & Compliance
 
@@ -284,13 +342,3 @@ This is a **financial application** with access to real bank accounts. Security 
 - Teller token rotation mechanism
 - CSP headers on WebView content
 - `npm audit` / `pip audit` in CI pipeline
-
-## Scaling Path
-
-1. Railway free tier → $5/mo hobby plan (or Render/Fly.io)
-2. \>100 bank connections → paid Teller plan (or migrate to Plaid)
-3. Database >500MB → Supabase Pro ($25/mo)
-4. Background jobs → Celery + Redis
-5. High traffic → Cloudflare caching + DDoS protection
-6. Mobile → `eas build --platform ios`, no code rewrite
-7. Push notifications → Expo Push Notifications or FCM

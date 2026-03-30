@@ -109,6 +109,7 @@ export const createAuthStyles = (deps: StyleDeps) => {
       marginBottom: 32,
     },
     logoWrapper: {
+      alignItems: 'center',
       marginBottom: 16,
     },
     title: {
