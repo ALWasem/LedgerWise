@@ -5,12 +5,13 @@ import { useColors } from '../../contexts/ThemeContext';
 import { useThemeStyles } from '../../hooks/useThemeStyles';
 import { createCategorizeStyles } from './styles/categorize.styles';
 import { isHovered } from '../../utils/pressable';
-import { COMPACT_BREAKPOINT } from '../../utils/responsive';
+import { COMPACT_BREAKPOINT, SIDEBAR_BREAKPOINT } from '../../utils/responsive';
 import StaggeredView from '../../components/StaggeredView';
 import useCategorizeData from './useCategorizeData';
 import TransactionRow from './components/TransactionRow';
 import CategoryTarget from './components/CategoryTarget';
 import ProgressHeader from './components/ProgressHeader';
+import MobileCategorizeList from './components/MobileCategorizeList';
 import type { Transaction } from '../../types/transaction';
 import type { CategoryInfo } from '../../types/categorize';
 
@@ -40,6 +41,8 @@ export default function Categorize() {
     setCategorySearch,
     assignToCategory,
   } = useCategorizeData();
+
+  const isMobile = windowWidth < SIDEBAR_BREAKPOINT;
 
   const renderTransaction = useCallback(
     ({ item }: { item: Transaction }) => <TransactionRow transaction={item} />,
@@ -90,6 +93,20 @@ export default function Categorize() {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.brand.primary} />
       </View>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <MobileCategorizeList
+        transactions={transactions}
+        categories={categories}
+        categorizedCount={categorizedCount}
+        totalTransactions={totalTransactions}
+        transactionSearch={transactionSearch}
+        setTransactionSearch={setTransactionSearch}
+        assignToCategory={assignToCategory}
+      />
     );
   }
 

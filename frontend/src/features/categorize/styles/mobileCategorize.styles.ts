@@ -1,0 +1,363 @@
+import { Platform, StyleSheet } from 'react-native';
+import { radius, typography } from '../../../theme';
+import type { StyleDeps } from '../../../hooks/useThemeStyles';
+
+export const createMobileCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
+  // --- Container ---
+  container: {
+    flex: 1,
+    backgroundColor: deps.colors.surface.bg,
+  },
+
+  // --- Header ---
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    gap: 12,
+  },
+  title: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 24,
+    fontWeight: '700',
+    color: deps.colors.text.primary,
+  },
+  subtitle: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 13,
+    fontWeight: '500',
+    color: deps.colors.text.secondary,
+    marginTop: -4,
+  },
+
+  // --- Progress ---
+  progressContainer: {
+    gap: 6,
+  },
+  progressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressLabelLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  progressLabelText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 13,
+    fontWeight: '600',
+    color: deps.colors.text.secondary,
+  },
+  progressPercentage: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 13,
+    fontWeight: '700',
+    color: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[600],
+  },
+  progressTrack: {
+    height: 6,
+    backgroundColor: deps.colors.isDark ? deps.colors.purple[900] + '30' : deps.colors.purple[50],
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: deps.colors.purple[600],
+  },
+
+  // --- Search ---
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: deps.colors.surface.card,
+    borderWidth: 1,
+    borderColor: deps.colors.border.default,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 14,
+    color: deps.colors.text.primary,
+    paddingVertical: 10,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' as unknown as undefined } : {}),
+  },
+
+  // --- Transaction Row ---
+  transactionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: deps.colors.border.default,
+    backgroundColor: deps.colors.surface.card,
+    gap: 10,
+  },
+  dragHandle: {
+    width: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.4,
+  },
+  dragDots: {
+    flexDirection: 'row',
+  },
+  dragDotSecond: {
+    marginLeft: -10,
+  },
+  transactionInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  transactionMerchant: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 15,
+    fontWeight: '600',
+    color: deps.colors.text.primary,
+  },
+  transactionDate: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 12,
+    fontWeight: '500',
+    color: deps.colors.text.tertiary,
+    marginTop: 2,
+  },
+  transactionAmount: {
+    ...typography.amount,
+    fontSize: 15,
+    fontWeight: '700',
+    color: deps.colors.text.primary,
+  },
+
+  // --- List ---
+  listEmptyContent: {
+    flex: 1,
+  },
+
+  // --- Empty State ---
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 16,
+    fontWeight: '600',
+    color: deps.colors.text.primary,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptyText: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 13,
+    color: deps.colors.text.secondary,
+    textAlign: 'center',
+  },
+
+  // --- Overlay ---
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: deps.colors.surface.bg,
+    zIndex: 100,
+  },
+  overlayHeader: {
+    backgroundColor: deps.colors.surface.card,
+    borderBottomWidth: 1,
+    borderBottomColor: deps.colors.border.default,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  overlayHeaderLabel: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 12,
+    fontWeight: '500',
+    color: deps.colors.text.tertiary,
+    marginBottom: 4,
+  },
+  overlayHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  overlayHeaderMerchant: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 16,
+    fontWeight: '700',
+    color: deps.colors.text.primary,
+    flex: 1,
+  },
+  overlayHeaderAmount: {
+    ...typography.amount,
+    fontSize: 16,
+    fontWeight: '700',
+    color: deps.colors.text.primary,
+    marginLeft: 12,
+  },
+  overlayHeaderDate: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 12,
+    fontWeight: '500',
+    color: deps.colors.text.tertiary,
+    marginTop: 2,
+  },
+
+  // --- Category Grid ---
+  gridContainer: {
+    flex: 1,
+    padding: 12,
+  },
+  gridRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+
+  // --- Category Tile ---
+  tileWrapper: {
+    flex: 1,
+    aspectRatio: 1,
+  },
+  tileInner: {
+    flex: 1,
+    aspectRatio: undefined,
+  },
+  tile: {
+    flex: 1,
+    aspectRatio: 1,
+    backgroundColor: deps.colors.surface.card,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    gap: 4,
+  },
+  tileActive: {
+    borderColor: deps.colors.purple[600],
+    borderStyle: 'dashed',
+    backgroundColor: deps.colors.isDark ? deps.colors.purple[900] + '30' : deps.colors.purple[50],
+  },
+  tileDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  tileName: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 11,
+    fontWeight: '600',
+    color: deps.colors.text.primary,
+    textAlign: 'center',
+  },
+  tileNameActive: {
+    color: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[600],
+  },
+  tileCount: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 10,
+    fontWeight: '500',
+    color: deps.colors.text.tertiary,
+  },
+  tileCountActive: {
+    color: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[600],
+  },
+  tileEmpty: {
+    flex: 1,
+    aspectRatio: 1,
+  },
+
+  // --- Cancel Zone ---
+  cancelZone: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 20,
+    backgroundColor: deps.colors.surface.card,
+    borderTopWidth: 1,
+    borderTopColor: deps.colors.border.default,
+  },
+  cancelZoneActive: {
+    backgroundColor: '#FEE2E2',
+    borderTopColor: '#FECACA',
+  },
+  cancelText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999999',
+  },
+  cancelTextActive: {
+    color: '#B91C1C',
+  },
+
+  // --- Floating Drag Card ---
+  floatingCard: {
+    position: 'absolute',
+    width: 160,
+    backgroundColor: deps.colors.surface.card,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: deps.colors.purple[600],
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    zIndex: 200,
+    ...deps.shadows.lg,
+  },
+  floatingCardMerchant: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 13,
+    fontWeight: '600',
+    color: deps.colors.text.primary,
+  },
+  floatingCardAmount: {
+    ...typography.amount,
+    fontSize: 13,
+    fontWeight: '700',
+    color: deps.colors.purple[600],
+    marginTop: 2,
+  },
+
+  // --- Toast ---
+  toastContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 24,
+    right: 24,
+    alignItems: 'center',
+    zIndex: 300,
+  },
+  toast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: deps.colors.purple[600],
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 16,
+    ...deps.shadows.lg,
+  },
+  toastText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  toastDetail: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+});
