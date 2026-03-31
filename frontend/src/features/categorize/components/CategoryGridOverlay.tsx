@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import { Animated, GestureResponderEvent, LayoutChangeEvent, Text, View } from 'react-native';
+import { Animated, LayoutChangeEvent, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { formatCurrency } from '../../../utils/formatters';
@@ -19,8 +19,6 @@ interface Props {
   dragY: Animated.Value;
   onRegisterTile: (index: number, pageX: number, pageY: number, width: number, height: number) => void;
   onRegisterCancel: (pageX: number, pageY: number, width: number, height: number) => void;
-  onMove: (pageX: number, pageY: number) => void;
-  onRelease: () => void;
 }
 
 export default function CategoryGridOverlay({
@@ -32,8 +30,6 @@ export default function CategoryGridOverlay({
   dragY,
   onRegisterTile,
   onRegisterCancel,
-  onMove,
-  onRelease,
 }: Props) {
   const styles = useThemeStyles(createMobileCategorizeStyles);
   const cancelRef = useRef<View>(null);
@@ -46,15 +42,6 @@ export default function CategoryGridOverlay({
       onRegisterCancel(pageX, pageY, width, height);
     });
   }, [onRegisterCancel]);
-
-  // Responder handlers — overlay captures all touch movement
-  const handleResponderMove = useCallback((e: GestureResponderEvent) => {
-    onMove(e.nativeEvent.pageX, e.nativeEvent.pageY);
-  }, [onMove]);
-
-  const handleResponderRelease = useCallback(() => {
-    onRelease();
-  }, [onRelease]);
 
   // Build grid rows (4 columns per row, max 6 rows = 24 tiles)
   const rows: (CategoryInfo | null)[][] = [];
@@ -69,17 +56,12 @@ export default function CategoryGridOverlay({
   return (
     <View
       style={styles.overlay}
-      onStartShouldSetResponder={() => true}
-      onMoveShouldSetResponder={() => true}
-      onMoveShouldSetResponderCapture={() => true}
-      onResponderMove={handleResponderMove}
-      onResponderRelease={handleResponderRelease}
-      onResponderTerminate={handleResponderRelease}
+      pointerEvents="box-none"
       accessibilityRole="menu"
       accessibilityLabel="Category selection. Drag to a category or drop on cancel to dismiss."
     >
       {/* Category Grid */}
-      <View style={styles.gridContainer}>
+      <View style={styles.gridContainer} pointerEvents="none">
         {rows.map((row, rowIdx) => (
           <View key={rowIdx} style={styles.gridRow}>
             {row.map((cat, colIdx) => {
@@ -106,6 +88,7 @@ export default function CategoryGridOverlay({
         ref={cancelRef}
         style={[styles.cancelZone, isOverCancel && styles.cancelZoneActive]}
         onLayout={handleCancelLayout}
+        pointerEvents="none"
         accessibilityRole="button"
         accessibilityLabel="Cancel categorization"
         accessibilityState={{ selected: isOverCancel }}

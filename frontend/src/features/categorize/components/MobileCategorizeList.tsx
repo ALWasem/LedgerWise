@@ -77,6 +77,7 @@ export default function MobileCategorizeList({
 
   const {
     isDragging,
+    isDraggingRef,
     draggedTransaction,
     activeTileIndex,
     isOverCancel,
@@ -92,6 +93,23 @@ export default function MobileCategorizeList({
   const handleLongPress = useCallback((transaction: Transaction, e: GestureResponderEvent) => {
     startDrag(transaction, e.nativeEvent.pageX, e.nativeEvent.pageY);
   }, [startDrag]);
+
+  // Container-level responder: captures touch once dragging starts.
+  // This lets the same finger that triggered onLongPress seamlessly
+  // continue driving the drag without lifting.
+  const shouldCapture = useCallback(() => isDraggingRef.current, [isDraggingRef]);
+
+  const handleResponderMove = useCallback((e: GestureResponderEvent) => {
+    if (isDraggingRef.current) {
+      onOverlayMove(e.nativeEvent.pageX, e.nativeEvent.pageY);
+    }
+  }, [isDraggingRef, onOverlayMove]);
+
+  const handleResponderRelease = useCallback(() => {
+    if (isDraggingRef.current) {
+      onOverlayRelease();
+    }
+  }, [isDraggingRef, onOverlayRelease]);
 
   const renderTransaction = useCallback(({ item }: { item: Transaction }) => {
     const formattedDate = formatLocalDate(item.date, { includeYear: true });
@@ -140,7 +158,15 @@ export default function MobileCategorizeList({
   ), [transactionSearch, styles, colors]);
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      onStartShouldSetResponder={shouldCapture}
+      onMoveShouldSetResponder={shouldCapture}
+      onMoveShouldSetResponderCapture={shouldCapture}
+      onResponderMove={handleResponderMove}
+      onResponderRelease={handleResponderRelease}
+      onResponderTerminate={handleResponderRelease}
+    >
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Categorize</Text>
@@ -206,8 +232,6 @@ export default function MobileCategorizeList({
           dragY={dragY}
           onRegisterTile={registerTileBounds}
           onRegisterCancel={registerCancelBounds}
-          onMove={onOverlayMove}
-          onRelease={onOverlayRelease}
         />
       )}
 

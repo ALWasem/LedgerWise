@@ -26,6 +26,8 @@ export default function useCategorizeDrag(
   const cancelBoundsRef = useRef<Bounds | null>(null);
   const draggedTxRef = useRef<Transaction | null>(null);
   const activeTileRef = useRef<number | null>(null);
+  // Synchronous flag so responder capture can check without waiting for re-render
+  const isDraggingRef = useRef(false);
 
   const registerTileBounds = useCallback((index: number, pageX: number, pageY: number, width: number, height: number) => {
     tileBoundsRef.current[index] = { x: pageX, y: pageY, width, height };
@@ -65,6 +67,7 @@ export default function useCategorizeDrag(
 
   const startDrag = useCallback((transaction: Transaction, pageX: number, pageY: number) => {
     draggedTxRef.current = transaction;
+    isDraggingRef.current = true;
     dragX.setValue(pageX);
     dragY.setValue(pageY);
     setDraggedTransaction(transaction);
@@ -90,6 +93,7 @@ export default function useCategorizeDrag(
 
     draggedTxRef.current = null;
     activeTileRef.current = null;
+    isDraggingRef.current = false;
     setIsDragging(false);
     setDraggedTransaction(null);
     setActiveTileIndex(null);
@@ -99,6 +103,7 @@ export default function useCategorizeDrag(
   const cancelDrag = useCallback(() => {
     draggedTxRef.current = null;
     activeTileRef.current = null;
+    isDraggingRef.current = false;
     setIsDragging(false);
     setDraggedTransaction(null);
     setActiveTileIndex(null);
@@ -107,6 +112,7 @@ export default function useCategorizeDrag(
 
   return {
     isDragging,
+    isDraggingRef,
     draggedTransaction,
     activeTileIndex,
     isOverCancel,
