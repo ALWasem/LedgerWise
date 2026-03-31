@@ -171,47 +171,6 @@ export const createMobileCategorizeStyles = (deps: StyleDeps) => StyleSheet.crea
     backgroundColor: deps.colors.surface.bg,
     zIndex: 100,
   },
-  overlayHeader: {
-    backgroundColor: deps.colors.surface.card,
-    borderBottomWidth: 1,
-    borderBottomColor: deps.colors.border.default,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  overlayHeaderLabel: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: 12,
-    fontWeight: '500',
-    color: deps.colors.text.tertiary,
-    marginBottom: 4,
-  },
-  overlayHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  overlayHeaderMerchant: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: 16,
-    fontWeight: '700',
-    color: deps.colors.text.primary,
-    flex: 1,
-  },
-  overlayHeaderAmount: {
-    ...typography.amount,
-    fontSize: 16,
-    fontWeight: '700',
-    color: deps.colors.text.primary,
-    marginLeft: 12,
-  },
-  overlayHeaderDate: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: 12,
-    fontWeight: '500',
-    color: deps.colors.text.tertiary,
-    marginTop: 2,
-  },
-
   // --- Category Grid ---
   gridContainer: {
     flex: 1,

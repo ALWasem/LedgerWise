@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { Animated, FlatList, GestureResponderEvent, Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
@@ -89,8 +89,8 @@ export default function MobileCategorizeList({
     registerCancelBounds,
   } = useCategorizeDrag(categories, handleAssign);
 
-  const handleLongPress = useCallback((transaction: Transaction) => {
-    startDrag(transaction);
+  const handleLongPress = useCallback((transaction: Transaction, e: GestureResponderEvent) => {
+    startDrag(transaction, e.nativeEvent.pageX, e.nativeEvent.pageY);
   }, [startDrag]);
 
   const renderTransaction = useCallback(({ item }: { item: Transaction }) => {
@@ -100,7 +100,7 @@ export default function MobileCategorizeList({
 
     return (
       <Pressable
-        onLongPress={() => handleLongPress(item)}
+        onLongPress={(e) => handleLongPress(item, e)}
         delayLongPress={300}
         style={styles.transactionRow}
         accessibilityRole="button"

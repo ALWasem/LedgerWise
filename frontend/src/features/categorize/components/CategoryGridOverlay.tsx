@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 import { Animated, GestureResponderEvent, LayoutChangeEvent, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
-import { formatCurrency, formatLocalDate } from '../../../utils/formatters';
+import { formatCurrency } from '../../../utils/formatters';
 import { createMobileCategorizeStyles } from '../styles/mobileCategorize.styles';
 import CategoryTile from './CategoryTile';
 import type { Transaction } from '../../../types/transaction';
@@ -38,9 +38,7 @@ export default function CategoryGridOverlay({
   const styles = useThemeStyles(createMobileCategorizeStyles);
   const cancelRef = useRef<View>(null);
 
-  const amount = parseFloat(transaction.amount);
-  const formattedAmount = formatCurrency(amount);
-  const formattedDate = formatLocalDate(transaction.date, { includeYear: true });
+  const formattedAmount = formatCurrency(parseFloat(transaction.amount));
 
   const handleCancelLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -80,18 +78,6 @@ export default function CategoryGridOverlay({
       accessibilityRole="menu"
       accessibilityLabel="Category selection. Drag to a category or drop on cancel to dismiss."
     >
-      {/* Header showing transaction being assigned */}
-      <View style={styles.overlayHeader}>
-        <Text style={styles.overlayHeaderLabel}>Assigning transaction</Text>
-        <View style={styles.overlayHeaderRow}>
-          <Text style={styles.overlayHeaderMerchant} numberOfLines={1}>
-            {transaction.description}
-          </Text>
-          <Text style={styles.overlayHeaderAmount}>{formattedAmount}</Text>
-        </View>
-        <Text style={styles.overlayHeaderDate}>{formattedDate}</Text>
-      </View>
-
       {/* Category Grid */}
       <View style={styles.gridContainer}>
         {rows.map((row, rowIdx) => (

@@ -63,13 +63,15 @@ export default function useCategorizeDrag(
     setActiveTileIndex(null);
   }, []);
 
-  const startDrag = useCallback((transaction: Transaction) => {
+  const startDrag = useCallback((transaction: Transaction, pageX: number, pageY: number) => {
     draggedTxRef.current = transaction;
+    dragX.setValue(pageX);
+    dragY.setValue(pageY);
     setDraggedTransaction(transaction);
     setIsDragging(true);
     setActiveTileIndex(null);
     setIsOverCancel(false);
-  }, []);
+  }, [dragX, dragY]);
 
   const onOverlayMove = useCallback((pageX: number, pageY: number) => {
     dragX.setValue(pageX);
