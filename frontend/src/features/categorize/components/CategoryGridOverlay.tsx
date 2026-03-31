@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
-import { Animated, LayoutChangeEvent, Text, View } from 'react-native';
+import { LayoutChangeEvent, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { formatCurrency } from '../../../utils/formatters';
@@ -9,14 +10,17 @@ import type { Transaction } from '../../../types/transaction';
 import type { CategoryInfo } from '../../../types/categorize';
 
 const GRID_COLUMNS = 4;
+const CARD_HALF_WIDTH = 80;
+const VERTICAL_OFFSET = 65;
 
 interface Props {
   transaction: Transaction;
   categories: CategoryInfo[];
   activeTileIndex: number | null;
   isOverCancel: boolean;
-  dragX: Animated.Value;
-  dragY: Animated.Value;
+  dragX: SharedValue<number>;
+  dragY: SharedValue<number>;
+  dragCardScale: SharedValue<number>;
   onRegisterTile: (index: number, pageX: number, pageY: number, width: number, height: number) => void;
   onRegisterCancel: (pageX: number, pageY: number, width: number, height: number) => void;
 }
@@ -28,13 +32,27 @@ export default function CategoryGridOverlay({
   isOverCancel,
   dragX,
   dragY,
+  dragCardScale,
   onRegisterTile,
   onRegisterCancel,
 }: Props) {
   const styles = useThemeStyles(createMobileCategorizeStyles);
+  const overlayRef = useRef<View>(null);
   const cancelRef = useRef<View>(null);
 
+  // Overlay's window-space offset — gesture absoluteX/Y are screen-relative,
+  // but translateX/Y are relative to the overlay container.
+  const overlayOffsetX = useSharedValue(0);
+  const overlayOffsetY = useSharedValue(0);
+
   const formattedAmount = formatCurrency(parseFloat(transaction.amount));
+
+  const handleOverlayLayout = useCallback(() => {
+    overlayRef.current?.measureInWindow((x, y) => {
+      overlayOffsetX.value = x;
+      overlayOffsetY.value = y;
+    });
+  }, [overlayOffsetX, overlayOffsetY]);
 
   const handleCancelLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -42,6 +60,18 @@ export default function CategoryGridOverlay({
       onRegisterCancel(pageX, pageY, width, height);
     });
   }, [onRegisterCancel]);
+
+  // Floating card positioned on UI thread via shared values.
+  // Subtract overlay offset to convert screen coords → overlay-local coords.
+  // Then offset 65px above touch point so card floats above the thumb.
+  const floatingCardStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: dragX.value - overlayOffsetX.value - CARD_HALF_WIDTH },
+      { translateY: dragY.value - overlayOffsetY.value - VERTICAL_OFFSET },
+      { rotate: '-2.5deg' },
+      { scale: dragCardScale.value },
+    ],
+  }));
 
   // Build grid rows (4 columns per row, max 6 rows = 24 tiles)
   const rows: (CategoryInfo | null)[][] = [];
@@ -55,8 +85,10 @@ export default function CategoryGridOverlay({
 
   return (
     <View
+      ref={overlayRef}
       style={styles.overlay}
       pointerEvents="box-none"
+      onLayout={handleOverlayLayout}
       accessibilityRole="menu"
       accessibilityLabel="Category selection. Drag to a category or drop on cancel to dismiss."
     >
@@ -105,15 +137,7 @@ export default function CategoryGridOverlay({
 
       {/* Floating Drag Card */}
       <Animated.View
-        style={[
-          styles.floatingCard,
-          {
-            transform: [
-              { translateX: Animated.subtract(dragX, 80) },
-              { translateY: Animated.subtract(dragY, 40) },
-            ],
-          },
-        ]}
+        style={[styles.floatingCard, floatingCardStyle]}
         pointerEvents="none"
       >
         <Text style={styles.floatingCardMerchant} numberOfLines={1}>

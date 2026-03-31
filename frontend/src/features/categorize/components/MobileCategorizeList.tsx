@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, FlatList, GestureResponderEvent, Pressable, Text, TextInput, View } from 'react-native';
+import { Animated, FlatList, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
-import { formatCurrency, formatLocalDate } from '../../../utils/formatters';
+import { formatCurrency } from '../../../utils/formatters';
 import { createMobileCategorizeStyles } from '../styles/mobileCategorize.styles';
 import CategoryGridOverlay from './CategoryGridOverlay';
+import MobileDraggableRow from './MobileDraggableRow';
 import useCategorizeDrag from '../useCategorizeDrag';
 import type { Transaction } from '../../../types/transaction';
 import type { CategoryInfo } from '../../../types/categorize';
@@ -77,69 +78,38 @@ export default function MobileCategorizeList({
 
   const {
     isDragging,
-    isDraggingRef,
     draggedTransaction,
     activeTileIndex,
     isOverCancel,
     dragX,
     dragY,
+    isDragActive,
+    dragCardScale,
+    sourceRowOpacity,
+    sourceRowScale,
     startDrag,
-    onOverlayMove,
-    onOverlayRelease,
+    onDragMove,
+    onDragEnd,
     registerTileBounds,
     registerCancelBounds,
   } = useCategorizeDrag(categories, handleAssign);
 
-  const handleLongPress = useCallback((transaction: Transaction, e: GestureResponderEvent) => {
-    startDrag(transaction, e.nativeEvent.pageX, e.nativeEvent.pageY);
-  }, [startDrag]);
+  const draggedTransactionId = draggedTransaction?.id ?? null;
 
-  // Container-level responder: captures touch once dragging starts.
-  // This lets the same finger that triggered onLongPress seamlessly
-  // continue driving the drag without lifting.
-  const shouldCapture = useCallback(() => isDraggingRef.current, [isDraggingRef]);
-
-  const handleResponderMove = useCallback((e: GestureResponderEvent) => {
-    if (isDraggingRef.current) {
-      onOverlayMove(e.nativeEvent.pageX, e.nativeEvent.pageY);
-    }
-  }, [isDraggingRef, onOverlayMove]);
-
-  const handleResponderRelease = useCallback(() => {
-    if (isDraggingRef.current) {
-      onOverlayRelease();
-    }
-  }, [isDraggingRef, onOverlayRelease]);
-
-  const renderTransaction = useCallback(({ item }: { item: Transaction }) => {
-    const formattedDate = formatLocalDate(item.date, { includeYear: true });
-    const amount = parseFloat(item.amount);
-    const formattedAmount = formatCurrency(amount);
-
-    return (
-      <Pressable
-        onLongPress={(e) => handleLongPress(item, e)}
-        delayLongPress={300}
-        style={styles.transactionRow}
-        accessibilityRole="button"
-        accessibilityLabel={`${item.description}, ${formattedAmount}, ${formattedDate}. Long press to categorize.`}
-      >
-        <View style={styles.dragHandle}>
-          <View style={styles.dragDots}>
-            <Ionicons name="ellipsis-vertical" size={14} color={colors.text.tertiary} />
-            <Ionicons name="ellipsis-vertical" size={14} color={colors.text.tertiary} style={styles.dragDotSecond} />
-          </View>
-        </View>
-        <View style={styles.transactionInfo}>
-          <Text style={styles.transactionMerchant} numberOfLines={1}>
-            {item.description}
-          </Text>
-          <Text style={styles.transactionDate}>{formattedDate}</Text>
-        </View>
-        <Text style={styles.transactionAmount}>{formattedAmount}</Text>
-      </Pressable>
-    );
-  }, [handleLongPress, styles, colors]);
+  const renderTransaction = useCallback(({ item }: { item: Transaction }) => (
+    <MobileDraggableRow
+      transaction={item}
+      draggedTransactionId={draggedTransactionId}
+      dragX={dragX}
+      dragY={dragY}
+      isDragActive={isDragActive}
+      sourceRowOpacity={sourceRowOpacity}
+      sourceRowScale={sourceRowScale}
+      onDragStart={startDrag}
+      onDragMove={onDragMove}
+      onDragEnd={onDragEnd}
+    />
+  ), [draggedTransactionId, dragX, dragY, isDragActive, sourceRowOpacity, sourceRowScale, startDrag, onDragMove, onDragEnd]);
 
   const keyExtractor = useCallback((item: Transaction) => item.id, []);
 
@@ -158,15 +128,7 @@ export default function MobileCategorizeList({
   ), [transactionSearch, styles, colors]);
 
   return (
-    <View
-      style={styles.container}
-      onStartShouldSetResponder={shouldCapture}
-      onMoveShouldSetResponder={shouldCapture}
-      onMoveShouldSetResponderCapture={shouldCapture}
-      onResponderMove={handleResponderMove}
-      onResponderRelease={handleResponderRelease}
-      onResponderTerminate={handleResponderRelease}
-    >
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Categorize</Text>
@@ -230,6 +192,7 @@ export default function MobileCategorizeList({
           isOverCancel={isOverCancel}
           dragX={dragX}
           dragY={dragY}
+          dragCardScale={dragCardScale}
           onRegisterTile={registerTileBounds}
           onRegisterCancel={registerCancelBounds}
         />

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Animated } from 'react-native';
+import { useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 import type { Transaction } from '../../types/transaction';
 import type { CategoryInfo } from '../../types/categorize';
 
@@ -10,24 +10,33 @@ interface Bounds {
   height: number;
 }
 
+function pointInBounds(px: number, py: number, b: Bounds): boolean {
+  return px >= b.x && px <= b.x + b.width && py >= b.y && py <= b.y + b.height;
+}
+
 export default function useCategorizeDrag(
   categories: CategoryInfo[],
   onAssign: (transactionId: string, categoryName: string) => void,
 ) {
+  // React state for discrete events (start/end of drag, tile hover changes)
   const [isDragging, setIsDragging] = useState(false);
   const [draggedTransaction, setDraggedTransaction] = useState<Transaction | null>(null);
   const [activeTileIndex, setActiveTileIndex] = useState<number | null>(null);
   const [isOverCancel, setIsOverCancel] = useState(false);
 
-  const dragX = useRef(new Animated.Value(0)).current;
-  const dragY = useRef(new Animated.Value(0)).current;
+  // Shared values for UI-thread position tracking (no React state during drag)
+  const dragX = useSharedValue(0);
+  const dragY = useSharedValue(0);
+  const isDragActive = useSharedValue(false);
+  const dragCardScale = useSharedValue(0.8);
+  const sourceRowOpacity = useSharedValue(1);
+  const sourceRowScale = useSharedValue(1);
 
+  // Refs for synchronous hit testing
   const tileBoundsRef = useRef<Bounds[]>([]);
   const cancelBoundsRef = useRef<Bounds | null>(null);
   const draggedTxRef = useRef<Transaction | null>(null);
   const activeTileRef = useRef<number | null>(null);
-  // Synchronous flag so responder capture can check without waiting for re-render
-  const isDraggingRef = useRef(false);
 
   const registerTileBounds = useCallback((index: number, pageX: number, pageY: number, width: number, height: number) => {
     tileBoundsRef.current[index] = { x: pageX, y: pageY, width, height };
@@ -38,10 +47,8 @@ export default function useCategorizeDrag(
   }, []);
 
   const hitTest = useCallback((absX: number, absY: number) => {
-    // Check cancel zone first
     const cancel = cancelBoundsRef.current;
-    if (cancel && absX >= cancel.x && absX <= cancel.x + cancel.width &&
-        absY >= cancel.y && absY <= cancel.y + cancel.height) {
+    if (cancel && pointInBounds(absX, absY, cancel)) {
       activeTileRef.current = null;
       setActiveTileIndex(null);
       setIsOverCancel(true);
@@ -50,12 +57,9 @@ export default function useCategorizeDrag(
 
     setIsOverCancel(false);
 
-    // Check tiles
     for (let i = 0; i < tileBoundsRef.current.length; i++) {
       const bounds = tileBoundsRef.current[i];
-      if (!bounds) continue;
-      if (absX >= bounds.x && absX <= bounds.x + bounds.width &&
-          absY >= bounds.y && absY <= bounds.y + bounds.height) {
+      if (bounds && pointInBounds(absX, absY, bounds)) {
         activeTileRef.current = i;
         setActiveTileIndex(i);
         return;
@@ -65,63 +69,69 @@ export default function useCategorizeDrag(
     setActiveTileIndex(null);
   }, []);
 
+  const resetDragState = useCallback(() => {
+    isDragActive.value = false;
+    sourceRowOpacity.value = withTiming(1, { duration: 150 });
+    sourceRowScale.value = withTiming(1, { duration: 150 });
+
+    draggedTxRef.current = null;
+    activeTileRef.current = null;
+    setIsDragging(false);
+    setDraggedTransaction(null);
+    setActiveTileIndex(null);
+    setIsOverCancel(false);
+  }, [isDragActive, sourceRowOpacity, sourceRowScale]);
+
   const startDrag = useCallback((transaction: Transaction, pageX: number, pageY: number) => {
     draggedTxRef.current = transaction;
-    isDraggingRef.current = true;
-    dragX.setValue(pageX);
-    dragY.setValue(pageY);
+    dragX.value = pageX;
+    dragY.value = pageY;
+    isDragActive.value = true;
+
+    // Drag card entrance: spring from 0.8 → 1.05
+    dragCardScale.value = 0.8;
+    dragCardScale.value = withSpring(1.05, { damping: 15, stiffness: 150 });
+
+    // Source row: fade and shrink over 150ms
+    sourceRowOpacity.value = withTiming(0.3, { duration: 150 });
+    sourceRowScale.value = withTiming(0.97, { duration: 150 });
+
     setDraggedTransaction(transaction);
     setIsDragging(true);
     setActiveTileIndex(null);
     setIsOverCancel(false);
-  }, [dragX, dragY]);
+  }, [dragX, dragY, isDragActive, dragCardScale, sourceRowOpacity, sourceRowScale]);
 
-  const onOverlayMove = useCallback((pageX: number, pageY: number) => {
-    dragX.setValue(pageX);
-    dragY.setValue(pageY);
+  const onDragMove = useCallback((pageX: number, pageY: number) => {
     hitTest(pageX, pageY);
-  }, [dragX, dragY, hitTest]);
+  }, [hitTest]);
 
-  const onOverlayRelease = useCallback(() => {
+  const onDragEnd = useCallback(() => {
     const tx = draggedTxRef.current;
     const tileIdx = activeTileRef.current;
 
     if (tx && tileIdx !== null && tileIdx < categories.length) {
-      const category = categories[tileIdx];
-      onAssign(tx.id, category.name);
+      onAssign(tx.id, categories[tileIdx].name);
     }
 
-    draggedTxRef.current = null;
-    activeTileRef.current = null;
-    isDraggingRef.current = false;
-    setIsDragging(false);
-    setDraggedTransaction(null);
-    setActiveTileIndex(null);
-    setIsOverCancel(false);
-  }, [categories, onAssign]);
-
-  const cancelDrag = useCallback(() => {
-    draggedTxRef.current = null;
-    activeTileRef.current = null;
-    isDraggingRef.current = false;
-    setIsDragging(false);
-    setDraggedTransaction(null);
-    setActiveTileIndex(null);
-    setIsOverCancel(false);
-  }, []);
+    resetDragState();
+  }, [categories, onAssign, resetDragState]);
 
   return {
     isDragging,
-    isDraggingRef,
     draggedTransaction,
     activeTileIndex,
     isOverCancel,
     dragX,
     dragY,
+    isDragActive,
+    dragCardScale,
+    sourceRowOpacity,
+    sourceRowScale,
     startDrag,
-    onOverlayMove,
-    onOverlayRelease,
-    cancelDrag,
+    onDragMove,
+    onDragEnd,
+    cancelDrag: resetDragState,
     registerTileBounds,
     registerCancelBounds,
   };
