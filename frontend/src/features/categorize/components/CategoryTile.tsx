@@ -4,6 +4,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
@@ -21,10 +22,11 @@ interface Props {
   category: CategoryInfo;
   index: number;
   isActive: boolean;
+  isPulsing: boolean;
   onLayout: (index: number, pageX: number, pageY: number, width: number, height: number) => void;
 }
 
-export default function CategoryTile({ category, index, isActive, onLayout }: Props) {
+export default function CategoryTile({ category, index, isActive, isPulsing, onLayout }: Props) {
   const styles = useThemeStyles(createMobileCategorizeStyles);
   const wrapperRef = useRef<View>(null);
 
@@ -33,16 +35,29 @@ export default function CategoryTile({ category, index, isActive, onLayout }: Pr
 
   // Staggered entrance: fade in with per-tile delay
   const staggerOpacity = useSharedValue(STAGGER_INITIAL_OPACITY);
+  useEffect(() => {
+    staggerOpacity.value = withDelay(
+      index * STAGGER_DELAY_MS,
+      withTiming(1, { duration: STAGGER_DURATION_MS }),
+    );
+  // Run once on mount — index is stable per tile instance
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  staggerOpacity.value = withDelay(
-    index * STAGGER_DELAY_MS,
-    withTiming(1, { duration: STAGGER_DURATION_MS }),
-  );
+  }, []);
 
   // Drive scale spring from isActive prop
   useEffect(() => {
     hoverScale.value = withSpring(isActive ? HOVER_SCALE : 1, HOVER_SPRING);
   }, [isActive, hoverScale]);
+
+  // Pulse animation on successful drop
+  useEffect(() => {
+    if (isPulsing) {
+      hoverScale.value = withSequence(
+        withSpring(1.12, { damping: 8 }),
+        withSpring(1.0, { damping: 10 }),
+      );
+    }
+  }, [isPulsing, hoverScale]);
 
   const staggerStyle = useAnimatedStyle(() => ({
     opacity: staggerOpacity.value,

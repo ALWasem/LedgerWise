@@ -16,6 +16,9 @@ const SOURCE_ROW_MS = 150;
 const GRID_INITIAL_SCALE = 1.02;
 const LIST_SHRUNK_SCALE = 0.95;
 const GRID_SLIDE_OFFSET = -12;
+const ABSORB_MS = 200;
+const CANCEL_FALL_MS = 250;
+const VERTICAL_OFFSET = 65;
 
 interface Bounds {
   x: number;
@@ -43,11 +46,15 @@ export default function useCategorizeDrag(
   const dragY = useSharedValue(0);
   const isDragActive = useSharedValue(false);
   const dragCardScale = useSharedValue(0.8);
+  const dragCardOpacity = useSharedValue(1);
   const sourceRowOpacity = useSharedValue(1);
   const sourceRowScale = useSharedValue(1);
 
   // Cancel zone hover animation (0 → 1)
   const cancelHoverSV = useSharedValue(0);
+
+  // Tile pulse after successful drop
+  const [pulsingTileIndex, setPulsingTileIndex] = useState<number | null>(null);
 
   // Crossfade shared values (list ↔ grid transition)
   const listOpacity = useSharedValue(1);
@@ -119,21 +126,29 @@ export default function useCategorizeDrag(
     }
   }, [cancelHoverSV, triggerLightHaptic]);
 
+  const triggerSuccessHaptic = useCallback(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, []);
+
   const clearAfterExit = useCallback(() => {
     draggedTxRef.current = null;
     activeTileRef.current = null;
     cancelRef.current = false;
     cancelHoverSV.value = 0;
+    setPulsingTileIndex(null);
     setIsDragging(false);
     setDraggedTransaction(null);
     setActiveTileIndex(null);
     setOverlayVisible(false);
   }, [cancelHoverSV]);
 
-  const resetDragState = useCallback(() => {
-    isDragActive.value = false;
+  // Reverse grid→list crossfade + clean up
+  const reverseToList = useCallback(() => {
     sourceRowOpacity.value = withTiming(1, { duration: SOURCE_ROW_MS });
     sourceRowScale.value = withTiming(1, { duration: SOURCE_ROW_MS });
+
+    // Reset drag card visuals for next drag
+    dragCardOpacity.value = 1;
 
     const exitConfig = { duration: CROSSFADE_EXIT_MS, easing: CROSSFADE_EASING };
 
@@ -144,7 +159,13 @@ export default function useCategorizeDrag(
     listScale.value = withTiming(1, exitConfig, () => {
       runOnJS(clearAfterExit)();
     });
-  }, [isDragActive, sourceRowOpacity, sourceRowScale, gridOpacity, gridScale, gridTranslateY, listOpacity, listScale, clearAfterExit]);
+  }, [sourceRowOpacity, sourceRowScale, dragCardOpacity, gridOpacity, gridScale, gridTranslateY, listOpacity, listScale, clearAfterExit]);
+
+  // Immediate reset (fallback / cancelDrag export)
+  const resetDragState = useCallback(() => {
+    isDragActive.value = false;
+    reverseToList();
+  }, [isDragActive, reverseToList]);
 
   const startDrag = useCallback((transaction: Transaction, pageX: number, pageY: number) => {
     draggedTxRef.current = transaction;
@@ -183,26 +204,69 @@ export default function useCategorizeDrag(
     hitTest(pageX, pageY);
   }, [hitTest]);
 
+  // Called on JS thread after absorb animation completes
+  const handleSuccessfulDrop = useCallback((txId: string, categoryName: string, tileIdx: number) => {
+    triggerSuccessHaptic();
+    setPulsingTileIndex(tileIdx);
+    // Optimistic update removes tx from list data before list fades back in
+    onAssign(txId, categoryName);
+    reverseToList();
+  }, [triggerSuccessHaptic, onAssign, reverseToList]);
+
+  // Called on JS thread after cancel/fall-away animation completes
+  const handleCancelComplete = useCallback(() => {
+    reverseToList();
+  }, [reverseToList]);
+
   const onDragEnd = useCallback(() => {
     const tx = draggedTxRef.current;
     const tileIdx = activeTileRef.current;
+    const isCancel = cancelRef.current;
 
-    if (tx && tileIdx !== null && tileIdx < categories.length) {
-      onAssign(tx.id, categories[tileIdx].name);
+    isDragActive.value = false;
+
+    if (tx && tileIdx !== null && tileIdx < categories.length && !isCancel) {
+      // --- SUCCESSFUL DROP: absorb card into tile ---
+      const tileBounds = tileBoundsRef.current[tileIdx];
+      if (tileBounds) {
+        const tileCenterX = tileBounds.x + tileBounds.width / 2;
+        const tileCenterY = tileBounds.y + tileBounds.height / 2;
+
+        const absorbConfig = { duration: ABSORB_MS, easing: Easing.in(Easing.cubic) };
+        dragX.value = withTiming(tileCenterX, absorbConfig);
+        dragY.value = withTiming(tileCenterY + VERTICAL_OFFSET, absorbConfig);
+        dragCardScale.value = withTiming(0, absorbConfig, () => {
+          runOnJS(handleSuccessfulDrop)(tx.id, categories[tileIdx].name, tileIdx);
+        });
+      } else {
+        // Fallback if tile bounds unavailable
+        onAssign(tx.id, categories[tileIdx].name);
+        resetDragState();
+      }
+    } else {
+      // --- CANCEL or EMPTY SPACE: card falls off screen ---
+      triggerLightHaptic();
+
+      const cancelConfig = { duration: CANCEL_FALL_MS, easing: Easing.in(Easing.quad) };
+      const currentY = dragY.value;
+      dragY.value = withTiming(currentY + 200, cancelConfig);
+      dragCardOpacity.value = withTiming(0, cancelConfig, () => {
+        runOnJS(handleCancelComplete)();
+      });
     }
-
-    resetDragState();
-  }, [categories, onAssign, resetDragState]);
+  }, [categories, onAssign, isDragActive, dragX, dragY, dragCardScale, dragCardOpacity, handleSuccessfulDrop, handleCancelComplete, resetDragState, triggerLightHaptic]);
 
   return {
     isDragging,
     draggedTransaction,
     activeTileIndex,
     overlayVisible,
+    pulsingTileIndex,
     dragX,
     dragY,
     isDragActive,
     dragCardScale,
+    dragCardOpacity,
     sourceRowOpacity,
     sourceRowScale,
     cancelHoverSV,

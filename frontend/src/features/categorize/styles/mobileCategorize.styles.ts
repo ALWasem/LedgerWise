@@ -296,10 +296,12 @@ export const createMobileCategorizeStyles = (deps: StyleDeps) => StyleSheet.crea
   // --- Toast ---
   toastContainer: {
     position: 'absolute',
-    bottom: 100,
+    top: 0,
+    bottom: 0,
     left: 24,
     right: 24,
     alignItems: 'center',
+    justifyContent: 'center',
     zIndex: 300,
   },
   toast: {

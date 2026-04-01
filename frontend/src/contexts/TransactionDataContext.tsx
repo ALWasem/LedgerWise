@@ -38,6 +38,7 @@ interface TransactionDataContextValue {
   transactionsLoading: boolean;
   error: string | null;
   refresh: () => void;
+  updateTransactionLocally: (transactionId: string, updates: Partial<Transaction>) => void;
   selectedPeriod: TimePeriod;
   setSelectedPeriod: (period: TimePeriod) => void;
 }
@@ -64,6 +65,15 @@ export function TransactionDataProvider({ token, children }: ProviderProps) {
     setAllTransactions([]);
     setRefreshKey((k) => k + 1);
   }, []);
+
+  const updateTransactionLocally = useCallback(
+    (transactionId: string, updates: Partial<Transaction>) => {
+      setAllTransactions((prev) =>
+        prev.map((tx) => (tx.id === transactionId ? { ...tx, ...updates } : tx)),
+      );
+    },
+    [],
+  );
 
   // Fetch accounts once
   useEffect(() => {
@@ -132,10 +142,11 @@ export function TransactionDataProvider({ token, children }: ProviderProps) {
       transactionsLoading,
       error,
       refresh,
+      updateTransactionLocally,
       selectedPeriod,
       setSelectedPeriod,
     }),
-    [accounts, allTransactions, hasAccounts, accountsLoading, transactionsLoading, error, refresh, selectedPeriod],
+    [accounts, allTransactions, hasAccounts, accountsLoading, transactionsLoading, error, refresh, updateTransactionLocally, selectedPeriod],
   );
 
   return (

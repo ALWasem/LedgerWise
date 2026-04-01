@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, FlatList, Text, TextInput, View } from 'react-native';
-import RNAnimated, { useAnimatedStyle } from 'react-native-reanimated';
+import { Text, TextInput, View } from 'react-native';
+import { FlatList } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
@@ -41,24 +48,35 @@ export default function MobileCategorizeList({
   const styles = useThemeStyles(createMobileCategorizeStyles);
 
   const [toast, setToast] = useState<ToastData | null>(null);
-  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const toastOpacity = useSharedValue(0);
+  const toastScale = useSharedValue(0.8);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const percentage = totalTransactions > 0
     ? Math.round((categorizedCount / totalTransactions) * 100)
     : 0;
 
-  // Toast animation
+  const clearToast = useCallback(() => setToast(null), []);
+
+  // Toast animation: spring entrance, timed exit
   const showToast = useCallback((data: ToastData) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(data);
-    Animated.timing(toastOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    toastOpacity.value = 0;
+    toastScale.value = 0.8;
+    toastOpacity.value = withSpring(1, { damping: 15, stiffness: 200 });
+    toastScale.value = withSpring(1, { damping: 15, stiffness: 200 });
     toastTimer.current = setTimeout(() => {
-      Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(
-        () => setToast(null),
-      );
-    }, 1800);
-  }, [toastOpacity]);
+      toastOpacity.value = withTiming(0, { duration: 300 }, () => {
+        runOnJS(clearToast)();
+      });
+    }, 1500);
+  }, [toastOpacity, toastScale, clearToast]);
+
+  const toastAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: toastOpacity.value,
+    transform: [{ scale: toastScale.value }],
+  }));
 
   useEffect(() => {
     return () => { if (toastTimer.current) clearTimeout(toastTimer.current); };
@@ -81,10 +99,12 @@ export default function MobileCategorizeList({
     draggedTransaction,
     activeTileIndex,
     overlayVisible,
+    pulsingTileIndex,
     dragX,
     dragY,
     isDragActive,
     dragCardScale,
+    dragCardOpacity,
     sourceRowOpacity,
     sourceRowScale,
     cancelHoverSV,
@@ -119,7 +139,7 @@ export default function MobileCategorizeList({
 
   const keyExtractor = useCallback((item: Transaction) => item.id, []);
 
-  const listAnimatedStyle = useAnimatedStyle(() => ({
+  const listAnimStyle = useAnimatedStyle(() => ({
     opacity: listOpacity.value,
     transform: [{ scale: listScale.value }],
   }));
@@ -141,7 +161,7 @@ export default function MobileCategorizeList({
   return (
     <View style={styles.container}>
       {/* Transaction list layer — fades out during drag */}
-      <RNAnimated.View style={[styles.listLayer, listAnimatedStyle]}>
+      <Animated.View style={[styles.listLayer, listAnimStyle]}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Categorize</Text>
@@ -196,7 +216,7 @@ export default function MobileCategorizeList({
           style={styles.transactionList}
           contentContainerStyle={transactions.length === 0 ? styles.listEmptyContent : undefined}
         />
-      </RNAnimated.View>
+      </Animated.View>
 
       {/* Category Grid Overlay — always mounted, crossfades via shared values */}
       {overlayVisible && draggedTransaction && (
@@ -204,10 +224,12 @@ export default function MobileCategorizeList({
           transaction={draggedTransaction}
           categories={categories}
           activeTileIndex={activeTileIndex}
+          pulsingTileIndex={pulsingTileIndex}
           cancelHoverSV={cancelHoverSV}
           dragX={dragX}
           dragY={dragY}
           dragCardScale={dragCardScale}
+          dragCardOpacity={dragCardOpacity}
           gridOpacity={gridOpacity}
           gridScale={gridScale}
           gridTranslateY={gridTranslateY}
@@ -218,7 +240,7 @@ export default function MobileCategorizeList({
 
       {/* Toast */}
       {toast && (
-        <Animated.View style={[styles.toastContainer, { opacity: toastOpacity }]} pointerEvents="none">
+        <Animated.View style={[styles.toastContainer, toastAnimatedStyle]} pointerEvents="none">
           <View style={styles.toast}>
             <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
             <View>

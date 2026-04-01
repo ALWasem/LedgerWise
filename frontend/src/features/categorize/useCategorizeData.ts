@@ -9,7 +9,7 @@ import type { Transaction } from '../../types/transaction';
 import type { CategoryInfo } from '../../types/categorize';
 
 export default function useCategorizeData() {
-  const { allTransactions, transactionsLoading } = useTransactionData();
+  const { allTransactions, transactionsLoading, updateTransactionLocally } = useTransactionData();
   const { session } = useAuth();
   const token = session?.access_token ?? null;
 
@@ -85,19 +85,24 @@ export default function useCategorizeData() {
         return next;
       });
 
-      // Persist to backend (no refresh — optimistic state is sufficient)
+      // Persist to backend and update global transaction state
       if (token) {
-        updateTransactionCategory(token, transactionId, categoryName).catch(() => {
-          // Revert optimistic update on failure
-          setReassigned((prev) => {
-            const next = new Map(prev);
-            next.delete(transactionId);
-            return next;
+        updateTransactionCategory(token, transactionId, categoryName)
+          .then(() => {
+            // Update the global context so the change persists across navigation
+            updateTransactionLocally(transactionId, { category: categoryName });
+          })
+          .catch(() => {
+            // Revert optimistic update on failure
+            setReassigned((prev) => {
+              const next = new Map(prev);
+              next.delete(transactionId);
+              return next;
+            });
           });
-        });
       }
     },
-    [token],
+    [token, updateTransactionLocally],
   );
 
   // Search/filter

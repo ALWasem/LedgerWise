@@ -23,10 +23,12 @@ interface Props {
   transaction: Transaction;
   categories: CategoryInfo[];
   activeTileIndex: number | null;
+  pulsingTileIndex: number | null;
   cancelHoverSV: SharedValue<number>;
   dragX: SharedValue<number>;
   dragY: SharedValue<number>;
   dragCardScale: SharedValue<number>;
+  dragCardOpacity: SharedValue<number>;
   gridOpacity: SharedValue<number>;
   gridScale: SharedValue<number>;
   gridTranslateY: SharedValue<number>;
@@ -38,10 +40,12 @@ export default function CategoryGridOverlay({
   transaction,
   categories,
   activeTileIndex,
+  pulsingTileIndex,
   cancelHoverSV,
   dragX,
   dragY,
   dragCardScale,
+  dragCardOpacity,
   gridOpacity,
   gridScale,
   gridTranslateY,
@@ -81,6 +85,7 @@ export default function CategoryGridOverlay({
   }));
 
   const floatingCardStyle = useAnimatedStyle(() => ({
+    opacity: dragCardOpacity.value,
     transform: [
       { translateX: dragX.value - overlayOffsetX.value - CARD_HALF_WIDTH },
       { translateY: dragY.value - overlayOffsetY.value - VERTICAL_OFFSET },
@@ -156,6 +161,7 @@ export default function CategoryGridOverlay({
                     category={cat}
                     index={tileIndex}
                     isActive={activeTileIndex === tileIndex}
+                    isPulsing={pulsingTileIndex === tileIndex}
                     onLayout={onRegisterTile}
                   />
                 );

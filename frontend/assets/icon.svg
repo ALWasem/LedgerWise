@@ -1,0 +1,27 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="180" fill="#FAFAF9"/>
+
+  <!-- Ledger Book Base -->
+  <rect x="262" y="340" width="500" height="520" rx="40" fill="url(#gradient)"/>
+
+  <!-- Book Pages Detail -->
+  <rect x="312" y="400" width="400" height="28" rx="14" fill="white" fill-opacity="0.4"/>
+  <rect x="312" y="480" width="400" height="28" rx="14" fill="white" fill-opacity="0.4"/>
+  <rect x="312" y="560" width="280" height="28" rx="14" fill="white" fill-opacity="0.4"/>
+
+  <!-- Crown Element on Top -->
+  <path d="M362 160L412 280L512 200L612 280L662 160L700 320H324L362 160Z" fill="url(#crownGradient)"/>
+
+  <!-- Definitions -->
+  <defs>
+    <linearGradient id="gradient" x1="262" y1="340" x2="762" y2="860" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9333EA"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+    <linearGradient id="crownGradient" x1="324" y1="160" x2="700" y2="320" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FCD34D"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+</svg>
