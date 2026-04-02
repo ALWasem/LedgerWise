@@ -52,7 +52,7 @@ export default function BarChart({ months, categoryLabel, barColor }: Props) {
       {/* Header */}
       <View style={styles.chartHeader}>
         <View>
-          <Text style={styles.chartTitle}>Monthly Spending Trend</Text>
+          <Text style={styles.chartTitle}>{months.length}-Month Spending Trend</Text>
           <Text style={styles.chartSubtitle}>{categoryLabel}</Text>
         </View>
         {!isNarrow && (
@@ -129,15 +129,17 @@ export default function BarChart({ months, categoryLabel, barColor }: Props) {
 
       {/* X-axis — month labels below the plot area */}
       <View style={styles.xAxis}>
-        {months.map((month) => {
+        {months.map((month, index) => {
           const isCurrent = month.month === currentMonth && month.year === currentYear;
+          // Skip every other label when there are many months to avoid overlap
+          const skipLabel = months.length > 14 && index % 2 !== 0 && !isCurrent;
           return (
             <View key={`label-${month.year}-${month.month}`} style={styles.xAxisLabel}>
               <Text style={[
                 styles.monthLabel,
                 isCurrent && styles.monthLabelHighlight,
               ]}>
-                {month.label}
+                {skipLabel ? '' : month.label}
               </Text>
             </View>
           );

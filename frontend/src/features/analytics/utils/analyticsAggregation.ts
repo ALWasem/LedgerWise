@@ -4,7 +4,7 @@
  */
 
 import type { Transaction } from '../../../types/transaction';
-import type { AnalyticsSummary, MonthlyAggregate } from '../../../types/analytics';
+import type { AnalyticsSummary, AnalyticsTimePeriod, MonthlyAggregate } from '../../../types/analytics';
 import { isSpending, isRefund } from '../../../utils/transactionFilters';
 
 const MONTH_LABELS = [
@@ -12,11 +12,56 @@ const MONTH_LABELS = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ] as const;
 
-function buildEmptyMonths(): MonthlyAggregate[] {
+function buildMonthsForPeriod(
+  period: AnalyticsTimePeriod,
+  transactions: Transaction[],
+): MonthlyAggregate[] {
   const now = new Date();
   const months: MonthlyAggregate[] = [];
 
-  for (let i = 11; i >= 0; i--) {
+  if (period === 'ytd') {
+    // January of current year through current month
+    for (let m = 0; m <= now.getMonth(); m++) {
+      months.push({
+        year: now.getFullYear(),
+        month: m,
+        label: MONTH_LABELS[m],
+        total: 0,
+      });
+    }
+    return months;
+  }
+
+  if (period === 'all') {
+    // Find earliest transaction date, build months from there
+    let earliest = now;
+    for (const tx of transactions) {
+      const txDate = new Date(tx.date);
+      if (txDate < earliest) earliest = txDate;
+    }
+    const startYear = earliest.getFullYear();
+    const startMonth = earliest.getMonth();
+    const endYear = now.getFullYear();
+    const endMonth = now.getMonth();
+
+    let y = startYear;
+    let m = startMonth;
+    while (y < endYear || (y === endYear && m <= endMonth)) {
+      months.push({
+        year: y,
+        month: m,
+        label: MONTH_LABELS[m],
+        total: 0,
+      });
+      m++;
+      if (m > 11) { m = 0; y++; }
+    }
+    return months;
+  }
+
+  // '6m' or '12m'
+  const count = period === '6m' ? 6 : 12;
+  for (let i = count - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     months.push({
       year: d.getFullYear(),
@@ -34,31 +79,33 @@ function monthKey(year: number, month: number): string {
 }
 
 /**
- * Compute a 12-month spending trend from raw transactions.
+ * Compute a spending trend from raw transactions for the given time period.
  * Optionally filter to a single category.
  */
 export function computeAnalyticsSummary(
   transactions: Transaction[],
   categoryFilter: string | null,
+  period: AnalyticsTimePeriod = '12m',
 ): AnalyticsSummary | null {
   if (transactions.length === 0) return null;
 
-  const months = buildEmptyMonths();
+  const months = buildMonthsForPeriod(period, transactions);
   const monthMap = new Map<string, MonthlyAggregate>();
   for (const m of months) {
     monthMap.set(monthKey(m.year, m.month), m);
   }
 
-  for (const tx of transactions) {
-    const matchesCategory = (t: Transaction): boolean => {
-      if (!categoryFilter) return true;
-      const txCategory = (t.category ?? '').toLowerCase().trim();
-      const filterLower = categoryFilter.toLowerCase().trim();
-      const isGeneralFilter = filterLower === 'general';
-      const isGeneralTx = txCategory === '' || txCategory === 'general';
-      return isGeneralFilter ? isGeneralTx : txCategory === filterLower;
-    };
+  const filterLower = categoryFilter?.toLowerCase().trim() ?? null;
+  const isGeneralFilter = filterLower === 'general';
 
+  const matchesCategory = (tx: Transaction): boolean => {
+    if (!filterLower) return true;
+    const txCategory = (tx.category ?? '').toLowerCase().trim();
+    const isGeneralTx = txCategory === '' || txCategory === 'general';
+    return isGeneralFilter ? isGeneralTx : txCategory === filterLower;
+  };
+
+  for (const tx of transactions) {
     // Subtract refunds from the month they occurred in (same category filter)
     if (isRefund(tx) && matchesCategory(tx)) {
       const [yearStr, monthStr] = tx.date.split('-');
@@ -91,17 +138,17 @@ export function computeAnalyticsSummary(
     m.total = Math.max(0, Math.round(m.total * 100) / 100);
   }
 
-  const twelveMonthTotal = months.reduce((sum, m) => sum + m.total, 0);
+  const periodTotal = months.reduce((sum, m) => sum + m.total, 0);
   const monthsWithData = months.filter((m) => m.total > 0);
   const monthlyAverage = monthsWithData.length > 0
-    ? Math.round((twelveMonthTotal / monthsWithData.length) * 100) / 100
+    ? Math.round((periodTotal / monthsWithData.length) * 100) / 100
     : 0;
 
   const highestMonth = months.reduce((max, m) => (m.total > max.total ? m : max), months[0]);
   const lowestMonth = months.reduce((min, m) => (m.total < min.total ? m : min), months[0]);
 
   return {
-    twelveMonthTotal: Math.round(twelveMonthTotal * 100) / 100,
+    periodTotal: Math.round(periodTotal * 100) / 100,
     monthlyAverage,
     highestMonth,
     lowestMonth,

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTransactionData } from '../../contexts/TransactionDataContext';
 import { computeAnalyticsSummary, extractCategories } from './utils/analyticsAggregation';
-import type { AnalyticsSummary } from '../../types/analytics';
+import type { AnalyticsSummary, AnalyticsTimePeriod } from '../../types/analytics';
 
 interface AnalyticsData {
   summary: AnalyticsSummary | null;
@@ -9,12 +9,15 @@ interface AnalyticsData {
   loading: boolean;
 }
 
-export function useAnalyticsData(selectedCategory: string | null): AnalyticsData {
+export function useAnalyticsData(
+  selectedCategory: string | null,
+  timePeriod: AnalyticsTimePeriod = '12m',
+): AnalyticsData {
   const { allTransactions, transactionsLoading } = useTransactionData();
 
   const summary = useMemo(
-    () => computeAnalyticsSummary(allTransactions, selectedCategory),
-    [allTransactions, selectedCategory],
+    () => computeAnalyticsSummary(allTransactions, selectedCategory, timePeriod),
+    [allTransactions, selectedCategory, timePeriod],
   );
 
   const categories = useMemo(

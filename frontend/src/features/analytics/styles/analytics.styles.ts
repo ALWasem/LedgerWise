@@ -8,9 +8,17 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
   container: {
     flex: 1,
   },
-  contentContainer: {
+  stickyHeader: {
     paddingHorizontal: isNarrow ? 16 : 24,
     paddingTop: isNarrow ? 16 : 24,
+    paddingBottom: isNarrow ? 16 : 24,
+  },
+  scrollArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: isNarrow ? 16 : 24,
+    paddingTop: isNarrow ? 12 : 20,
     paddingBottom: 40,
   },
   ...pageHeaderDefs(deps),
@@ -27,76 +35,139 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
     fontSize: 15,
   },
 
+  // --- Page Header Row (title + dropdowns) ---
+  headerRow: {
+    flexDirection: isNarrow ? 'column' : 'row',
+    justifyContent: 'space-between',
+    alignItems: isNarrow ? 'flex-start' : 'center',
+    gap: isNarrow ? 12 : 0,
+  },
+  dropdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  // --- Dropdown Trigger (matches spending page button style) ---
+  dropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: deps.colors.surface.card,
+    borderWidth: 2,
+    borderColor: deps.colors.border.default,
+    borderRadius: radius.md,
+    ...deps.shadows.sm,
+  },
+  dropdownTriggerOpen: {
+    borderColor: deps.colors.purple[400],
+    backgroundColor: deps.colors.isDark ? deps.colors.purple[900] + '60' : deps.colors.purple[50],
+    ...deps.shadows.purple,
+  },
+  dropdownTriggerHovered: {
+    borderColor: deps.colors.purple[400],
+    backgroundColor: deps.colors.isDark ? deps.colors.purple[900] + '60' : deps.colors.purple[50],
+    ...deps.shadows.purple,
+  },
+  dropdownTriggerText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 14,
+    fontWeight: '500',
+    color: deps.colors.text.primary,
+  },
+  dropdownChevron: {
+    ...(Platform.OS === 'web' ? { transition: 'transform 0.2s ease' } : {}) as Record<string, unknown>,
+  },
+  dropdownChevronOpen: {
+    transform: [{ rotate: '180deg' }],
+  },
+  dropdownCategoryDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+
+  // --- Dropdown Menu (rendered inside a transparent Modal) ---
+  dropdownBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    minWidth: isNarrow ? 220 : 260,
+    backgroundColor: deps.colors.surface.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: deps.colors.border.default,
+    overflow: 'hidden',
+    ...deps.shadows.lg,
+  },
+  dropdownScroll: {
+    maxHeight: 400,
+  },
+
+  // --- Dropdown Item ---
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    gap: 12,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  dropdownItemSelected: {
+    backgroundColor: deps.colors.isDark ? deps.colors.purple[900] + '40' : deps.colors.purple[50],
+  },
+  dropdownItemHovered: {
+    backgroundColor: deps.colors.isDark ? deps.colors.purple[900] + '20' : deps.colors.purple[50] + '80',
+  },
+  dropdownItemActiveBorder: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: deps.colors.purple[600],
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+  dropdownItemIcon: {
+    marginRight: 2,
+  },
+  dropdownItemTextGroup: {
+    flex: 1,
+  },
+  dropdownItemLabel: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 15,
+    fontWeight: '600',
+    color: deps.colors.text.primary,
+  },
+  dropdownItemLabelSelected: {
+    color: deps.colors.isDark ? deps.colors.purple[300] : deps.colors.purple[700],
+  },
+  dropdownItemDescription: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 12,
+    color: deps.colors.text.tertiary,
+    marginTop: 2,
+  },
+  dropdownCategoryItemLabel: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 15,
+    fontWeight: '600',
+    color: deps.colors.text.primary,
+    flex: 1,
+  },
+
   // --- Summary Stats Row ---
   statsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: isNarrow ? 8 : 12,
-    marginBottom: isNarrow ? 16 : 24,
-  },
-
-  // --- Category Filter Pills ---
-  pillsCard: {
-    backgroundColor: deps.colors.surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: deps.colors.border.default,
-    padding: isNarrow ? 12 : 16,
-    marginBottom: isNarrow ? 16 : 24,
-    ...deps.shadows.md,
-  },
-  pillsLabel: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: 12,
-    fontWeight: '600',
-    color: deps.colors.text.tertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  pillsScroll: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radius.xl,
-    borderWidth: 1.5,
-    borderColor: deps.colors.border.default,
-    backgroundColor: deps.colors.surface.bg,
-    gap: 6,
-  },
-  pillSelected: {
-    backgroundColor: deps.colors.isDark ? deps.colors.purple[900] + '60' : deps.colors.purple[100],
-    borderColor: deps.colors.purple[500],
-  },
-  pillAllSelected: {
-    backgroundColor: deps.colors.purple[600],
-    borderColor: deps.colors.purple[600],
-  },
-  pillHovered: {
-    backgroundColor: deps.colors.surface.elevated,
-  },
-  pillText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: 13,
-    fontWeight: '600',
-    color: deps.colors.text.secondary,
-  },
-  pillTextSelected: {
-    color: deps.colors.isDark ? deps.colors.purple[300] : deps.colors.purple[700],
-  },
-  pillTextAllSelected: {
-    color: '#FFFFFF',
-  },
-  pillDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    marginBottom: isNarrow ? 20 : 28,
   },
 
   // --- Bar Chart ---

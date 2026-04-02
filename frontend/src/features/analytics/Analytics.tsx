@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTransactionData } from '../../contexts/TransactionDataContext';
@@ -9,44 +9,68 @@ import { getCategoryColor } from '../../utils/categoryColors';
 import StaggeredView from '../../components/StaggeredView';
 import { useAnalyticsData } from './useAnalyticsData';
 import SummaryStatsRow from './components/SummaryStatsRow';
-import CategoryFilterPills from './components/CategoryFilterPills';
+import TimePeriodDropdown from './components/TimePeriodDropdown';
+import CategoryDropdown from './components/CategoryDropdown';
 import BarChart from './components/BarChart';
+import type { AnalyticsTimePeriod } from '../../types/analytics';
+
+type OpenDropdown = 'none' | 'period' | 'category';
 
 export default function Analytics() {
   const { hasAccounts, accountsLoading } = useTransactionData();
   const colors = useColors();
   const styles = useThemeStyles(createAnalyticsStyles);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const { summary, categories, loading } = useAnalyticsData(selectedCategory);
+  const [timePeriod, setTimePeriod] = useState<AnalyticsTimePeriod>('12m');
+  const [openDropdown, setOpenDropdown] = useState<OpenDropdown>('none');
+  const { summary, categories, loading } = useAnalyticsData(selectedCategory, timePeriod);
 
   const categoryLabel = selectedCategory ?? 'All spending categories';
   const barColor = selectedCategory
     ? getCategoryColor(selectedCategory)
     : undefined;
 
+  const togglePeriodDropdown = useCallback(() => {
+    setOpenDropdown((prev) => (prev === 'period' ? 'none' : 'period'));
+  }, []);
+
+  const toggleCategoryDropdown = useCallback(() => {
+    setOpenDropdown((prev) => (prev === 'category' ? 'none' : 'category'));
+  }, []);
+
+  const showDropdowns = hasAccounts && !accountsLoading && !loading;
+
   if (accountsLoading || loading) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        <StaggeredView index={0}>
-          <View style={styles.pageHeader}>
-            <Text style={styles.pageTitle}>Analytics</Text>
-            <Text style={styles.pageSubtitle}>12-month spending trends</Text>
-          </View>
-        </StaggeredView>
+      <View style={styles.container}>
+        <View style={styles.stickyHeader}>
+          <StaggeredView index={0}>
+            <View style={styles.headerRow}>
+              <View>
+                <Text style={styles.pageTitle}>Analytics</Text>
+                <Text style={styles.pageSubtitle}>Track your spending trends over time</Text>
+              </View>
+            </View>
+          </StaggeredView>
+        </View>
         <ActivityIndicator size="large" color={colors.brand.primary} style={styles.spinner} />
-      </ScrollView>
+      </View>
     );
   }
 
   if (!hasAccounts) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        <StaggeredView index={0}>
-          <View style={styles.pageHeader}>
-            <Text style={styles.pageTitle}>Analytics</Text>
-            <Text style={styles.pageSubtitle}>12-month spending trends</Text>
-          </View>
-        </StaggeredView>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.stickyHeader}>
+          <StaggeredView index={0}>
+            <View style={styles.headerRow}>
+              <View>
+                <Text style={styles.pageTitle}>Analytics</Text>
+                <Text style={styles.pageSubtitle}>Track your spending trends over time</Text>
+              </View>
+            </View>
+          </StaggeredView>
+        </View>
         <StaggeredView index={1}>
           <View style={styles.placeholderCard}>
             <View style={styles.placeholderIconContainer}>
@@ -64,50 +88,69 @@ export default function Analytics() {
 
   if (!summary) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        <StaggeredView index={0}>
-          <View style={styles.pageHeader}>
-            <Text style={styles.pageTitle}>Analytics</Text>
-            <Text style={styles.pageSubtitle}>12-month spending trends</Text>
-          </View>
-        </StaggeredView>
+      <View style={styles.container}>
+        <View style={styles.stickyHeader}>
+          <StaggeredView index={0}>
+            <View style={styles.headerRow}>
+              <View>
+                <Text style={styles.pageTitle}>Analytics</Text>
+                <Text style={styles.pageSubtitle}>Track your spending trends over time</Text>
+              </View>
+            </View>
+          </StaggeredView>
+        </View>
         <Text style={styles.emptyText}>No spending data available.</Text>
-      </ScrollView>
+      </View>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      <StaggeredView index={0}>
-        <View style={styles.pageHeader}>
-          <Text style={styles.pageTitle}>Analytics</Text>
-          <Text style={styles.pageSubtitle}>12-month spending trends</Text>
-        </View>
-      </StaggeredView>
+    <View style={styles.container}>
+      <View style={styles.stickyHeader}>
+        <StaggeredView index={0}>
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.pageTitle}>Analytics</Text>
+              <Text style={styles.pageSubtitle}>Track your spending trends over time</Text>
+            </View>
+            {showDropdowns && (
+              <View style={styles.dropdownRow}>
+                <CategoryDropdown
+                  categories={categories}
+                  selected={selectedCategory}
+                  onSelect={setSelectedCategory}
+                  isOpen={openDropdown === 'category'}
+                  onToggle={toggleCategoryDropdown}
+                />
+                <TimePeriodDropdown
+                  selected={timePeriod}
+                  onSelect={setTimePeriod}
+                  isOpen={openDropdown === 'period'}
+                  onToggle={togglePeriodDropdown}
+                />
+              </View>
+            )}
+          </View>
+        </StaggeredView>
+      </View>
 
-      <StaggeredView index={1}>
-        <SummaryStatsRow summary={summary} />
-      </StaggeredView>
+      <ScrollView
+        style={styles.scrollArea}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <StaggeredView index={1}>
+          <SummaryStatsRow summary={summary} timePeriod={timePeriod} />
+        </StaggeredView>
 
-      <StaggeredView index={2}>
-        <CategoryFilterPills
-          categories={categories}
-          selected={selectedCategory}
-          onSelect={setSelectedCategory}
-        />
-      </StaggeredView>
-
-      <StaggeredView index={3}>
-        <BarChart
-          months={summary.months}
-          categoryLabel={categoryLabel}
-          barColor={barColor}
-        />
-      </StaggeredView>
-    </ScrollView>
+        <StaggeredView index={2}>
+          <BarChart
+            months={summary.months}
+            categoryLabel={categoryLabel}
+            barColor={barColor}
+          />
+        </StaggeredView>
+      </ScrollView>
+    </View>
   );
 }

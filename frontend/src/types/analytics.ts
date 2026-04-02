@@ -5,8 +5,10 @@ export interface MonthlyAggregate {
   total: number;
 }
 
+export type AnalyticsTimePeriod = '6m' | '12m' | 'ytd' | 'all';
+
 export interface AnalyticsSummary {
-  twelveMonthTotal: number;
+  periodTotal: number;
   monthlyAverage: number;
   highestMonth: MonthlyAggregate;
   lowestMonth: MonthlyAggregate;

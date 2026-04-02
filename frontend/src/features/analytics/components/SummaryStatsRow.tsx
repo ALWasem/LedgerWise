@@ -3,18 +3,26 @@ import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createAnalyticsStyles } from '../styles/analytics.styles';
 import StatCard from '../../../components/StatCard';
-import type { AnalyticsSummary } from '../../../types/analytics';
+import type { AnalyticsSummary, AnalyticsTimePeriod } from '../../../types/analytics';
 
 const FULL_MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+const PERIOD_LABELS: Record<AnalyticsTimePeriod, string> = {
+  '6m': '6-Month Total',
+  '12m': '12-Month Total',
+  'ytd': 'Year to Date',
+  'all': 'All-Time Total',
+};
+
 interface Props {
   summary: AnalyticsSummary;
+  timePeriod: AnalyticsTimePeriod;
 }
 
-export default function SummaryStatsRow({ summary }: Props) {
+export default function SummaryStatsRow({ summary, timePeriod }: Props) {
   const colors = useColors();
   const styles = useThemeStyles(createAnalyticsStyles);
 
@@ -24,8 +32,8 @@ export default function SummaryStatsRow({ summary }: Props) {
   return (
     <View style={styles.statsRow}>
       <StatCard
-        value={`$${summary.twelveMonthTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-        subtitle="12-Month Total"
+        value={`$${summary.periodTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+        subtitle={PERIOD_LABELS[timePeriod]}
         icon="trending-up"
         iconColor={iconColor}
         iconBgColor={iconBg}
