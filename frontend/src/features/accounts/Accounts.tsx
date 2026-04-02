@@ -1,10 +1,15 @@
-import { useCallback, useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Platform, ScrollView, Text, View } from 'react-native';
 import { useThemeStyles } from '../../hooks/useThemeStyles';
 import { createAccountsStyles } from './styles/accounts.styles';
 import { useTransactionData } from '../../contexts/TransactionDataContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useColors } from '../../contexts/ThemeContext';
+import { useTellerConnect } from '../../hooks/useTellerConnect';
+import { enrollAccount } from '../../api/client';
 import type { Account } from '../../types/account';
 import StaggeredView from '../../components/StaggeredView';
+import TellerModal from '../../components/TellerModal';
 import AccountCard from './components/AccountCard';
 import StatsSummary from './components/StatsSummary';
 import AddAccountCard from './components/AddAccountCard';
@@ -22,12 +27,36 @@ function pairUp<T>(items: T[]): T[][] {
 
 export default function Accounts() {
   const styles = useThemeStyles(createAccountsStyles);
-  const { accounts } = useTransactionData();
+  const { accounts, accountsLoading, refresh } = useTransactionData();
+  const { session } = useAuth();
+  const token = session?.access_token ?? null;
+  const colors = useColors();
   const [accountToRemove, setAccountToRemove] = useState<Account | null>(null);
+  const [enrolling, setEnrolling] = useState(false);
+  const [tellerError, setTellerError] = useState<string | null>(null);
 
-  const handleAddAccount = useCallback(() => {
-    // Will open Teller Connect in iteration 2
-  }, []);
+  const {
+    showWebView, tellerSource,
+    openTellerConnect, handleWebViewMessage, closeWebView,
+  } = useTellerConnect(
+    async (accessToken: string) => {
+      setTellerError(null);
+      setEnrolling(true);
+      try {
+        await enrollAccount(token!, accessToken);
+        refresh();
+      } catch (err) {
+        setTellerError(
+          err instanceof Error ? err.message : 'Failed to enroll account',
+        );
+      } finally {
+        setEnrolling(false);
+      }
+    },
+    setTellerError,
+  );
+
+  const handleAddAccount = openTellerConnect;
 
   const cardRows = useMemo(() => {
     const items: ({ type: 'account'; account: Account } | { type: 'add' })[] = [
@@ -50,7 +79,28 @@ export default function Accounts() {
             </Text>
           </View>
         </StaggeredView>
-        <EmptyState onConnect={handleAddAccount} />
+
+        {(accountsLoading || enrolling) ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.brand.primary} />
+            {enrolling && (
+              <Text style={styles.loadingText}>Syncing your accounts...</Text>
+            )}
+          </View>
+        ) : (
+          <EmptyState onConnect={handleAddAccount} />
+        )}
+
+        {tellerError && <Text style={styles.errorText}>{tellerError}</Text>}
+
+        {Platform.OS !== 'web' && (
+          <TellerModal
+            visible={showWebView}
+            tellerSource={tellerSource}
+            onMessage={handleWebViewMessage}
+            onClose={closeWebView}
+          />
+        )}
       </ScrollView>
     );
   }
@@ -96,10 +146,30 @@ export default function Accounts() {
         </StaggeredView>
       ))}
 
+      {enrolling && (
+        <StaggeredView index={cardRows.length + 2}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.brand.primary} />
+            <Text style={styles.loadingText}>Syncing your accounts...</Text>
+          </View>
+        </StaggeredView>
+      )}
+
+      {tellerError && <Text style={styles.errorText}>{tellerError}</Text>}
+
       {accountToRemove && (
         <RemoveAccountDialog
           account={accountToRemove}
           onClose={() => setAccountToRemove(null)}
+        />
+      )}
+
+      {Platform.OS !== 'web' && (
+        <TellerModal
+          visible={showWebView}
+          tellerSource={tellerSource}
+          onMessage={handleWebViewMessage}
+          onClose={closeWebView}
         />
       )}
     </ScrollView>

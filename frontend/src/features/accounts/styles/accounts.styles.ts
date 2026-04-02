@@ -208,6 +208,29 @@ export const createAccountsStyles = (deps: StyleDeps) => StyleSheet.create({
     lineHeight: 19,
   },
 
+  // --- Loading / Error ---
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: isNarrow ? 60 : 80,
+  },
+  loadingText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 15,
+    fontWeight: '500',
+    color: deps.colors.text.secondary,
+    marginTop: 16,
+  },
+  errorText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 14,
+    fontWeight: '500',
+    color: deps.colors.semantic.error,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+
   // --- Empty State ---
   emptyContainer: {
     flex: 1,
