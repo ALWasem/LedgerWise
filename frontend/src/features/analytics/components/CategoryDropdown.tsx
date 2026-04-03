@@ -1,11 +1,14 @@
 import { useCallback, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Dimensions, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createAnalyticsStyles } from '../styles/analytics.styles';
 import { getCategoryColor } from '../../../utils/categoryColors';
 import { isHovered } from '../../../utils/pressable';
+import { isNarrow } from '../../../utils/responsive';
+
+const MENU_WIDTH = isNarrow ? 220 : 260;
 
 interface Props {
   categories: string[];
@@ -19,16 +22,20 @@ export default function CategoryDropdown({ categories, selected, onSelect, isOpe
   const colors = useColors();
   const styles = useThemeStyles(createAnalyticsStyles);
   const triggerRef = useRef<View>(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
 
-  const displayLabel = selected ?? 'All Categories';
+  const displayLabel = selected ?? 'All categories';
 
   const handleOpen = useCallback(() => {
     if (triggerRef.current) {
       triggerRef.current.measureInWindow((x, y, width, height) => {
+        // Right-align menu to the trigger's right edge, with screen padding
+        const screenWidth = Dimensions.get('window').width;
+        const menuLeft = x + width - MENU_WIDTH;
+        const maxLeft = screenWidth - MENU_WIDTH - 16;
         setMenuPos({
           top: y + height + 6,
-          right: typeof window !== 'undefined' ? window.innerWidth - (x + width) : 16,
+          left: Math.max(8, Math.min(menuLeft, maxLeft)),
         });
         onToggle();
       });
@@ -77,7 +84,7 @@ export default function CategoryDropdown({ categories, selected, onSelect, isOpe
           accessibilityLabel="Close dropdown"
         />
         <View
-          style={[styles.dropdownMenu, { top: menuPos.top, right: menuPos.right }]}
+          style={[styles.dropdownMenu, { top: menuPos.top, left: menuPos.left, width: MENU_WIDTH }]}
           pointerEvents="box-none"
         >
           <ScrollView bounces={false} style={styles.dropdownScroll}>

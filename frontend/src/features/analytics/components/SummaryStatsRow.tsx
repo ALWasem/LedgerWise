@@ -5,16 +5,11 @@ import { createAnalyticsStyles } from '../styles/analytics.styles';
 import StatCard from '../../../components/StatCard';
 import type { AnalyticsSummary, AnalyticsTimePeriod } from '../../../types/analytics';
 
-const FULL_MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
 const PERIOD_LABELS: Record<AnalyticsTimePeriod, string> = {
-  '6m': '6-Month Total',
-  '12m': '12-Month Total',
-  'ytd': 'Year to Date',
-  'all': 'All-Time Total',
+  '6m': '6-month total',
+  '12m': '12-month total',
+  'ytd': 'Year to date',
+  'all': 'All-time total',
 };
 
 interface Props {
@@ -32,23 +27,16 @@ export default function SummaryStatsRow({ summary, timePeriod }: Props) {
   return (
     <View style={styles.statsRow}>
       <StatCard
-        value={`$${summary.periodTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+        value={`$${summary.periodTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
         subtitle={PERIOD_LABELS[timePeriod]}
         icon="trending-up"
         iconColor={iconColor}
         iconBgColor={iconBg}
       />
       <StatCard
-        value={`$${summary.monthlyAverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-        subtitle="Monthly Average"
+        value={`$${summary.monthlyAverage.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+        subtitle="Monthly avg"
         icon="calendar-outline"
-        iconColor={iconColor}
-        iconBgColor={iconBg}
-      />
-      <StatCard
-        value={FULL_MONTHS[summary.highestMonth.month]}
-        subtitle={`$${summary.highestMonth.total.toLocaleString(undefined, { minimumFractionDigits: 2 })} · Highest`}
-        icon="bar-chart-outline"
         iconColor={iconColor}
         iconBgColor={iconBg}
       />

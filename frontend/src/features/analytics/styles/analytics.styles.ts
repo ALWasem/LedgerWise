@@ -9,16 +9,23 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
     flex: 1,
   },
   stickyHeader: {
+    backgroundColor: deps.colors.surface.bg,
+    zIndex: 2,
     paddingHorizontal: isNarrow ? 16 : 24,
     paddingTop: isNarrow ? 16 : 24,
     paddingBottom: isNarrow ? 16 : 24,
   },
+  headerGradient: {
+    height: 20,
+    zIndex: 1,
+  },
   scrollArea: {
     flex: 1,
+    marginTop: -20,
   },
   scrollContent: {
     paddingHorizontal: isNarrow ? 16 : 24,
-    paddingTop: isNarrow ? 12 : 20,
+    paddingTop: 20,
     paddingBottom: 40,
   },
   ...pageHeaderDefs(deps),
@@ -35,19 +42,12 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
     fontSize: 15,
   },
 
-  // --- Page Header Row (title + dropdowns) ---
+  // --- Page Header Row (title + category dropdown) ---
   headerRow: {
-    flexDirection: isNarrow ? 'column' : 'row',
-    justifyContent: 'space-between',
-    alignItems: isNarrow ? 'flex-start' : 'center',
-    gap: isNarrow ? 12 : 0,
-  },
-  dropdownRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 12,
   },
-
   // --- Dropdown Trigger (matches spending page button style) ---
   dropdownTrigger: {
     flexDirection: 'row',
@@ -95,7 +95,6 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
   },
   dropdownMenu: {
     position: 'absolute',
-    minWidth: isNarrow ? 220 : 260,
     backgroundColor: deps.colors.surface.card,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -133,26 +132,8 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
     borderTopRightRadius: 2,
     borderBottomRightRadius: 2,
   },
-  dropdownItemIcon: {
-    marginRight: 2,
-  },
-  dropdownItemTextGroup: {
-    flex: 1,
-  },
-  dropdownItemLabel: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: 15,
-    fontWeight: '600',
-    color: deps.colors.text.primary,
-  },
   dropdownItemLabelSelected: {
     color: deps.colors.isDark ? deps.colors.purple[300] : deps.colors.purple[700],
-  },
-  dropdownItemDescription: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
-    color: deps.colors.text.tertiary,
-    marginTop: 2,
   },
   dropdownCategoryItemLabel: {
     fontFamily: typography.fontFamily.semiBold,
@@ -246,6 +227,7 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
   },
   barColumn: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingHorizontal: isNarrow ? 1 : 2,
@@ -276,9 +258,11 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
   xAxis: {
     flexDirection: 'row',
     paddingLeft: isNarrow ? 32 : 44,
+    overflow: 'hidden',
   },
   xAxisLabel: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
   },
   monthLabel: {
@@ -294,44 +278,35 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
     fontWeight: '700',
   },
 
-  // --- Chart Footer ---
-  chartFooter: {
+  // --- Time Period Pills (below chart) ---
+  pillRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: isNarrow ? 12 : 16,
-    paddingTop: isNarrow ? 12 : 16,
+    justifyContent: 'center',
+    gap: 16,
+    marginTop: 20,
+    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: deps.colors.border.default,
   },
-  chartLegend: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  pill: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
   },
-  chartLegendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 3,
-    backgroundColor: deps.colors.purple[600],
+  pillSelected: {
+    backgroundColor: deps.colors.isDark ? deps.colors.purple[800] : deps.colors.purple[600],
   },
-  chartLegendText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: 13,
-    fontWeight: '500',
-    color: deps.colors.text.secondary,
+  pillHovered: {
+    backgroundColor: deps.colors.isDark ? deps.colors.purple[900] + '40' : deps.colors.purple[50],
   },
-  chartRangeLabel: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 12,
-    color: deps.colors.text.tertiary,
-    marginBottom: 2,
-  },
-  chartRangeValue: {
-    ...typography.amount,
+  pillText: {
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: 14,
-    fontWeight: '700',
-    color: deps.colors.text.primary,
-    textAlign: 'right',
+    fontWeight: '600',
+    color: deps.colors.text.tertiary,
+  },
+  pillTextSelected: {
+    color: '#FFFFFF',
   },
 });

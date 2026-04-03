@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTransactionData } from '../../contexts/TransactionDataContext';
 import { useColors } from '../../contexts/ThemeContext';
@@ -9,12 +10,11 @@ import { getCategoryColor } from '../../utils/categoryColors';
 import StaggeredView from '../../components/StaggeredView';
 import { useAnalyticsData } from './useAnalyticsData';
 import SummaryStatsRow from './components/SummaryStatsRow';
-import TimePeriodDropdown from './components/TimePeriodDropdown';
 import CategoryDropdown from './components/CategoryDropdown';
 import BarChart from './components/BarChart';
 import type { AnalyticsTimePeriod } from '../../types/analytics';
 
-type OpenDropdown = 'none' | 'period' | 'category';
+type OpenDropdown = 'none' | 'category';
 
 export default function Analytics() {
   const { hasAccounts, accountsLoading } = useTransactionData();
@@ -30,10 +30,6 @@ export default function Analytics() {
     ? getCategoryColor(selectedCategory)
     : undefined;
 
-  const togglePeriodDropdown = useCallback(() => {
-    setOpenDropdown((prev) => (prev === 'period' ? 'none' : 'period'));
-  }, []);
-
   const toggleCategoryDropdown = useCallback(() => {
     setOpenDropdown((prev) => (prev === 'category' ? 'none' : 'category'));
   }, []);
@@ -48,7 +44,7 @@ export default function Analytics() {
             <View style={styles.headerRow}>
               <View>
                 <Text style={styles.pageTitle}>Analytics</Text>
-                <Text style={styles.pageSubtitle}>Track your spending trends over time</Text>
+                <Text style={styles.pageSubtitle}>Track your spending trends</Text>
               </View>
             </View>
           </StaggeredView>
@@ -66,7 +62,7 @@ export default function Analytics() {
             <View style={styles.headerRow}>
               <View>
                 <Text style={styles.pageTitle}>Analytics</Text>
-                <Text style={styles.pageSubtitle}>Track your spending trends over time</Text>
+                <Text style={styles.pageSubtitle}>Track your spending trends</Text>
               </View>
             </View>
           </StaggeredView>
@@ -94,7 +90,7 @@ export default function Analytics() {
             <View style={styles.headerRow}>
               <View>
                 <Text style={styles.pageTitle}>Analytics</Text>
-                <Text style={styles.pageSubtitle}>Track your spending trends over time</Text>
+                <Text style={styles.pageSubtitle}>Track your spending trends</Text>
               </View>
             </View>
           </StaggeredView>
@@ -111,28 +107,25 @@ export default function Analytics() {
           <View style={styles.headerRow}>
             <View>
               <Text style={styles.pageTitle}>Analytics</Text>
-              <Text style={styles.pageSubtitle}>Track your spending trends over time</Text>
+              <Text style={styles.pageSubtitle}>Track your spending trends</Text>
             </View>
             {showDropdowns && (
-              <View style={styles.dropdownRow}>
-                <CategoryDropdown
-                  categories={categories}
-                  selected={selectedCategory}
-                  onSelect={setSelectedCategory}
-                  isOpen={openDropdown === 'category'}
-                  onToggle={toggleCategoryDropdown}
-                />
-                <TimePeriodDropdown
-                  selected={timePeriod}
-                  onSelect={setTimePeriod}
-                  isOpen={openDropdown === 'period'}
-                  onToggle={togglePeriodDropdown}
-                />
-              </View>
+              <CategoryDropdown
+                categories={categories}
+                selected={selectedCategory}
+                onSelect={setSelectedCategory}
+                isOpen={openDropdown === 'category'}
+                onToggle={toggleCategoryDropdown}
+              />
             )}
           </View>
         </StaggeredView>
       </View>
+      <LinearGradient
+        colors={[colors.surface.bg, colors.surface.bg + '00']}
+        style={styles.headerGradient}
+        pointerEvents="none"
+      />
 
       <ScrollView
         style={styles.scrollArea}
@@ -148,6 +141,8 @@ export default function Analytics() {
             months={summary.months}
             categoryLabel={categoryLabel}
             barColor={barColor}
+            timePeriod={timePeriod}
+            onTimePeriodChange={setTimePeriod}
           />
         </StaggeredView>
       </ScrollView>

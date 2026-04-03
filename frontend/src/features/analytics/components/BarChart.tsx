@@ -5,7 +5,8 @@ import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createAnalyticsStyles } from '../styles/analytics.styles';
 import { isNarrow } from '../../../utils/responsive';
-import type { MonthlyAggregate } from '../../../types/analytics';
+import TimePeriodPills from './TimePeriodPills';
+import type { MonthlyAggregate, AnalyticsTimePeriod } from '../../../types/analytics';
 
 /** Must match plotArea height in analytics.styles.ts */
 const PLOT_HEIGHT = isNarrow ? 160 : 220;
@@ -17,6 +18,8 @@ interface Props {
   months: MonthlyAggregate[];
   categoryLabel: string;
   barColor?: string;
+  timePeriod: AnalyticsTimePeriod;
+  onTimePeriodChange: (period: AnalyticsTimePeriod) => void;
 }
 
 function formatAmount(value: number): string {
@@ -24,25 +27,17 @@ function formatAmount(value: number): string {
   return `$${Math.round(value)}`;
 }
 
-export default function BarChart({ months, categoryLabel, barColor }: Props) {
+export default function BarChart({ months, categoryLabel, barColor, timePeriod, onTimePeriodChange }: Props) {
   const colors = useColors();
   const styles = useThemeStyles(createAnalyticsStyles);
   const [activeBar, setActiveBar] = useState<number | null>(null);
 
-  const maxValue = Math.max(...months.map((m) => m.total), 1);
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
-
-  const minMonth = months.reduce((min, m) => (m.total < min.total ? m : min), months[0]);
-  const maxMonth = months.reduce((max, m) => (m.total > max.total ? m : max), months[0]);
-
-  // Date range label
-  const first = months[0];
-  const last = months[months.length - 1];
-  const dateLabel = `${first.label} ${first.year} \u2013 ${last.label} ${last.year}`;
+  const peakTotal = Math.max(...months.map((m) => m.total), 1);
 
   // Grid step rounded to a nice number
-  const rawStep = maxValue / GRID_LINES;
+  const rawStep = peakTotal / GRID_LINES;
   const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
   const gridStep = Math.ceil(rawStep / magnitude) * magnitude;
   const gridMax = gridStep * GRID_LINES;
@@ -52,7 +47,7 @@ export default function BarChart({ months, categoryLabel, barColor }: Props) {
       {/* Header */}
       <View style={styles.chartHeader}>
         <View>
-          <Text style={styles.chartTitle}>{months.length}-Month Spending Trend</Text>
+          <Text style={styles.chartTitle}>Monthly spending trend</Text>
           <Text style={styles.chartSubtitle}>{categoryLabel}</Text>
         </View>
         {!isNarrow && (
@@ -62,7 +57,9 @@ export default function BarChart({ months, categoryLabel, barColor }: Props) {
               size={14}
               color={colors.isDark ? colors.purple[400] : colors.purple[600]}
             />
-            <Text style={styles.chartDateText}>{dateLabel}</Text>
+            <Text style={styles.chartDateText}>
+              {months[0].label} {months[0].year} – {months[months.length - 1].label} {months[months.length - 1].year}
+            </Text>
           </View>
         )}
       </View>
@@ -131,14 +128,16 @@ export default function BarChart({ months, categoryLabel, barColor }: Props) {
       <View style={styles.xAxis}>
         {months.map((month, index) => {
           const isCurrent = month.month === currentMonth && month.year === currentYear;
-          // Skip every other label when there are many months to avoid overlap
           const skipLabel = months.length > 14 && index % 2 !== 0 && !isCurrent;
           return (
             <View key={`label-${month.year}-${month.month}`} style={styles.xAxisLabel}>
-              <Text style={[
-                styles.monthLabel,
-                isCurrent && styles.monthLabelHighlight,
-              ]}>
+              <Text
+                style={[
+                  styles.monthLabel,
+                  isCurrent && styles.monthLabelHighlight,
+                ]}
+                numberOfLines={1}
+              >
                 {skipLabel ? '' : month.label}
               </Text>
             </View>
@@ -146,22 +145,7 @@ export default function BarChart({ months, categoryLabel, barColor }: Props) {
         })}
       </View>
 
-      {/* Footer */}
-      <View style={styles.chartFooter}>
-        <View style={styles.chartLegend}>
-          <View style={[
-            styles.chartLegendDot,
-            barColor ? { backgroundColor: barColor } : undefined,
-          ]} />
-          <Text style={styles.chartLegendText}>Monthly Spending</Text>
-        </View>
-        <View>
-          <Text style={styles.chartRangeLabel}>Spending Range</Text>
-          <Text style={styles.chartRangeValue}>
-            {formatAmount(minMonth.total)} - {formatAmount(maxMonth.total)}
-          </Text>
-        </View>
-      </View>
+      <TimePeriodPills selected={timePeriod} onSelect={onTimePeriodChange} />
     </View>
   );
 }
