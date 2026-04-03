@@ -78,31 +78,42 @@ export default function useCategorizeData() {
 
   const assignToCategory = useCallback(
     (transactionId: string, categoryName: string) => {
-      // Optimistic update — move transaction out of uncategorized immediately
+      // Find the original category before any updates (needed for revert on failure)
+      const originalTx = allTransactions.find((tx) => tx.id === transactionId);
+      const originalCategory = originalTx?.category ?? '';
+
+      // Optimistic update — update both local tracking and global state immediately
       setReassigned((prev) => {
         const next = new Map(prev);
         next.set(transactionId, categoryName);
         return next;
       });
+      updateTransactionLocally(transactionId, { category: categoryName });
 
-      // Persist to backend and update global transaction state
+      // Persist to backend
       if (token) {
         updateTransactionCategory(token, transactionId, categoryName)
           .then(() => {
-            // Update the global context so the change persists across navigation
-            updateTransactionLocally(transactionId, { category: categoryName });
-          })
-          .catch(() => {
-            // Revert optimistic update on failure
+            // Success — clean up reassigned entry (global state is already correct)
             setReassigned((prev) => {
               const next = new Map(prev);
               next.delete(transactionId);
               return next;
             });
+          })
+          .catch((err) => {
+            console.error('Failed to update transaction category:', err);
+            // Revert both optimistic updates on failure
+            setReassigned((prev) => {
+              const next = new Map(prev);
+              next.delete(transactionId);
+              return next;
+            });
+            updateTransactionLocally(transactionId, { category: originalCategory });
           });
       }
     },
-    [token, updateTransactionLocally],
+    [token, allTransactions, updateTransactionLocally],
   );
 
   // Search/filter
