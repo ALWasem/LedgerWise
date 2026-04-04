@@ -16,6 +16,9 @@ frontend/.expo/
 frontend/dist/
 frontend/web-build/
 
+# Claude Code (local settings are personal, skills are shared)
+.claude/settings.local.json
+
 # General
 .DS_Store
 *.log
