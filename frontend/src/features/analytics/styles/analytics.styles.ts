@@ -231,6 +231,7 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
     justifyContent: 'flex-end',
     paddingHorizontal: isNarrow ? 1 : 2,
     overflow: 'visible',
+    zIndex: 1,
   },
   bar: {
     width: '100%' as unknown as number,
@@ -245,15 +246,21 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
     borderTopRightRadius: radius.sm,
     backgroundColor: deps.colors.isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.15)',
   },
+  barTooltipWrapper: {
+    position: 'absolute',
+    width: isNarrow ? 72 : 88,
+    marginLeft: isNarrow ? -36 : -44,
+    left: '50%' as unknown as number,
+    alignItems: 'center',
+    zIndex: 10,
+  },
   barTooltip: {
-    marginBottom: 6,
     backgroundColor: deps.colors.surface.elevated,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: deps.colors.border.default,
-    zIndex: 10,
     ...deps.shadows.md,
   },
   barTooltipText: {
@@ -261,7 +268,6 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
     fontSize: isNarrow ? 11 : 13,
     fontWeight: '600',
     color: deps.colors.text.primary,
-    textAlign: 'center',
   },
   barTooltipArrow: {
     alignSelf: 'center',

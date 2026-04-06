@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -8,6 +8,7 @@ import Animated, {
   withSpring,
   Easing,
 } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createAnalyticsStyles } from '../styles/analytics.styles';
 
@@ -62,6 +63,9 @@ function AnimatedBar({
   const hasAnimatedOnce = useRef(false);
 
   const handlePress = useCallback(() => {
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     onPress(index);
   }, [onPress, index]);
 
@@ -113,11 +117,12 @@ function AnimatedBar({
   const tooltipAnimatedStyle = useAnimatedStyle(() => ({
     opacity: tooltipOpacity.value,
     transform: [{ scale: tooltipScale.value }],
+    bottom: barHeight.value + 8,
   }));
 
   return (
     <Pressable
-      style={styles.barColumn}
+      style={[styles.barColumn, isActive && { zIndex: 10 }]}
       onPressIn={handlePress}
       onPressOut={onPressOut}
       onHoverIn={handlePress}
@@ -127,9 +132,9 @@ function AnimatedBar({
     >
       {/* Tooltip */}
       {total > 0 && (
-        <Animated.View style={tooltipAnimatedStyle} pointerEvents="none">
+        <Animated.View style={[styles.barTooltipWrapper, tooltipAnimatedStyle]} pointerEvents="none">
           <View style={styles.barTooltip}>
-            <Text style={styles.barTooltipText}>
+            <Text style={styles.barTooltipText} numberOfLines={1}>
               {tooltipFormatter.format(total)}
             </Text>
           </View>

@@ -23,9 +23,10 @@ export const createMobileCategorizeStyles = (deps: StyleDeps) => StyleSheet.crea
   },
   title: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: deps.colors.text.primary,
+    letterSpacing: -0.96,
   },
   subtitle: {
     fontFamily: typography.fontFamily.medium,
