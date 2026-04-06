@@ -118,6 +118,8 @@ Work through each section in order. For every issue found, fix it — don't just
 - `runOnJS` sparingly — only for callbacks that must touch React state
 - No heavy computation in gesture event handlers — use pre-computed layout measurements
 - `LayoutAnimation` does not work on web — use Reanimated layout transitions instead
+- **Never use React `setState` for values that change during gestures** (hover target, drag position, active index). Every `setState` during a pan/drag causes a full re-render cycle on the JS thread, competing with the gesture for frame time and causing visible jank. Use `useSharedValue` for any state that changes on every frame or on hover transitions, and derive all visual changes via `useAnimatedStyle` / `useAnimatedReaction` / `interpolateColor`. Reserve `setState` for discrete, non-frame-critical events only (drag start/end, overlay mount/unmount).
+- When converting `isActive`-style boolean props to shared values: use a single `activeTileSV: SharedValue<number>` (index, -1 = none) at the parent, pass it to each child, and let each child derive `active = activeTileSV.value === myIndex` inside `useAnimatedStyle`. This eliminates re-renders of all siblings when only one tile's hover state changes.
 
 ### 12. Style Hygiene
 - **No inline style objects** — extract to `StyleSheet.create()` in the appropriate styles file

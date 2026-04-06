@@ -35,11 +35,13 @@ export default function useCategorizeDrag(
   categories: CategoryInfo[],
   onAssign: (transactionId: string, categoryName: string) => void,
 ) {
-  // React state for discrete events (hover changes only fire on actual transitions)
+  // React state for discrete events
   const [isDragging, setIsDragging] = useState(false);
   const [draggedTransaction, setDraggedTransaction] = useState<Transaction | null>(null);
-  const [activeTileIndex, setActiveTileIndex] = useState<number | null>(null);
   const [overlayVisible, setOverlayVisible] = useState(false);
+
+  // Shared value for active tile — drives animations on UI thread without React re-renders
+  const activeTileSV = useSharedValue(-1);
 
   // Shared values for UI-thread position tracking
   const dragX = useSharedValue(0);
@@ -98,7 +100,7 @@ export default function useCategorizeDrag(
       }
       if (prevTile !== null) {
         activeTileRef.current = null;
-        setActiveTileIndex(null);
+        activeTileSV.value = -1;
       }
       return;
     }
@@ -113,7 +115,7 @@ export default function useCategorizeDrag(
       if (bounds && pointInBounds(absX, absY, bounds)) {
         if (prevTile !== i) {
           activeTileRef.current = i;
-          setActiveTileIndex(i);
+          activeTileSV.value = i;
           triggerLightHaptic();
         }
         return;
@@ -122,9 +124,9 @@ export default function useCategorizeDrag(
 
     if (prevTile !== null) {
       activeTileRef.current = null;
-      setActiveTileIndex(null);
+      activeTileSV.value = -1;
     }
-  }, [cancelHoverSV, triggerLightHaptic]);
+  }, [activeTileSV, cancelHoverSV, triggerLightHaptic]);
 
   const triggerSuccessHaptic = useCallback(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -135,12 +137,12 @@ export default function useCategorizeDrag(
     activeTileRef.current = null;
     cancelRef.current = false;
     cancelHoverSV.value = 0;
+    activeTileSV.value = -1;
     setPulsingTileIndex(null);
     setIsDragging(false);
     setDraggedTransaction(null);
-    setActiveTileIndex(null);
     setOverlayVisible(false);
-  }, [cancelHoverSV]);
+  }, [cancelHoverSV, activeTileSV]);
 
   // Reverse grid→list crossfade + clean up
   const reverseToList = useCallback(() => {
@@ -196,7 +198,7 @@ export default function useCategorizeDrag(
     setOverlayVisible(true);
     activeTileRef.current = null;
     cancelRef.current = false;
-    setActiveTileIndex(null);
+    activeTileSV.value = -1;
     cancelHoverSV.value = 0;
   }, [dragX, dragY, isDragActive, dragCardScale, sourceRowOpacity, sourceRowScale, listOpacity, listScale, gridOpacity, gridScale, gridTranslateY, cancelHoverSV]);
 
@@ -259,7 +261,7 @@ export default function useCategorizeDrag(
   return {
     isDragging,
     draggedTransaction,
-    activeTileIndex,
+    activeTileSV,
     overlayVisible,
     pulsingTileIndex,
     dragX,

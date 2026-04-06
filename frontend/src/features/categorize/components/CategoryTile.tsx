@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { LayoutChangeEvent, Text, View } from 'react-native';
+import { LayoutChangeEvent, View } from 'react-native';
 import Animated, {
+  interpolateColor,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withSequence,
   withSpring,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
+import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createMobileCategorizeStyles } from '../styles/mobileCategorize.styles';
 import { HOVER_SPRING } from '../useCategorizeDrag';
@@ -21,13 +25,14 @@ const HOVER_SCALE = 1.08;
 interface Props {
   category: CategoryInfo;
   index: number;
-  isActive: boolean;
+  activeTileSV: SharedValue<number>;
   isPulsing: boolean;
   onLayout: (index: number, pageX: number, pageY: number, width: number, height: number) => void;
 }
 
-export default function CategoryTile({ category, index, isActive, isPulsing, onLayout }: Props) {
+export default function CategoryTile({ category, index, activeTileSV, isPulsing, onLayout }: Props) {
   const styles = useThemeStyles(createMobileCategorizeStyles);
+  const colors = useColors();
   const wrapperRef = useRef<View>(null);
 
   // Per-tile scale shared value
@@ -44,10 +49,15 @@ export default function CategoryTile({ category, index, isActive, isPulsing, onL
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Drive scale spring from isActive prop
-  useEffect(() => {
-    hoverScale.value = withSpring(isActive ? HOVER_SCALE : 1, HOVER_SPRING);
-  }, [isActive, hoverScale]);
+  // Drive scale spring from shared value — stays on UI thread, no React re-renders
+  useAnimatedReaction(
+    () => activeTileSV.value === index,
+    (isActive, prev) => {
+      if (isActive !== prev) {
+        hoverScale.value = withSpring(isActive ? HOVER_SCALE : 1, HOVER_SPRING);
+      }
+    },
+  );
 
   // Pulse animation on successful drop
   useEffect(() => {
@@ -63,9 +73,38 @@ export default function CategoryTile({ category, index, isActive, isPulsing, onL
     opacity: staggerOpacity.value,
   }));
 
-  const tileAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: hoverScale.value }],
-  }));
+  // Active colors for interpolation
+  const cardBg = colors.surface.card;
+  const activeBg = colors.isDark ? colors.purple[900] + '30' : colors.purple[50];
+  const purpleBorder = colors.purple[600];
+  const primaryText = colors.text.primary;
+  const tertiaryText = colors.text.tertiary;
+  const activeText = colors.isDark ? colors.purple[400] : colors.purple[600];
+
+  // Tile border, background, and scale — all driven by shared value
+  const tileAnimatedStyle = useAnimatedStyle(() => {
+    const active = activeTileSV.value === index ? 1 : 0;
+    return {
+      transform: [{ scale: hoverScale.value }],
+      borderColor: interpolateColor(active, [0, 1], ['transparent', purpleBorder]),
+      backgroundColor: interpolateColor(active, [0, 1], [cardBg, activeBg]),
+    };
+  });
+
+  // Text color transitions
+  const nameAnimatedStyle = useAnimatedStyle(() => {
+    const active = activeTileSV.value === index ? 1 : 0;
+    return {
+      color: interpolateColor(active, [0, 1], [primaryText, activeText]),
+    };
+  });
+
+  const countAnimatedStyle = useAnimatedStyle(() => {
+    const active = activeTileSV.value === index ? 1 : 0;
+    return {
+      color: interpolateColor(active, [0, 1], [tertiaryText, activeText]),
+    };
+  });
 
   const handleLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -81,26 +120,24 @@ export default function CategoryTile({ category, index, isActive, isPulsing, onL
       onLayout={handleLayout}
       accessibilityRole="button"
       accessibilityLabel={`${category.name}, ${category.transactionCount} transactions`}
-      accessibilityState={{ selected: isActive }}
     >
       <Animated.View
         style={[
           styles.tile,
           styles.tileInner,
-          isActive && styles.tileActive,
           tileAnimatedStyle,
         ]}
       >
         <View style={[styles.tileDot, { backgroundColor: category.color }]} />
-        <Text
-          style={[styles.tileName, isActive && styles.tileNameActive]}
+        <Animated.Text
+          style={[styles.tileName, nameAnimatedStyle]}
           numberOfLines={2}
         >
           {category.name}
-        </Text>
-        <Text style={[styles.tileCount, isActive && styles.tileCountActive]}>
+        </Animated.Text>
+        <Animated.Text style={[styles.tileCount, countAnimatedStyle]}>
           {category.transactionCount}
-        </Text>
+        </Animated.Text>
       </Animated.View>
     </Animated.View>
   );

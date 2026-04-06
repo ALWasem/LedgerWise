@@ -4,7 +4,7 @@ import Animated, {
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
-  type SharedValue,
+  SharedValue,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
@@ -22,7 +22,7 @@ const VERTICAL_OFFSET = 65;
 interface Props {
   transaction: Transaction;
   categories: CategoryInfo[];
-  activeTileIndex: number | null;
+  activeTileSV: SharedValue<number>;
   pulsingTileIndex: number | null;
   cancelHoverSV: SharedValue<number>;
   dragX: SharedValue<number>;
@@ -39,7 +39,7 @@ interface Props {
 export default function CategoryGridOverlay({
   transaction,
   categories,
-  activeTileIndex,
+  activeTileSV,
   pulsingTileIndex,
   cancelHoverSV,
   dragX,
@@ -154,7 +154,7 @@ export default function CategoryGridOverlay({
                     key={cat.id}
                     category={cat}
                     index={tileIndex}
-                    isActive={activeTileIndex === tileIndex}
+                    activeTileSV={activeTileSV}
                     isPulsing={pulsingTileIndex === tileIndex}
                     onLayout={onRegisterTile}
                   />

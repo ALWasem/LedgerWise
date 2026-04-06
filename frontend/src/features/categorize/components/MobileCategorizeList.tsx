@@ -98,7 +98,7 @@ export default function MobileCategorizeList({
 
   const {
     draggedTransaction,
-    activeTileIndex,
+    activeTileSV,
     overlayVisible,
     pulsingTileIndex,
     dragX,
@@ -228,7 +228,7 @@ export default function MobileCategorizeList({
         <CategoryGridOverlay
           transaction={draggedTransaction}
           categories={categories}
-          activeTileIndex={activeTileIndex}
+          activeTileSV={activeTileSV}
           pulsingTileIndex={pulsingTileIndex}
           cancelHoverSV={cancelHoverSV}
           dragX={dragX}
