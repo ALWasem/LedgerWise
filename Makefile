@@ -5,7 +5,7 @@ LAN_IP := $(shell ipconfig getifaddr en0)
 # Start the FastAPI backend (creates venv and installs deps if needed)
 backend:
 	cd backend && \
-	[ -d venv ] || python3 -m venv venv && \
+	( [ -d venv ] || python3 -m venv venv ) && \
 	. venv/bin/activate && \
 	pip install -q -r requirements.txt && \
 	CORS_ORIGINS='["http://localhost:8081","http://$(LAN_IP):8081"]' \

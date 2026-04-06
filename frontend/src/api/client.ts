@@ -3,6 +3,7 @@ import type { SpendingSummaryData } from '../types/spending';
 import type { Transaction } from '../types/transaction';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
+console.log('[API] URL =', API_URL);
 
 /** Default cache TTL in milliseconds (5 minutes). */
 const CACHE_TTL = 5 * 60 * 1000;
