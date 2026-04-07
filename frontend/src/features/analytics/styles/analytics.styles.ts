@@ -233,6 +233,9 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
     overflow: 'visible',
     zIndex: 1,
   },
+  barColumnActive: {
+    zIndex: 10,
+  },
   bar: {
     width: '100%' as unknown as number,
     maxWidth: isNarrow ? 28 : 48,

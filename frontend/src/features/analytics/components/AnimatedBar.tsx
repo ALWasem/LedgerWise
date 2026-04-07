@@ -122,7 +122,7 @@ function AnimatedBar({
 
   return (
     <Pressable
-      style={[styles.barColumn, isActive && { zIndex: 10 }]}
+      style={[styles.barColumn, isActive && styles.barColumnActive]}
       onPressIn={handlePress}
       onPressOut={onPressOut}
       onHoverIn={handlePress}

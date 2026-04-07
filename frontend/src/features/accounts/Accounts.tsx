@@ -1,15 +1,13 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useThemeStyles } from '../../hooks/useThemeStyles';
 import { createAccountsStyles } from './styles/accounts.styles';
 import { useTransactionData } from '../../contexts/TransactionDataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useColors } from '../../contexts/ThemeContext';
-import { useTellerConnect } from '../../hooks/useTellerConnect';
-import { enrollAccount } from '../../api/client';
+import { usePlaidLink } from '../../hooks/usePlaidLink';
 import type { Account } from '../../types/account';
 import StaggeredView from '../../components/StaggeredView';
-import TellerModal from '../../components/TellerModal';
 import AccountCard from './components/AccountCard';
 import StatsSummary from './components/StatsSummary';
 import AddAccountCard from './components/AddAccountCard';
@@ -32,31 +30,16 @@ export default function Accounts() {
   const token = session?.access_token ?? null;
   const colors = useColors();
   const [accountToRemove, setAccountToRemove] = useState<Account | null>(null);
-  const [enrolling, setEnrolling] = useState(false);
-  const [tellerError, setTellerError] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
-  const {
-    showWebView, tellerSource,
-    openTellerConnect, handleWebViewMessage, closeWebView,
-  } = useTellerConnect(
-    async (accessToken: string) => {
-      setTellerError(null);
-      setEnrolling(true);
-      try {
-        await enrollAccount(token!, accessToken);
-        refresh();
-      } catch (err) {
-        setTellerError(
-          err instanceof Error ? err.message : 'Failed to enroll account',
-        );
-      } finally {
-        setEnrolling(false);
-      }
+  const { openPlaidLink, linkLoading, enrolling } = usePlaidLink(
+    token,
+    () => {
+      setLinkError(null);
+      refresh();
     },
-    setTellerError,
+    setLinkError,
   );
-
-  const handleAddAccount = openTellerConnect;
 
   const cardRows = useMemo(() => {
     const items: ({ type: 'account'; account: Account } | { type: 'add' })[] = [
@@ -80,27 +63,21 @@ export default function Accounts() {
           </View>
         </StaggeredView>
 
-        {(accountsLoading || enrolling) ? (
-          <View style={styles.loadingContainer}>
+        {(accountsLoading || enrolling || linkLoading) ? (
+          <View style={styles.loadingContainer} accessibilityLiveRegion="polite">
             <ActivityIndicator size="large" color={colors.brand.primary} />
             {enrolling && (
               <Text style={styles.loadingText}>Syncing your accounts...</Text>
             )}
+            {linkLoading && (
+              <Text style={styles.loadingText}>Connecting to bank...</Text>
+            )}
           </View>
         ) : (
-          <EmptyState onConnect={handleAddAccount} />
+          <EmptyState onConnect={openPlaidLink} />
         )}
 
-        {tellerError && <Text style={styles.errorText}>{tellerError}</Text>}
-
-        {Platform.OS !== 'web' && (
-          <TellerModal
-            visible={showWebView}
-            tellerSource={tellerSource}
-            onMessage={handleWebViewMessage}
-            onClose={closeWebView}
-          />
-        )}
+        {linkError && <Text style={styles.errorText}>{linkError}</Text>}
       </ScrollView>
     );
   }
@@ -137,7 +114,7 @@ export default function Accounts() {
                 </View>
               ) : (
                 <View key="add" style={styles.cardWrapper}>
-                  <AddAccountCard onPress={handleAddAccount} />
+                  <AddAccountCard onPress={openPlaidLink} />
                 </View>
               ),
             )}
@@ -146,30 +123,23 @@ export default function Accounts() {
         </StaggeredView>
       ))}
 
-      {enrolling && (
+      {(enrolling || linkLoading) && (
         <StaggeredView index={cardRows.length + 2}>
-          <View style={styles.loadingContainer}>
+          <View style={styles.loadingContainer} accessibilityLiveRegion="polite">
             <ActivityIndicator size="large" color={colors.brand.primary} />
-            <Text style={styles.loadingText}>Syncing your accounts...</Text>
+            <Text style={styles.loadingText}>
+              {enrolling ? 'Syncing your accounts...' : 'Connecting to bank...'}
+            </Text>
           </View>
         </StaggeredView>
       )}
 
-      {tellerError && <Text style={styles.errorText}>{tellerError}</Text>}
+      {linkError && <Text style={styles.errorText}>{linkError}</Text>}
 
       {accountToRemove && (
         <RemoveAccountDialog
           account={accountToRemove}
           onClose={() => setAccountToRemove(null)}
-        />
-      )}
-
-      {Platform.OS !== 'web' && (
-        <TellerModal
-          visible={showWebView}
-          tellerSource={tellerSource}
-          onMessage={handleWebViewMessage}
-          onClose={closeWebView}
         />
       )}
     </ScrollView>

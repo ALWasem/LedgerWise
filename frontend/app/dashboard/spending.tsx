@@ -1,11 +1,9 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { periodToDateRange } from '../../src/components/TimePeriodSelector';
-import TellerModal from '../../src/components/TellerModal';
 import { SpendingSummary } from '../../src/features/spending';
-import { enrollAccount } from '../../src/api/client';
-import { useTellerConnect } from '../../src/hooks/useTellerConnect';
+import { usePlaidLink } from '../../src/hooks/usePlaidLink';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTransactionData, useDataSlice } from '../../src/contexts/TransactionDataContext';
 import { useColors } from '../../src/contexts/ThemeContext';
@@ -14,8 +12,7 @@ import { createSpendingScreenStyles } from '../../src/features/spending/styles/s
 
 
 export default function SpendingScreen() {
-  const [enrolling, setEnrolling] = useState(false);
-  const [tellerError, setTellerError] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
   const { session } = useAuth();
   const token = session?.access_token ?? null;
   const colors = useColors();
@@ -35,50 +32,43 @@ export default function SpendingScreen() {
     return Array.from(yearSet).sort((a, b) => a - b);
   }, [allTransactions]);
 
-  const {
-    showWebView, tellerSource,
-    openTellerConnect, handleWebViewMessage, closeWebView,
-  } = useTellerConnect(
-    async (accessToken: string) => {
-      setTellerError(null);
-      setEnrolling(true);
-      try {
-        await enrollAccount(token!, accessToken);
-        refresh();
-      } catch (err) {
-        setTellerError(
-          err instanceof Error ? err.message : 'Failed to enroll account',
-        );
-      } finally {
-        setEnrolling(false);
-      }
+  const { openPlaidLink, linkLoading, enrolling } = usePlaidLink(
+    token,
+    () => {
+      setLinkError(null);
+      refresh();
     },
-    setTellerError,
+    setLinkError,
   );
 
-  const error = tellerError || dataError;
+  const error = linkError || dataError;
 
   return (
     <View style={styles.container}>
-      {!hasAccounts && !accountsLoading && !enrolling && (
+      {!hasAccounts && !accountsLoading && !enrolling && !linkLoading && (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
             Connect a bank account to see your spending
           </Text>
           <Pressable
             style={({ pressed }) => [styles.connectButton, pressed && styles.connectButtonPressed]}
-            onPress={openTellerConnect}
+            onPress={openPlaidLink}
+            accessibilityRole="button"
+            accessibilityLabel="Connect bank account"
           >
             <Text style={styles.connectButtonText}>Connect Bank</Text>
           </Pressable>
         </View>
       )}
 
-      {(accountsLoading && !hasAccounts || enrolling) && (
-        <View style={styles.emptyContainer}>
+      {(accountsLoading && !hasAccounts || enrolling || linkLoading) && (
+        <View style={styles.emptyContainer} accessibilityLiveRegion="polite">
           <ActivityIndicator style={styles.spinner} size="large" color={colors.brand.primary} />
           {enrolling && (
             <Text style={styles.emptyText}>Syncing your accounts...</Text>
+          )}
+          {linkLoading && (
+            <Text style={styles.emptyText}>Connecting to bank...</Text>
           )}
         </View>
       )}
@@ -93,16 +83,7 @@ export default function SpendingScreen() {
           onPeriodChange={setSelectedPeriod}
           availableYears={availableYears}
           accountCount={accounts.length}
-          onAddAccount={openTellerConnect}
-        />
-      )}
-
-      {Platform.OS !== 'web' && (
-        <TellerModal
-          visible={showWebView}
-          tellerSource={tellerSource}
-          onMessage={handleWebViewMessage}
-          onClose={closeWebView}
+          onAddAccount={openPlaidLink}
         />
       )}
     </View>

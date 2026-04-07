@@ -57,6 +57,8 @@ export default function MobileCategorizeList({
     ? Math.round((categorizedCount / totalTransactions) * 100)
     : 0;
 
+  const progressFillWidth = useMemo(() => ({ width: `${percentage}%` as unknown as number }), [percentage]);
+
   const clearToast = useCallback(() => setToast(null), []);
 
   // Toast animation: spring entrance, timed exit
@@ -185,7 +187,7 @@ export default function MobileCategorizeList({
                 <Text style={styles.progressPercentage}>{percentage}%</Text>
               </View>
               <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${percentage}%` }]} />
+                <View style={[styles.progressFill, progressFillWidth]} />
               </View>
             </View>
 
@@ -210,7 +212,7 @@ export default function MobileCategorizeList({
         </StaggeredView>
 
         {/* Transaction List */}
-        <StaggeredView index={1} total={3} style={{ flex: 1 }}>
+        <StaggeredView index={1} total={3} style={styles.transactionList}>
         <FlatList
           data={transactions}
           renderItem={renderTransaction}
@@ -219,6 +221,9 @@ export default function MobileCategorizeList({
           showsVerticalScrollIndicator={true}
           style={styles.transactionList}
           contentContainerStyle={transactions.length === 0 ? styles.listEmptyContent : undefined}
+          initialNumToRender={10}
+          maxToRenderPerBatch={15}
+          windowSize={5}
         />
         </StaggeredView>
       </Animated.View>

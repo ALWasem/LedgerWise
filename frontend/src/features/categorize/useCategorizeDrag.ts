@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { Easing, runOnJS, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import type { Transaction } from '../../types/transaction';
@@ -36,7 +37,6 @@ export default function useCategorizeDrag(
   onAssign: (transactionId: string, categoryName: string) => void,
 ) {
   // React state for discrete events
-  const [isDragging, setIsDragging] = useState(false);
   const [draggedTransaction, setDraggedTransaction] = useState<Transaction | null>(null);
   const [overlayVisible, setOverlayVisible] = useState(false);
 
@@ -81,7 +81,7 @@ export default function useCategorizeDrag(
   }, []);
 
   const triggerLightHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
   // Hit test uses refs for comparison, only calls setState on actual changes
@@ -129,7 +129,7 @@ export default function useCategorizeDrag(
   }, [activeTileSV, cancelHoverSV, triggerLightHaptic]);
 
   const triggerSuccessHaptic = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, []);
 
   const clearAfterExit = useCallback(() => {
@@ -139,7 +139,6 @@ export default function useCategorizeDrag(
     cancelHoverSV.value = 0;
     activeTileSV.value = -1;
     setPulsingTileIndex(null);
-    setIsDragging(false);
     setDraggedTransaction(null);
     setOverlayVisible(false);
   }, [cancelHoverSV, activeTileSV]);
@@ -194,7 +193,6 @@ export default function useCategorizeDrag(
     gridTranslateY.value = withSpring(0, { damping: 20, stiffness: 180 });
 
     setDraggedTransaction(transaction);
-    setIsDragging(true);
     setOverlayVisible(true);
     activeTileRef.current = null;
     cancelRef.current = false;
@@ -259,7 +257,6 @@ export default function useCategorizeDrag(
   }, [categories, onAssign, isDragActive, dragX, dragY, dragCardScale, dragCardOpacity, handleSuccessfulDrop, handleCancelComplete, resetDragState, triggerLightHaptic]);
 
   return {
-    isDragging,
     draggedTransaction,
     activeTileSV,
     overlayVisible,

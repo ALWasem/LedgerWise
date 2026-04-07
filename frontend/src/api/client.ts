@@ -1,9 +1,8 @@
-import type { Account } from '../types/account';
+import type { Account, ExchangeTokenResponse, PlaidItem } from '../types/account';
 import type { SpendingSummaryData } from '../types/spending';
 import type { Transaction } from '../types/transaction';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
-console.log('[API] URL =', API_URL);
 
 /** Default cache TTL in milliseconds (5 minutes). */
 const CACHE_TTL = 5 * 60 * 1000;
@@ -138,4 +137,33 @@ export async function enrollAccount(
   const data = await handleResponse<Account[]>(res);
   clearApiCache();
   return data;
+}
+
+// --- Plaid API functions ---
+
+export async function createPlaidLinkToken(token: string): Promise<string> {
+  const res = await fetch(`${API_URL}/api/v1/plaid/create-link-token`, {
+    method: 'POST',
+    headers: authHeaders(token),
+  });
+  const data = await handleResponse<{ link_token: string }>(res);
+  return data.link_token;
+}
+
+export async function exchangePlaidToken(
+  token: string,
+  publicToken: string,
+): Promise<ExchangeTokenResponse> {
+  const res = await fetch(`${API_URL}/api/v1/plaid/exchange-token`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ public_token: publicToken }),
+  });
+  const data = await handleResponse<ExchangeTokenResponse>(res);
+  clearApiCache();
+  return data;
+}
+
+export async function getPlaidItems(token: string): Promise<PlaidItem[]> {
+  return cachedGet<PlaidItem[]>(`${API_URL}/api/v1/plaid/items`, token);
 }
