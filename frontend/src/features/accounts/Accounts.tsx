@@ -11,7 +11,8 @@ import StaggeredView from '../../components/StaggeredView';
 import AccountCard from './components/AccountCard';
 import StatsSummary from './components/StatsSummary';
 import AddAccountCard from './components/AddAccountCard';
-import EmptyState from './components/EmptyState';
+import EmptyState from '../../components/EmptyState';
+import PlaidModal from '../../components/PlaidModal';
 import RemoveAccountDialog from './components/RemoveAccountDialog';
 
 /** Chunk an array into pairs for the 2-column grid */
@@ -32,7 +33,7 @@ export default function Accounts() {
   const [accountToRemove, setAccountToRemove] = useState<Account | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
 
-  const { openPlaidLink, linkLoading, enrolling } = usePlaidLink(
+  const { openPlaidLink, linkLoading, enrolling, mobileLinkToken, handleMobileSuccess, handleMobileExit } = usePlaidLink(
     token,
     () => {
       setLinkError(null);
@@ -53,32 +54,40 @@ export default function Accounts() {
 
   if (!hasAccounts) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        <StaggeredView index={0}>
-          <View style={styles.pageHeader}>
-            <Text style={styles.pageTitle}>Connected Accounts</Text>
-            <Text style={styles.pageSubtitle}>
-              Manage your linked bank accounts and credit cards
-            </Text>
-          </View>
-        </StaggeredView>
+      <>
+        <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+          <StaggeredView index={0}>
+            <View style={styles.pageHeader}>
+              <Text style={styles.pageTitle}>Connected Accounts</Text>
+              <Text style={styles.pageSubtitle}>
+                Manage your linked bank accounts and credit cards
+              </Text>
+            </View>
+          </StaggeredView>
 
-        {(accountsLoading || enrolling || linkLoading) ? (
-          <View style={styles.loadingContainer} accessibilityLiveRegion="polite">
-            <ActivityIndicator size="large" color={colors.brand.primary} />
-            {enrolling && (
-              <Text style={styles.loadingText}>Syncing your accounts...</Text>
-            )}
-            {linkLoading && (
-              <Text style={styles.loadingText}>Connecting to bank...</Text>
-            )}
-          </View>
-        ) : (
-          <EmptyState onConnect={openPlaidLink} />
-        )}
+          {(accountsLoading || enrolling || linkLoading) ? (
+            <View style={styles.loadingContainer} accessibilityLiveRegion="polite">
+              <ActivityIndicator size="large" color={colors.brand.primary} />
+              {enrolling && (
+                <Text style={styles.loadingText}>Syncing your accounts...</Text>
+              )}
+              {linkLoading && (
+                <Text style={styles.loadingText}>Connecting to bank...</Text>
+              )}
+            </View>
+          ) : (
+            <EmptyState onConnect={openPlaidLink} />
+          )}
 
-        {linkError && <Text style={styles.errorText}>{linkError}</Text>}
-      </ScrollView>
+          {linkError && <Text style={styles.errorText}>{linkError}</Text>}
+        </ScrollView>
+        <PlaidModal
+          visible={mobileLinkToken !== null}
+          linkToken={mobileLinkToken}
+          onSuccess={handleMobileSuccess}
+          onExit={handleMobileExit}
+        />
+      </>
     );
   }
 
@@ -142,6 +151,13 @@ export default function Accounts() {
           onClose={() => setAccountToRemove(null)}
         />
       )}
+
+      <PlaidModal
+        visible={mobileLinkToken !== null}
+        linkToken={mobileLinkToken}
+        onSuccess={handleMobileSuccess}
+        onExit={handleMobileExit}
+      />
     </ScrollView>
   );
 }

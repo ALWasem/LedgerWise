@@ -231,60 +231,6 @@ export const createAccountsStyles = (deps: StyleDeps) => StyleSheet.create({
     paddingVertical: 12,
   },
 
-  // --- Empty State ---
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: isNarrow ? 60 : 80,
-    paddingHorizontal: 20,
-  },
-  emptyIconBadge: {
-    width: isNarrow ? 72 : 80,
-    height: isNarrow ? 72 : 80,
-    borderRadius: radius.xl,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-    ...deps.shadows.purple,
-  },
-  emptyTitle: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: isNarrow ? 22 : 26,
-    fontWeight: '700',
-    color: deps.colors.text.primary,
-    marginBottom: 10,
-    textAlign: 'center',
-    letterSpacing: -0.5,
-  },
-  emptySubtitle: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: 15,
-    color: deps.colors.text.secondary,
-    textAlign: 'center',
-    maxWidth: 380,
-    lineHeight: 22,
-    marginBottom: 32,
-  },
-  emptyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: radius.lg,
-    ...deps.shadows.purple,
-  },
-  emptyButtonHovered: {
-    opacity: 0.9,
-  },
-  emptyButtonText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: 15,
-    fontWeight: '600',
-    color: deps.colors.text.inverse,
-  },
-
   // --- Remove Dialog ---
   dialogBackdrop: {
     ...(Platform.OS === 'web'

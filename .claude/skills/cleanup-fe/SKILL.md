@@ -126,6 +126,7 @@ Work through each section in order. For every issue found, fix it — don't just
 - Theme-aware styles use factory functions: `createXStyles(colors)` consumed by `useThemeStyles()`
 - Shared styles → `src/styles/`, feature styles → `src/features/<feature>/styles/`
 - Consolidate duplicate style definitions across files
+- **Page layout consistency** — all dashboard pages must use matching `paddingHorizontal` (`isNarrow ? 16 : 24`), `paddingTop` (`isNarrow ? 16 : 24`), and `pageHeader` margin values. When a page has alternate layouts (e.g. empty state vs data-loaded), verify both paths apply the same container padding. Compare against the shared `pageHeaderDefs` in `src/styles/shared.styles.ts` as the source of truth.
 
 ---
 

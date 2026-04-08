@@ -1,12 +1,16 @@
 import { Platform, StyleSheet } from 'react-native';
 import { isNarrow } from '../../../utils/responsive';
-import { pageHeaderDefs, placeholderDefs } from '../../../styles/shared.styles';
+import { pageHeaderDefs } from '../../../styles/shared.styles';
 import { radius, typography } from '../../../theme';
 import type { StyleDeps } from '../../../hooks/useThemeStyles';
 
 export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
   container: {
     flex: 1,
+  },
+  emptyWrapper: {
+    paddingHorizontal: isNarrow ? 16 : 24,
+    paddingTop: isNarrow ? 16 : 24,
   },
   stickyHeader: {
     backgroundColor: deps.colors.surface.bg,
@@ -29,7 +33,6 @@ export const createAnalyticsStyles = (deps: StyleDeps) => StyleSheet.create({
     paddingBottom: 40,
   },
   ...pageHeaderDefs(deps),
-  ...placeholderDefs(deps),
 
   spinner: {
     marginTop: 40,

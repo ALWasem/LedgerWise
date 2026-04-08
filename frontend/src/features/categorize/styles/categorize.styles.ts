@@ -17,6 +17,15 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: deps.colors.surface.bg,
   },
+  errorText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 14,
+    fontWeight: '500',
+    color: deps.colors.semantic.error,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
 
   // --- Page Header ---
   ...pageHeaderDefs(deps),

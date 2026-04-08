@@ -8,6 +8,12 @@ interface UsePlaidLinkReturn {
   openPlaidLink: () => void;
   linkLoading: boolean;
   enrolling: boolean;
+  /** Non-null when the mobile WebView modal should be shown */
+  mobileLinkToken: string | null;
+  /** Call when mobile Plaid Link returns a public token */
+  handleMobileSuccess: (publicToken: string) => void;
+  /** Call when the user exits the mobile Plaid Link modal */
+  handleMobileExit: () => void;
 }
 
 export function usePlaidLink(
@@ -30,34 +36,41 @@ export function usePlaidLink(
     return () => { mountedRef.current = false; };
   }, []);
 
+  const exchangeToken = useCallback(async (publicToken: string) => {
+    setEnrolling(true);
+    try {
+      await exchangePlaidToken(tokenRef.current!, publicToken);
+      if (mountedRef.current) onSuccessRef.current();
+    } catch (err) {
+      if (mountedRef.current) {
+        onErrorRef.current(
+          err instanceof Error ? err.message : 'Failed to link account',
+        );
+      }
+    } finally {
+      if (mountedRef.current) {
+        setEnrolling(false);
+        setLinkToken(null);
+      }
+    }
+  }, []);
+
   const handlePlaidSuccess: PlaidLinkOnSuccess = useCallback(
     async (publicToken) => {
-      setEnrolling(true);
-      try {
-        await exchangePlaidToken(tokenRef.current!, publicToken);
-        if (mountedRef.current) onSuccessRef.current();
-      } catch (err) {
-        if (mountedRef.current) {
-          onErrorRef.current(
-            err instanceof Error ? err.message : 'Failed to link account',
-          );
-        }
-      } finally {
-        if (mountedRef.current) {
-          setEnrolling(false);
-          setLinkToken(null);
-        }
-      }
+      await exchangeToken(publicToken);
     },
-    [],
+    [exchangeToken],
   );
 
   const handlePlaidExit: PlaidLinkOnExit = useCallback(() => {
     setLinkToken(null);
   }, []);
 
+  // Only pass the token to the web SDK on web — on mobile it fires onExit
+  // immediately since it can't open, which would clear linkToken and hide our modal.
+  const webToken = Platform.OS === 'web' ? linkToken : null;
   const { open: openPlaidLinkWeb, ready } = usePlaidLinkWeb({
-    token: linkToken,
+    token: webToken,
     onSuccess: handlePlaidSuccess,
     onExit: handlePlaidExit,
   });
@@ -71,7 +84,13 @@ export function usePlaidLink(
     setLinkLoading(true);
     try {
       const newLinkToken = await createPlaidLinkToken(tokenRef.current);
-      if (mountedRef.current) setLinkToken(newLinkToken);
+      if (mountedRef.current) {
+        setLinkToken(newLinkToken);
+        // On mobile, just setting the token is enough — the modal renders
+        if (Platform.OS !== 'web') {
+          setLinkLoading(false);
+        }
+      }
     } catch (err) {
       if (mountedRef.current) {
         onErrorRef.current(
@@ -92,5 +111,27 @@ export function usePlaidLink(
     }
   }, [linkToken, ready, openPlaidLinkWeb]);
 
-  return { openPlaidLink, linkLoading, enrolling };
+  // Mobile handlers
+  const handleMobileSuccess = useCallback(
+    (publicToken: string) => {
+      exchangeToken(publicToken);
+    },
+    [exchangeToken],
+  );
+
+  const handleMobileExit = useCallback(() => {
+    setLinkToken(null);
+    setLinkLoading(false);
+  }, []);
+
+  const mobileLinkToken = Platform.OS !== 'web' ? linkToken : null;
+
+  return {
+    openPlaidLink,
+    linkLoading,
+    enrolling,
+    mobileLinkToken,
+    handleMobileSuccess,
+    handleMobileExit,
+  };
 }

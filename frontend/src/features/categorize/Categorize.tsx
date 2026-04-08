@@ -2,12 +2,17 @@ import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useTransactionData } from '../../contexts/TransactionDataContext';
 import { useThemeStyles } from '../../hooks/useThemeStyles';
+import { usePlaidLink } from '../../hooks/usePlaidLink';
 import { createCategorizeStyles } from './styles/categorize.styles';
 import { isHovered } from '../../utils/pressable';
 import { formatCurrency } from '../../utils/formatters';
 import { COMPACT_BREAKPOINT, SIDEBAR_BREAKPOINT } from '../../utils/responsive';
 import StaggeredView from '../../components/StaggeredView';
+import EmptyState from '../../components/EmptyState';
+import PlaidModal from '../../components/PlaidModal';
 import BrandedToast from '../../components/BrandedToast';
 import type { ToastData } from '../../components/BrandedToast';
 import useCategorizeData from './useCategorizeData';
@@ -30,6 +35,11 @@ export default function Categorize() {
   const styles = useThemeStyles(createCategorizeStyles);
   const { width: windowWidth } = useWindowDimensions();
   const compactCards = windowWidth < COMPACT_BREAKPOINT;
+  const { hasAccounts, accountsLoading, refresh } = useTransactionData();
+  const { session } = useAuth();
+  const token = session?.access_token ?? null;
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const { openPlaidLink, linkLoading, enrolling, mobileLinkToken, handleMobileSuccess, handleMobileExit } = usePlaidLink(token, refresh, setLinkError);
 
   const {
     transactions,
@@ -110,10 +120,33 @@ export default function Categorize() {
     </View>
   );
 
-  if (loading) {
+  if (loading || accountsLoading || enrolling || linkLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.brand.primary} />
+      </View>
+    );
+  }
+
+  if (!hasAccounts) {
+    return (
+      <View style={styles.container}>
+        <StaggeredView index={0}>
+          <View style={styles.pageHeader}>
+            <Text style={styles.pageTitle}>Categorize Transactions</Text>
+            <Text style={styles.pageSubtitle}>
+              Organize your uncategorized transactions to improve insights
+            </Text>
+          </View>
+        </StaggeredView>
+        <EmptyState onConnect={openPlaidLink} />
+        {linkError && <Text style={styles.errorText}>{linkError}</Text>}
+        <PlaidModal
+          visible={mobileLinkToken !== null}
+          linkToken={mobileLinkToken}
+          onSuccess={handleMobileSuccess}
+          onExit={handleMobileExit}
+        />
       </View>
     );
   }

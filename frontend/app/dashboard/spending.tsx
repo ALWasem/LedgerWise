@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { periodToDateRange } from '../../src/components/TimePeriodSelector';
+import EmptyState from '../../src/components/EmptyState';
+import StaggeredView from '../../src/components/StaggeredView';
 import { SpendingSummary } from '../../src/features/spending';
 import { usePlaidLink } from '../../src/hooks/usePlaidLink';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -9,6 +11,7 @@ import { useTransactionData, useDataSlice } from '../../src/contexts/Transaction
 import { useColors } from '../../src/contexts/ThemeContext';
 import { useThemeStyles } from '../../src/hooks/useThemeStyles';
 import { createSpendingScreenStyles } from '../../src/features/spending/styles/spendingScreen.styles';
+import PlaidModal from '../../src/components/PlaidModal';
 
 
 export default function SpendingScreen() {
@@ -32,7 +35,7 @@ export default function SpendingScreen() {
     return Array.from(yearSet).sort((a, b) => a - b);
   }, [allTransactions]);
 
-  const { openPlaidLink, linkLoading, enrolling } = usePlaidLink(
+  const { openPlaidLink, linkLoading, enrolling, mobileLinkToken, handleMobileSuccess, handleMobileExit } = usePlaidLink(
     token,
     () => {
       setLinkError(null);
@@ -46,22 +49,18 @@ export default function SpendingScreen() {
   return (
     <View style={styles.container}>
       {!hasAccounts && !accountsLoading && !enrolling && !linkLoading && (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            Connect a bank account to see your spending
-          </Text>
-          <Pressable
-            style={({ pressed }) => [styles.connectButton, pressed && styles.connectButtonPressed]}
-            onPress={openPlaidLink}
-            accessibilityRole="button"
-            accessibilityLabel="Connect bank account"
-          >
-            <Text style={styles.connectButtonText}>Connect Bank</Text>
-          </Pressable>
-        </View>
+        <>
+          <StaggeredView index={0}>
+            <View style={styles.pageHeader}>
+              <Text style={styles.pageTitle}>Spending Summary</Text>
+              <Text style={styles.pageSubtitle}>Track and categorize your expenses</Text>
+            </View>
+          </StaggeredView>
+          <EmptyState onConnect={openPlaidLink} />
+        </>
       )}
 
-      {(accountsLoading && !hasAccounts || enrolling || linkLoading) && (
+      {((accountsLoading && !hasAccounts) || enrolling || linkLoading) && (
         <View style={styles.emptyContainer} accessibilityLiveRegion="polite">
           <ActivityIndicator style={styles.spinner} size="large" color={colors.brand.primary} />
           {enrolling && (
@@ -86,6 +85,13 @@ export default function SpendingScreen() {
           onAddAccount={openPlaidLink}
         />
       )}
+
+      <PlaidModal
+        visible={mobileLinkToken !== null}
+        linkToken={mobileLinkToken}
+        onSuccess={handleMobileSuccess}
+        onExit={handleMobileExit}
+      />
     </View>
   );
 }

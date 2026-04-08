@@ -225,7 +225,7 @@ async def sync_transactions(
                 "status": "pending" if txn.pending else "posted",
                 "personal_finance_category_primary": pfc.primary if pfc else None,
                 "personal_finance_category_detailed": pfc.detailed if pfc else None,
-                "payment_channel": txn.payment_channel.value if txn.payment_channel else None,
+                "payment_channel": txn.payment_channel if txn.payment_channel else None,
                 "pending": txn.pending,
                 "authorized_date": txn.authorized_date,
             }
