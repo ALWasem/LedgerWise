@@ -3,24 +3,10 @@
  * Mirrors backend logic in backend/app/services/spending.py.
  */
 
-import { isPayment, isSpending, isRefund } from '../../../utils/transactionFilters';
+import { isSpending, isRefund } from '../../../utils/transactionFilters';
+import { normalizeCategory } from '../../../utils/normalizeCategory';
 import type { Transaction } from '../../../types/transaction';
 import type { SpendingSummaryData, CategoryData } from '../../../types/spending';
-
-// Re-export for backwards compatibility with existing barrel imports
-export { isPayment, isSpending, isRefund };
-
-function titleCase(s: string): string {
-  return s
-    .split(' ')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
-}
-
-function normalizeCategory(category: string | null | undefined): string {
-  if (!category || category.trim() === '') return 'General';
-  return titleCase(category);
-}
 
 export function computeSpendingSummary(
   transactions: Transaction[],

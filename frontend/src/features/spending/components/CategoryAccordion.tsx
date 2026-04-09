@@ -7,20 +7,11 @@ import { createSpendingStyles } from '../styles/spending.styles';
 import type { SpendingSummaryData } from '../../../types/spending';
 import type { Transaction } from '../../../types/transaction';
 import { getCategoryColor } from '../../../utils/categoryColors';
-import { isPayment } from '../utils/spendingSummary';
+import { formatCurrency, formatLocalDate } from '../../../utils/formatters';
+import { isPayment } from '../../../utils/transactionFilters';
 import { isHovered } from '../../../utils/pressable';
 import AccordionReveal from '../../../components/AccordionReveal';
 import useAccordionHeight from '../useAccordionHeight';
-
-/** Parse "YYYY-MM-DD" as local time (not UTC) and format for display. */
-function formatLocalDate(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
 
 interface CategoryAccordionProps {
   data: SpendingSummaryData;
@@ -94,7 +85,7 @@ export default function CategoryAccordion({
               ]}
               onPress={() => toggle(cat.name)}
               accessibilityRole="button"
-              accessibilityLabel={`${cat.name}, ${percentage}% of spending, $${cat.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+              accessibilityLabel={`${cat.name}, ${percentage}% of spending, ${formatCurrency(cat.total)}`}
               accessibilityState={{ expanded: isExpanded && !isClosing }}
             >
               <View style={styles.categoryLeft}>
@@ -141,7 +132,7 @@ export default function CategoryAccordion({
                     isRefund && styles.refundTotal,
                   ]}
                 >
-                  {isRefund ? '+' : ''}${cat.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {isRefund ? '+' : ''}{formatCurrency(cat.total)}
                 </Text>
                 <View
                   style={[
@@ -192,11 +183,11 @@ export default function CategoryAccordion({
                             {txn.description}
                           </Text>
                           <Text style={styles.expandedTxnMeta}>
-                            {formatLocalDate(txn.date)}
+                            {formatLocalDate(txn.date, { includeYear: true })}
                           </Text>
                         </View>
                         <Text style={styles.expandedTxnAmount}>
-                          {isRefund ? '+' : ''}${Math.abs(parseFloat(txn.amount)).toFixed(2)}
+                          {isRefund ? '+' : ''}{formatCurrency(Math.abs(parseFloat(txn.amount)))}
                         </Text>
                       </View>
                     ))}
@@ -210,7 +201,7 @@ export default function CategoryAccordion({
                         isUncategorized && styles.expandedFooterAmountGold,
                         isRefund && styles.expandedFooterAmountRefund,
                       ]}>
-                        {isRefund ? '+' : ''}${cat.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {isRefund ? '+' : ''}{formatCurrency(cat.total)}
                       </Text>
                     </View>
                   </View>
@@ -262,7 +253,7 @@ export default function CategoryAccordion({
                                 )}
                               </View>
                               <Text style={styles.expandedTxnMeta}>
-                                {formatLocalDate(txn.date)}
+                                {formatLocalDate(txn.date, { includeYear: true })}
                               </Text>
                             </View>
                             <Text
@@ -271,7 +262,7 @@ export default function CategoryAccordion({
                                 isRefund && styles.expandedTxnRefund,
                               ]}
                             >
-                              {isRefund ? '+' : ''}${Math.abs(amt).toFixed(2)}
+                              {isRefund ? '+' : ''}{formatCurrency(Math.abs(amt))}
                             </Text>
                           </View>
                         </AccordionReveal>
@@ -293,7 +284,7 @@ export default function CategoryAccordion({
                           isUncategorized && styles.expandedFooterAmountGold,
                           isRefund && styles.expandedFooterAmountRefund,
                         ]}>
-                          {isRefund ? '+' : ''}${cat.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {isRefund ? '+' : ''}{formatCurrency(cat.total)}
                         </Text>
                       </View>
                     </AccordionReveal>

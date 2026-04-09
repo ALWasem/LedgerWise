@@ -40,7 +40,7 @@ export default function TransactionRow({ transaction }: Props) {
       ref={ref}
       style={[styles.transactionRow, isDragging && styles.transactionRowDragging]}
       accessibilityRole="button"
-      accessibilityLabel={`${transaction.description}, $${amount.toFixed(2)}, ${formattedDate}. Drag to categorize.`}
+      accessibilityLabel={`${transaction.description}, ${formattedAmount}, ${formattedDate}. Drag to categorize.`}
     >
       <View style={styles.dragHandle}>
         <Ionicons name="ellipsis-vertical" size={14} color={colors.text.tertiary} />

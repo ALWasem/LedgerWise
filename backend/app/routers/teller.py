@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_db
 from app.middleware.auth import get_current_user_id
 from app.schemas import AccountResponse, CategoryUpdateRequest, TokenRequest, TransactionResponse
+from app.services import banking as banking_service
 from app.services import teller as teller_service
 from app.utils.logging import log_data_access, log_security_event
 
@@ -29,7 +30,7 @@ async def get_my_accounts(
     """Return all bank accounts linked to the authenticated user."""
     log_data_access(user_id, "accounts")
     try:
-        accounts = await teller_service.get_user_accounts(db, user_id, account_type)
+        accounts = await banking_service.get_user_accounts(db, user_id, account_type)
     except Exception:
         logger.error("Failed to fetch accounts for user=%s", user_id, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to retrieve accounts.")
@@ -63,7 +64,7 @@ async def get_my_transactions(
     """Return transactions for the authenticated user's accounts."""
     log_data_access(user_id, "transactions")
     try:
-        return await teller_service.get_user_transactions(
+        return await banking_service.get_user_transactions(
             db, user_id, start_date, end_date, account_type
         )
     except Exception:
@@ -83,7 +84,7 @@ async def update_category(
         raise HTTPException(status_code=400, detail="Invalid transaction ID format.")
     log_data_access(user_id, f"transaction_category_update:{transaction_id}")
     try:
-        result = await teller_service.update_transaction_category(
+        result = await banking_service.update_transaction_category(
             db, user_id, transaction_id, body.category
         )
     except Exception:

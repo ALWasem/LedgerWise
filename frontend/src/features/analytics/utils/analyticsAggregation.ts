@@ -6,6 +6,7 @@
 import type { Transaction } from '../../../types/transaction';
 import type { AnalyticsSummary, AnalyticsTimePeriod, MonthlyAggregate } from '../../../types/analytics';
 import { isSpending, isRefund } from '../../../utils/transactionFilters';
+import { normalizeCategory } from '../../../utils/normalizeCategory';
 
 const MONTH_LABELS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -157,10 +158,7 @@ export function extractCategories(transactions: Transaction[]): string[] {
   for (const tx of transactions) {
     if (!isSpending(tx)) continue;
 
-    const raw = (tx.category ?? '').trim();
-    const name = raw === '' ? 'General' : raw.split(' ')
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-      .join(' ');
+    const name = normalizeCategory(tx.category);
 
     totals.set(name, (totals.get(name) ?? 0) + parseFloat(tx.amount));
   }
