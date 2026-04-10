@@ -27,6 +27,7 @@ from app.schemas import AccountResponse
 from app.schemas.transaction import PlaidItemResponse
 from app.config import settings
 from app.services.plaid_client import get_plaid_client
+from app.services.category import consolidate_categories
 from app.utils.encryption import encrypt
 from app.utils.logging import log_data_access, log_enrollment
 
@@ -154,6 +155,9 @@ async def exchange_public_token(
 
     # 5. Initial transaction sync
     await sync_transactions(db, user_id, item_id, access_token, plaid_acct_id_map)
+
+    # 6. Auto-create Category entries and consolidate similar names
+    await consolidate_categories(db, user_id)
 
     try:
         await db.commit()

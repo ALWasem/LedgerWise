@@ -41,9 +41,18 @@ function hashName(name: string): number {
 
 /**
  * Returns a deterministic color for a spending category.
- * The same category name always returns the same color across all pages.
+ * If userCategories is provided, user-defined colors take precedence over hash-based ones.
  */
-export function getCategoryColor(name: string): string {
+export function getCategoryColor(
+  name: string,
+  userCategories?: readonly { name: string; color: string }[],
+): string {
+  if (userCategories) {
+    const match = userCategories.find(
+      (uc) => uc.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (match) return match.color;
+  }
   if (name === 'General') return UNCATEGORIZED_COLOR;
   return CATEGORY_COLORS[hashName(name) % CATEGORY_COLORS.length];
 }

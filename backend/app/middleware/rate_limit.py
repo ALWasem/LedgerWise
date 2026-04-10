@@ -23,7 +23,10 @@ DATA_PATHS = {
     "/api/v1/spending/summary",
     "/api/v1/plaid/items",
     "/api/v1/plaid/create-link-token",
+    "/api/v1/categories",
 }
+# Paths where rate limiting applies to any sub-path (e.g. /categories/{id})
+DATA_PATH_PREFIXES = ("/api/v1/categories/",)
 
 # Max unique keys per store before forced eviction (prevents unbounded growth)
 _MAX_KEYS = 10_000
@@ -87,6 +90,7 @@ async def rate_limit_middleware(
 
     # --- per-endpoint rate checks ---
     path = request.url.path
+    is_data_path = path in DATA_PATHS or path.startswith(DATA_PATH_PREFIXES)
     if path in SENSITIVE_PATHS:
         sw = SENSITIVE_RATE_LIMIT["window_seconds"]
         smax = SENSITIVE_RATE_LIMIT["max_requests"]
@@ -98,7 +102,7 @@ async def rate_limit_middleware(
                 content={"detail": "Rate limit exceeded for this action. Please wait."},
             )
         _sensitive_hits[key].append(now)
-    elif path in DATA_PATHS:
+    elif is_data_path:
         dw = DATA_RATE_LIMIT["window_seconds"]
         dmax = DATA_RATE_LIMIT["max_requests"]
         key = f"{client_ip}:{path}"

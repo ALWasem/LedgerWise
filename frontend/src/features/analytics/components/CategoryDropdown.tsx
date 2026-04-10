@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Dimensions, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
+import { useTransactionData } from '../../../contexts/TransactionDataContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createAnalyticsStyles } from '../styles/analytics.styles';
 import { getCategoryColor } from '../../../utils/categoryColors';
@@ -20,6 +21,7 @@ interface Props {
 
 export default function CategoryDropdown({ categories, selected, onSelect, isOpen, onToggle }: Props) {
   const colors = useColors();
+  const { userCategories } = useTransactionData();
   const styles = useThemeStyles(createAnalyticsStyles);
   const triggerRef = useRef<View>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -64,7 +66,7 @@ export default function CategoryDropdown({ categories, selected, onSelect, isOpe
         accessibilityState={{ expanded: isOpen }}
       >
         {selected && (
-          <View style={[styles.dropdownCategoryDot, { backgroundColor: getCategoryColor(selected) }]} />
+          <View style={[styles.dropdownCategoryDot, { backgroundColor: getCategoryColor(selected, userCategories) }]} />
         )}
         <Text style={styles.dropdownTriggerText}>{displayLabel}</Text>
         <View style={[styles.dropdownChevron, isOpen && styles.dropdownChevronOpen]}>
@@ -111,7 +113,7 @@ export default function CategoryDropdown({ categories, selected, onSelect, isOpe
 
             {categories.map((name) => {
               const isSelected = selected === name;
-              const color = getCategoryColor(name);
+              const color = getCategoryColor(name, userCategories);
               return (
                 <Pressable
                   key={name}

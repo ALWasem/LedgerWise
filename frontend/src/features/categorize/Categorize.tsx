@@ -21,14 +21,22 @@ import CategoryTarget from './components/CategoryTarget';
 import ProgressHeader from './components/ProgressHeader';
 import TransactionFilterDropdown from './components/TransactionFilterDropdown';
 import MobileCategorizeList from './components/MobileCategorizeList';
+import NewCategoryCard from './components/NewCategoryCard';
+import CategoryModal from './components/CategoryModal';
+import DeleteCategoryModal from './components/DeleteCategoryModal';
+import CategoryMenu from './components/CategoryMenu';
 import type { Transaction } from '../../types/transaction';
 import type { CategoryInfo } from '../../types/categorize';
 
-type CategoryListItem = CategoryInfo | { id: '__spacer__'; _spacer: true };
+type CategoryListItem = CategoryInfo | { id: '__new__'; _newCard: true } | { id: '__spacer__'; _spacer: true };
 const SPACER: CategoryListItem = { id: '__spacer__', _spacer: true };
 
 function isSpacer(item: CategoryListItem): item is typeof SPACER {
   return '_spacer' in item;
+}
+
+function isNewCard(item: CategoryListItem): item is { id: '__new__'; _newCard: true } {
+  return '_newCard' in item;
 }
 
 export default function Categorize() {
@@ -57,6 +65,9 @@ export default function Categorize() {
     setTransactionSearch,
     setCategorySearch,
     assignToCategory,
+    createCategory,
+    updateCategory,
+    deleteCategory,
   } = useCategorizeData();
 
   const uncategorizedCount = totalTransactions - categorizedCount;
@@ -66,6 +77,63 @@ export default function Categorize() {
   // Toast state for desktop drag & drop confirmation
   const [toast, setToast] = useState<ToastData | null>(null);
   const clearToast = useCallback(() => setToast(null), []);
+
+  // --- Category management modal state ---
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [editTarget, setEditTarget] = useState<CategoryInfo | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CategoryInfo | null>(null);
+  const [menuState, setMenuState] = useState<{
+    category: CategoryInfo;
+    position: { top: number; right: number };
+  } | null>(null);
+
+  const existingCategoryNames = useMemo(
+    () => allCategories.map((c) => c.name),
+    [allCategories],
+  );
+
+  const handleOpenCreateModal = useCallback(() => setCreateModalVisible(true), []);
+  const handleCloseCreateModal = useCallback(() => setCreateModalVisible(false), []);
+
+  const handleCreateCategory = useCallback(
+    async (name: string, color: string) => {
+      await createCategory(name, color);
+    },
+    [createCategory],
+  );
+
+  const handleEditCategory = useCallback(
+    async (name: string, color: string) => {
+      if (!editTarget) return;
+      await updateCategory(editTarget.id, { name, color }, editTarget.name);
+    },
+    [editTarget, updateCategory],
+  );
+
+  const handleDeleteCategory = useCallback(async () => {
+    if (!deleteTarget) return;
+    await deleteCategory(deleteTarget.id, deleteTarget.name);
+  }, [deleteTarget, deleteCategory]);
+
+  const handleMenuOpen = useCallback(
+    (category: CategoryInfo, position: { top: number; right: number }) => {
+      setMenuState({ category, position });
+    },
+    [],
+  );
+
+  const handleMenuClose = useCallback(() => setMenuState(null), []);
+
+  const handleMenuEdit = useCallback(() => {
+    if (menuState) setEditTarget(menuState.category);
+  }, [menuState]);
+
+  const handleMenuDelete = useCallback(() => {
+    if (menuState) setDeleteTarget(menuState.category);
+  }, [menuState]);
+
+  const handleCloseEditModal = useCallback(() => setEditTarget(null), []);
+  const handleCloseDeleteModal = useCallback(() => setDeleteTarget(null), []);
 
   const handleAssignToCategory = useCallback(
     (transactionId: string, categoryName: string) => {
@@ -87,9 +155,15 @@ export default function Categorize() {
     [],
   );
 
+  // Build category grid data: categories + "New Category" card + optional spacer
   const categoryData: CategoryListItem[] = useMemo(() => {
-    if (categories.length % 2 === 0) return categories;
-    return [...categories, SPACER];
+    const newCard: CategoryListItem = { id: '__new__', _newCard: true };
+    const items: CategoryListItem[] = [...categories, newCard];
+    // Pad to even count for 2-column grid
+    if (items.length % 2 !== 0) {
+      items.push(SPACER);
+    }
+    return items;
   }, [categories]);
 
   const renderCategory = useCallback(
@@ -97,16 +171,20 @@ export default function Categorize() {
       if (isSpacer(item)) {
         return <View style={styles.categoryCardSpacer} />;
       }
+      if (isNewCard(item)) {
+        return <NewCategoryCard onPress={handleOpenCreateModal} />;
+      }
       return (
         <CategoryTarget
           category={item}
           totalSpending={totalSpendingAmount}
           onDrop={handleAssignToCategory}
+          onMenuOpen={handleMenuOpen}
           compact={compactCards}
         />
       );
     },
-    [handleAssignToCategory, totalSpendingAmount, compactCards, styles.categoryCardSpacer],
+    [handleAssignToCategory, handleMenuOpen, handleOpenCreateModal, totalSpendingAmount, compactCards, styles.categoryCardSpacer],
   );
 
   const keyExtractorTx = useCallback((item: Transaction) => item.id, []);
@@ -239,7 +317,7 @@ export default function Categorize() {
                     />
                     <TextInput
                       style={styles.searchInput}
-                      placeholder="Search transactions..."
+                      placeholder={compactCards ? 'Search...' : 'Search transactions...'}
                       placeholderTextColor={colors.text.tertiary}
                       value={transactionSearch}
                       onChangeText={setTransactionSearch}
@@ -277,6 +355,7 @@ export default function Categorize() {
                       styles.addCategoryButton,
                       isHovered(state) && styles.addCategoryButtonHovered,
                     ]}
+                    onPress={handleOpenCreateModal}
                     accessibilityRole="button"
                     accessibilityLabel="Add category"
                   >
@@ -296,7 +375,7 @@ export default function Categorize() {
                   />
                   <TextInput
                     style={styles.searchInput}
-                    placeholder="Filter categories..."
+                    placeholder={compactCards ? 'Filter...' : 'Filter categories...'}
                     placeholderTextColor={colors.text.tertiary}
                     value={categorySearch}
                     onChangeText={setCategorySearch}
@@ -315,36 +394,6 @@ export default function Categorize() {
                 columnWrapperStyle={styles.categoryColumnWrapper}
                 showsVerticalScrollIndicator={true}
               />
-
-              {/* Create New Category */}
-              <Pressable
-                style={(state) => [
-                  styles.createCategoryRow,
-                  isHovered(state) && styles.createCategoryRowHovered,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="Create new category"
-              >
-                {(state) => (
-                  <>
-                    <Ionicons
-                      name="add"
-                      size={16}
-                      color={
-                        isHovered(state)
-                          ? (colors.isDark ? colors.purple[400] : colors.purple[600])
-                          : colors.text.secondary
-                      }
-                    />
-                    <Text style={[
-                      styles.createCategoryText,
-                      isHovered(state) && styles.createCategoryTextHovered,
-                    ]}>
-                      Create New Category
-                    </Text>
-                  </>
-                )}
-              </Pressable>
             </View>
           </StaggeredView>
         </View>
@@ -352,6 +401,39 @@ export default function Categorize() {
 
       {/* Branded toast — bottom-right confirmation on successful categorization */}
       <BrandedToast data={toast} onDismiss={clearToast} />
+
+      {/* Category Management Modals */}
+      <CategoryModal
+        visible={createModalVisible}
+        onClose={handleCloseCreateModal}
+        onSave={handleCreateCategory}
+        existingNames={existingCategoryNames}
+      />
+
+      <CategoryModal
+        visible={!!editTarget}
+        onClose={handleCloseEditModal}
+        onSave={handleEditCategory}
+        initialName={editTarget?.name}
+        initialColor={editTarget?.color}
+        existingNames={existingCategoryNames}
+      />
+
+      <DeleteCategoryModal
+        visible={!!deleteTarget}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteCategory}
+        categoryName={deleteTarget?.name ?? ''}
+        transactionCount={deleteTarget?.transactionCount ?? 0}
+      />
+
+      <CategoryMenu
+        visible={!!menuState}
+        onClose={handleMenuClose}
+        onEdit={handleMenuEdit}
+        onDelete={handleMenuDelete}
+        anchorPosition={menuState?.position ?? { top: 0, right: 0 }}
+      />
     </View>
   );
 }

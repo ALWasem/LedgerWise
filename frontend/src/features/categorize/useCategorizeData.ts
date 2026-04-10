@@ -1,7 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useTransactionData } from '../../contexts/TransactionDataContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { updateTransactionCategory } from '../../api/client';
+import {
+  createCategoryApi,
+  deleteCategoryApi,
+  updateCategoryApi,
+  updateTransactionCategory,
+} from '../../api/client';
 import { isSpending } from '../../utils/transactionFilters';
 import { getCategoryColor } from '../../utils/categoryColors';
 import { normalizeCategory } from '../../utils/normalizeCategory';
@@ -9,7 +14,8 @@ import type { Transaction } from '../../types/transaction';
 import type { CategoryInfo, TransactionFilter } from '../../types/categorize';
 
 export default function useCategorizeData() {
-  const { allTransactions, transactionsLoading, updateTransactionLocally } = useTransactionData();
+  const { allTransactions, transactionsLoading, updateTransactionLocally, refresh, userCategories, setUserCategories } =
+    useTransactionData();
   const { session } = useAuth();
   const token = session?.access_token ?? null;
 
@@ -54,15 +60,28 @@ export default function useCategorizeData() {
       }
     }
 
+    // Merge user-defined categories that have no transactions yet
+    for (const uc of userCategories) {
+      if (!catMap.has(uc.name) && uc.name !== 'General') {
+        catMap.set(uc.name, { count: 0, totalAmount: 0 });
+      }
+    }
+
     const sorted = [...catMap.entries()].sort((a, b) => b[1].totalAmount - a[1].totalAmount);
     let spendingTotal = 0;
 
     const cats = sorted.map(([name, info]): CategoryInfo => {
       spendingTotal += info.totalAmount;
+
+      // Find matching user category for the DB id
+      const userCat = userCategories.find(
+        (uc) => uc.name.toLowerCase() === name.toLowerCase(),
+      );
+
       return {
-        id: name.toLowerCase().replace(/\s+/g, '-'),
+        id: userCat?.id ?? name.toLowerCase().replace(/\s+/g, '-'),
         name,
-        color: getCategoryColor(name),
+        color: getCategoryColor(name, userCategories),
         transactionCount: info.count,
         totalAmount: info.totalAmount,
         lastAssignedMerchant: info.lastTx?.description,
@@ -71,7 +90,7 @@ export default function useCategorizeData() {
     });
 
     return { categories: cats, totalSpendingAmount: spendingTotal };
-  }, [spendingTransactions, reassigned]);
+  }, [spendingTransactions, reassigned, userCategories]);
 
   const totalSpending = spendingTransactions.length;
   const categorizedCount = totalSpending - uncategorized.length;
@@ -131,6 +150,79 @@ export default function useCategorizeData() {
     [token, allTransactions, updateTransactionLocally],
   );
 
+  // --- Category CRUD ---
+
+  const createCategory = useCallback(
+    async (name: string, color: string) => {
+      if (!token) return;
+      const created = await createCategoryApi(token, name, color);
+      setUserCategories((prev) => [...prev, created]);
+    },
+    [token],
+  );
+
+  const updateCategory = useCallback(
+    async (id: string, updates: { name?: string; color?: string }, oldName?: string) => {
+      if (!token) return;
+
+      // Resolve the DB UUID — prefer the id if already a UUID, otherwise look up by name
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      let resolvedId = isUuid ? id : null;
+
+      if (!resolvedId && oldName) {
+        // Check if category already exists in DB under this name
+        const existing = userCategories.find(
+          (uc) => uc.name.toLowerCase() === oldName.toLowerCase(),
+        );
+        if (existing) {
+          resolvedId = existing.id;
+        } else {
+          // Create a new DB entry for this transaction-derived category
+          const created = await createCategoryApi(token, oldName, updates.color ?? '#9333EA');
+          setUserCategories((prev) => [...prev, created]);
+          // If only color changed, we're done
+          if (!updates.name || updates.name === oldName) return;
+          resolvedId = created.id;
+        }
+      }
+
+      if (!resolvedId) return;
+
+      const updated = await updateCategoryApi(token, resolvedId, updates);
+      setUserCategories((prev) =>
+        prev.map((uc) => (uc.id === resolvedId ? updated : uc)),
+      );
+
+      // If name changed, refresh transactions so the renamed category reflects
+      if (updates.name && oldName && updates.name !== oldName) {
+        refresh();
+      }
+    },
+    [token, refresh, userCategories],
+  );
+
+  const deleteCategory = useCallback(
+    async (id: string, categoryName?: string) => {
+      if (!token) return;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      let resolvedId = isUuid ? id : null;
+
+      // If slug ID, try to find the DB entry by name
+      if (!resolvedId && categoryName) {
+        const existing = userCategories.find(
+          (uc) => uc.name.toLowerCase() === categoryName.toLowerCase(),
+        );
+        if (existing) resolvedId = existing.id;
+      }
+
+      if (!resolvedId) return; // No DB entry to delete
+      await deleteCategoryApi(token, resolvedId);
+      setUserCategories((prev) => prev.filter((uc) => uc.id !== resolvedId));
+      refresh();
+    },
+    [token, refresh, userCategories],
+  );
+
   // Search/filter
   const [transactionSearch, setTransactionSearch] = useState('');
   const [categorySearch, setCategorySearch] = useState('');
@@ -155,6 +247,7 @@ export default function useCategorizeData() {
     transactions: filteredTransactions,
     categories: filteredCategories,
     allCategories: categories,
+    userCategories,
     categorizedCount,
     totalTransactions: totalSpending,
     totalSpendingAmount,
@@ -166,5 +259,8 @@ export default function useCategorizeData() {
     setTransactionSearch,
     setCategorySearch,
     assignToCategory,
+    createCategory,
+    updateCategory,
+    deleteCategory,
   };
 }

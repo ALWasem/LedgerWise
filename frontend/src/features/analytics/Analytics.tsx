@@ -22,7 +22,7 @@ type OpenDropdown = 'none' | 'category';
 
 export default function Analytics() {
   const router = useRouter();
-  const { hasAccounts, accountsLoading, refresh, setSelectedPeriod, setHighlightCategory } = useTransactionData();
+  const { hasAccounts, accountsLoading, refresh, setSelectedPeriod, setHighlightCategory, userCategories } = useTransactionData();
   const { session } = useAuth();
   const token = session?.access_token ?? null;
   const colors = useColors();
@@ -37,7 +37,7 @@ export default function Analytics() {
 
   const categoryLabel = selectedCategory ?? 'All spending categories';
   const barColor = selectedCategory
-    ? getCategoryColor(selectedCategory)
+    ? getCategoryColor(selectedCategory, userCategories)
     : undefined;
 
   const toggleCategoryDropdown = useCallback(() => {

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createMobileCategorizeStyles } from '../styles/mobileCategorize.styles';
@@ -12,7 +12,7 @@ interface Props {
   totalCount: number;
 }
 
-export default function MobileFilterPills({
+function MobileFilterPills({
   filterMode,
   onFilterChange,
   categories,
@@ -118,3 +118,5 @@ export default function MobileFilterPills({
     </ScrollView>
   );
 }
+
+export default memo(MobileFilterPills);

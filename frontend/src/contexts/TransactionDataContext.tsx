@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
 import {
   clearApiCache,
   fetchAccounts,
+  fetchCategories,
   fetchTransactions,
   UnauthorizedError,
 } from '../api/client';
@@ -18,6 +19,7 @@ import { supabase } from '../api/supabase';
 import { computeSpendingSummary } from '../features/spending/utils/spendingSummary';
 import type { TimePeriod } from '../components/TimePeriodSelector';
 import type { Account } from '../types/account';
+import type { UserCategory } from '../types/categorize';
 import type { Transaction } from '../types/transaction';
 
 const DEFAULT_PERIOD: TimePeriod = {
@@ -44,6 +46,8 @@ interface TransactionDataContextValue {
   setSelectedPeriod: (period: TimePeriod) => void;
   highlightCategory: string | null;
   setHighlightCategory: (category: string | null) => void;
+  userCategories: UserCategory[];
+  setUserCategories: React.Dispatch<React.SetStateAction<UserCategory[]>>;
 }
 
 const TransactionDataContext = createContext<TransactionDataContextValue | null>(null);
@@ -63,6 +67,7 @@ export function TransactionDataProvider({ token, children }: ProviderProps) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>(DEFAULT_PERIOD);
   const [highlightCategory, setHighlightCategory] = useState<string | null>(null);
+  const [userCategories, setUserCategories] = useState<UserCategory[]>([]);
 
   const refresh = useCallback(() => {
     clearApiCache();
@@ -137,6 +142,20 @@ export function TransactionDataProvider({ token, children }: ProviderProps) {
     return () => { cancelled = true; };
   }, [token, hasAccounts, refreshKey]);
 
+  // Fetch user-defined categories (for color overrides across all pages)
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    fetchCategories(token)
+      .then((cats) => {
+        if (!cancelled) setUserCategories(cats);
+      })
+      .catch(() => {
+        // Categories are an optional enhancement — silent fail
+      });
+    return () => { cancelled = true; };
+  }, [token, refreshKey]);
+
   // Auto-select the most recent month with data on first load
   const hasAutoSelected = useRef(false);
   useEffect(() => {
@@ -172,8 +191,10 @@ export function TransactionDataProvider({ token, children }: ProviderProps) {
       setSelectedPeriod,
       highlightCategory,
       setHighlightCategory,
+      userCategories,
+      setUserCategories,
     }),
-    [accounts, allTransactions, hasAccounts, accountsLoading, transactionsLoading, error, refresh, updateTransactionLocally, selectedPeriod, highlightCategory],
+    [accounts, allTransactions, hasAccounts, accountsLoading, transactionsLoading, error, refresh, updateTransactionLocally, selectedPeriod, highlightCategory, userCategories],
   );
 
   return (

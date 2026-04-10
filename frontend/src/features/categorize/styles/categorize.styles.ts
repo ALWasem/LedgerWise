@@ -138,6 +138,7 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: 8,
+    minWidth: 0,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -147,12 +148,14 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     borderColor: deps.colors.border.default,
     borderRadius: radius.md,
     paddingHorizontal: 12,
+    overflow: 'hidden',
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
+    minWidth: 0,
     fontFamily: typography.fontFamily.regular,
     fontSize: 14,
     color: deps.colors.text.primary,
@@ -258,15 +261,18 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
   // --- Category Card ---
   categoryCard: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     padding: 12,
     backgroundColor: deps.colors.surface.elevated,
     borderWidth: 2,
     borderColor: deps.colors.border.default,
     borderRadius: radius.lg,
-    gap: 10,
+    gap: 8,
     ...deps.shadows.sm,
+  },
+  categoryCardRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
   },
   categoryCardSpacer: {
     flex: 1,
@@ -310,23 +316,32 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     alignItems: 'baseline',
     gap: 6,
     marginBottom: 6,
+    minWidth: 0,
+    overflow: 'hidden',
   },
   categoryAmount: {
     ...typography.amount,
     fontSize: 15,
     fontWeight: '700',
     color: deps.colors.text.primary,
+    flexShrink: 0,
   },
   categoryPercentage: {
     fontFamily: typography.fontFamily.semiBold,
     fontSize: 11,
     fontWeight: '600',
     color: deps.colors.text.tertiary,
+    flexShrink: 1,
+    minWidth: 0,
+    overflow: 'hidden',
   },
   categoryLastAssigned: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: deps.colors.border.default,
   },
   categoryLastAssignedText: {
     flex: 1,
@@ -346,6 +361,7 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radius.sm,
     overflow: 'hidden',
+    flexShrink: 0,
   },
 
   // --- Create New Category Row ---
@@ -376,6 +392,8 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
   filterContainer: {
     position: 'relative' as const,
     zIndex: 100,
+    flexShrink: 1,
+    minWidth: 0,
   },
   filterTrigger: {
     flexDirection: 'row',
@@ -387,6 +405,7 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     borderWidth: 1,
     borderColor: deps.colors.border.default,
     backgroundColor: deps.colors.surface.bg,
+    overflow: 'hidden',
   },
   filterTriggerActive: {
     borderColor: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[600],
@@ -398,11 +417,12 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     marginRight: 2,
   },
   filterLabel: {
+    flex: 1,
+    minWidth: 0,
     fontFamily: typography.fontFamily.semiBold,
     fontSize: 13,
     fontWeight: '600',
     color: deps.colors.text.primary,
-    maxWidth: 140,
   },
   filterLabelActive: {
     color: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[600],
@@ -499,6 +519,7 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
   },
   searchContainerFlex: {
     flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: deps.colors.surface.bg,
@@ -506,6 +527,55 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     borderColor: deps.colors.border.default,
     borderRadius: radius.md,
     paddingHorizontal: 12,
+    overflow: 'hidden',
+  },
+
+  // --- New Category Card ---
+  newCategoryCard: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: deps.colors.border.default,
+    borderRadius: radius.lg,
+    minHeight: 100,
+  },
+  newCategoryCardHovered: {
+    borderColor: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[500],
+    backgroundColor: deps.colors.isDark
+      ? deps.colors.purple[900] + '15'
+      : deps.colors.purple[50],
+  },
+  newCategoryContent: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  newCategoryText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 13,
+    fontWeight: '600',
+    color: deps.colors.text.tertiary,
+  },
+  newCategoryTextHovered: {
+    color: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[600],
+  },
+
+  // --- Category Card Top-Right (badge + menu) ---
+  categoryTopRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    flexShrink: 0,
+  },
+  menuTrigger: {
+    padding: 4,
+    borderRadius: radius.sm,
+  },
+  menuTriggerHovered: {
+    backgroundColor: deps.colors.surface.bg,
   },
 
   // --- Empty State ---

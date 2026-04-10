@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, findNodeHandle, Pressable, ScrollView, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '../../contexts/ThemeContext';
 import { useThemeStyles } from '../../hooks/useThemeStyles';
@@ -77,9 +77,10 @@ export default function SpendingSummary({
     scrollTimerRef.current = setTimeout(() => {
       scrollTimerRef.current = null;
       const scrollNode = scrollContentRef.current;
-      if (target && scrollNode) {
+      const nodeHandle = scrollNode ? findNodeHandle(scrollNode) : null;
+      if (target && nodeHandle !== null) {
         target.measureLayout(
-          scrollNode as any,
+          nodeHandle,
           (_x, y) => {
             scrollRef.current?.scrollTo({ y: Math.max(0, y - 20), animated: true });
           },

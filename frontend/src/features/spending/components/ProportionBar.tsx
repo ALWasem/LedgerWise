@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTransactionData } from '../../../contexts/TransactionDataContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createSpendingStyles } from '../styles/spending.styles';
 import type { CategoryData } from '../../../types/spending';
@@ -14,6 +15,7 @@ interface ProportionBarProps {
 }
 
 export default function ProportionBar({ categories, accountCount = 0 }: ProportionBarProps) {
+  const { userCategories } = useTransactionData();
   const styles = useThemeStyles(createSpendingStyles);
   const router = useRouter();
   const sorted = useMemo(
@@ -41,7 +43,7 @@ export default function ProportionBar({ categories, accountCount = 0 }: Proporti
         <View
           style={[
             styles.legendDot,
-            { backgroundColor: getCategoryColor(cat.name) },
+            { backgroundColor: getCategoryColor(cat.name, userCategories) },
           ]}
         />
         <Text style={styles.legendText} numberOfLines={1}>
@@ -52,7 +54,7 @@ export default function ProportionBar({ categories, accountCount = 0 }: Proporti
         {Math.round(cat.percentage)}%
       </Text>
     </View>
-  ), [styles, setHoveredIndex]);
+  ), [styles, setHoveredIndex, userCategories]);
 
   return (
     <View style={styles.proportionBarContainer}>
@@ -76,7 +78,7 @@ export default function ProportionBar({ categories, accountCount = 0 }: Proporti
 
       <View style={styles.proportionBar}>
         {sorted.map((cat, i) => {
-          const color = getCategoryColor(cat.name);
+          const color = getCategoryColor(cat.name, userCategories);
           const isHovered = hoveredIndex === i;
           const pct = Math.round(cat.percentage);
 

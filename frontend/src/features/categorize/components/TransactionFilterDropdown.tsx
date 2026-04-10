@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
@@ -31,7 +31,7 @@ interface FilterDivider {
 
 type FilterListItem = FilterOption | FilterDivider;
 
-export default function TransactionFilterDropdown({
+function TransactionFilterDropdown({
   filterMode,
   onFilterChange,
   categories,
@@ -172,3 +172,5 @@ export default function TransactionFilterDropdown({
     </View>
   );
 }
+
+export default memo(TransactionFilterDropdown);

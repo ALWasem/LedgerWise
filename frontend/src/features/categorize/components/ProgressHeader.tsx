@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,10 +11,11 @@ interface Props {
   totalCount: number;
 }
 
-export default function ProgressHeader({ categorizedCount, totalCount }: Props) {
+function ProgressHeader({ categorizedCount, totalCount }: Props) {
   const colors = useColors();
   const styles = useThemeStyles(createCategorizeStyles);
   const percentage = totalCount > 0 ? Math.round((categorizedCount / totalCount) * 100) : 0;
+  const fillWidth = useMemo(() => ({ width: `${percentage}%` as `${number}%` }), [percentage]);
 
   return (
     <View style={styles.progressContainer}>
@@ -40,9 +42,11 @@ export default function ProgressHeader({ categorizedCount, totalCount }: Props) 
           colors={[colors.purple[600], colors.purple[500]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={[styles.progressFill, { width: `${percentage}%` }]}
+          style={[styles.progressFill, fillWidth]}
         />
       </View>
     </View>
   );
 }
+
+export default memo(ProgressHeader);

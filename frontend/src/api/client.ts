@@ -1,4 +1,5 @@
 import type { Account, ExchangeTokenResponse, PlaidItem } from '../types/account';
+import type { UserCategory } from '../types/categorize';
 import type { SpendingSummaryData } from '../types/spending';
 import type { Transaction } from '../types/transaction';
 
@@ -166,4 +167,59 @@ export async function exchangePlaidToken(
 
 export async function getPlaidItems(token: string): Promise<PlaidItem[]> {
   return cachedGet<PlaidItem[]>(`${API_URL}/api/v1/plaid/items`, token);
+}
+
+// --- Category management ---
+
+export async function fetchCategories(token: string): Promise<UserCategory[]> {
+  return cachedGet<UserCategory[]>(`${API_URL}/api/v1/categories/`, token);
+}
+
+export async function createCategoryApi(
+  token: string,
+  name: string,
+  color: string,
+): Promise<UserCategory> {
+  const res = await fetch(`${API_URL}/api/v1/categories/`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ name, color }),
+  });
+  const data = await handleResponse<UserCategory>(res);
+  clearApiCache();
+  return data;
+}
+
+export async function updateCategoryApi(
+  token: string,
+  id: string,
+  updates: { name?: string; color?: string },
+): Promise<UserCategory> {
+  const res = await fetch(
+    `${API_URL}/api/v1/categories/${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      headers: authHeaders(token),
+      body: JSON.stringify(updates),
+    },
+  );
+  const data = await handleResponse<UserCategory>(res);
+  clearApiCache();
+  return data;
+}
+
+export async function deleteCategoryApi(
+  token: string,
+  id: string,
+): Promise<{ deleted: boolean; transactions_affected: number }> {
+  const res = await fetch(
+    `${API_URL}/api/v1/categories/${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    },
+  );
+  const data = await handleResponse<{ deleted: boolean; transactions_affected: number }>(res);
+  clearApiCache();
+  return data;
 }

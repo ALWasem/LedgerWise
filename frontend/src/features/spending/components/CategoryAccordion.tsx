@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Animated, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
+import { useTransactionData } from '../../../contexts/TransactionDataContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createSpendingStyles } from '../styles/spending.styles';
 import type { SpendingSummaryData } from '../../../types/spending';
@@ -30,6 +31,7 @@ export default function CategoryAccordion({
   onInitialOpenConsumed,
 }: CategoryAccordionProps) {
   const colors = useColors();
+  const { userCategories } = useTransactionData();
   const styles = useThemeStyles(createSpendingStyles);
   const { toggle, getState, handleMeasure } = useAccordionHeight();
   const isRefund = variant === 'refund';
@@ -83,7 +85,7 @@ export default function CategoryAccordion({
         const { isExpanded, isClosing, isSettled, showContent, animValue } =
           getState(cat.name);
         const isUncategorized = !isRefund && cat.name === 'General';
-        const color = isRefund ? colors.semantic.success : getCategoryColor(cat.name);
+        const color = isRefund ? colors.semantic.success : getCategoryColor(cat.name, userCategories);
         const categoryTransactions = showContent
           ? getTransactionsForCategory(cat.name)
           : [];
