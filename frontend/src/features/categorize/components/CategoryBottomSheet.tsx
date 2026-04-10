@@ -1,6 +1,5 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { memo, useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Keyboard, Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
@@ -34,19 +33,12 @@ function CategoryBottomSheet({
 }: Props) {
   const colors = useColors();
   const styles = useThemeStyles(createCategoryBottomSheetStyles);
-  const insets = useSafeAreaInsets();
-
   const [name, setName] = useState('');
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-
-  const sheetPaddingStyle = useMemo(
-    () => ({ paddingBottom: Math.max(insets.bottom, 20) }),
-    [insets.bottom],
-  );
 
   useEffect(() => {
     if (visible) {
@@ -99,7 +91,7 @@ function CategoryBottomSheet({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
     >
       <Pressable
@@ -108,10 +100,7 @@ function CategoryBottomSheet({
         accessibilityRole="button"
         accessibilityLabel="Close"
       >
-        <Pressable style={[styles.sheet, sheetPaddingStyle]} onPress={undefined}>
-          {/* Handle */}
-          <View style={styles.handle} />
-
+        <Pressable style={styles.sheet} onPress={Keyboard.dismiss} accessibilityRole="none">
           {/* Header */}
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>

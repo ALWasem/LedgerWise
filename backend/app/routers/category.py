@@ -4,7 +4,6 @@ import logging
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Path
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
@@ -51,7 +50,7 @@ async def create_category(
         return await category_service.create_category(
             db, user_id, body.name, body.color,
         )
-    except IntegrityError:
+    except ValueError:
         raise HTTPException(
             status_code=409, detail="A category with this name already exists.",
         )
@@ -80,7 +79,7 @@ async def update_category(
         result = await category_service.update_category(
             db, user_id, category_id, name=body.name, color=body.color,
         )
-    except IntegrityError:
+    except ValueError:
         raise HTTPException(
             status_code=409, detail="A category with this name already exists.",
         )

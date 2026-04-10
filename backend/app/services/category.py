@@ -3,6 +3,7 @@
 import logging
 
 from sqlalchemy import delete, func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.account import Account
@@ -146,6 +147,9 @@ async def create_category(
     db.add(cat)
     try:
         await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise ValueError("A category with this name already exists.")
     except Exception:
         await db.rollback()
         raise
@@ -195,6 +199,9 @@ async def update_category(
 
     try:
         await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise ValueError("A category with this name already exists.")
     except Exception:
         await db.rollback()
         raise

@@ -61,9 +61,11 @@ export default function useCategorizeData() {
     }
 
     // Merge user-defined categories that have no transactions yet
+    // Use normalizeCategory so the key matches transaction-derived keys (title-case)
     for (const uc of userCategories) {
-      if (!catMap.has(uc.name) && uc.name !== 'General') {
-        catMap.set(uc.name, { count: 0, totalAmount: 0 });
+      const normalized = normalizeCategory(uc.name);
+      if (!catMap.has(normalized) && normalized !== 'General') {
+        catMap.set(normalized, { count: 0, totalAmount: 0 });
       }
     }
 

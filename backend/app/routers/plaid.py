@@ -37,7 +37,7 @@ async def create_link_token(
     except Exception:
         logger.error("Unexpected error creating link token for user=%s", user_id, exc_info=True)
         raise HTTPException(
-            status_code=502,
+            status_code=500,
             detail="Failed to initialize bank connection. Please try again later.",
         )
     return LinkTokenResponse(link_token=link_token)

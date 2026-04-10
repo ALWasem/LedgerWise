@@ -77,6 +77,34 @@ function MobileFilterPills({
         </Text>
       </Pressable>
 
+      <Pressable
+        onPress={() => onFilterChange('all')}
+        style={[
+          styles.filterPill,
+          filterMode === 'all' && styles.filterPillActive,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={`All, ${totalCount} transactions`}
+        accessibilityState={{ selected: filterMode === 'all' }}
+      >
+        <Text
+          style={[
+            styles.filterPillText,
+            filterMode === 'all' && styles.filterPillTextActive,
+          ]}
+        >
+          All
+        </Text>
+        <Text
+          style={[
+            styles.filterPillCount,
+            filterMode === 'all' && styles.filterPillCountActive,
+          ]}
+        >
+          {totalCount}
+        </Text>
+      </Pressable>
+
       {categories.map((cat) => {
         const selected = filterMode === cat.name;
         return (
@@ -106,12 +134,20 @@ function MobileFilterPills({
 
       {/* + New pill — opens create sheet directly */}
       <Pressable
-        style={styles.newCategoryPill}
+        style={({ pressed }) => [
+          styles.newCategoryPill,
+          pressed && styles.newCategoryPillPressed,
+        ]}
         onPress={onNewCategory}
         accessibilityRole="button"
         accessibilityLabel="Create new category"
       >
-        <Text style={styles.newCategoryPillText}>+ New</Text>
+        {({ pressed }) => (
+          <Text style={[
+            styles.newCategoryPillText,
+            pressed && styles.newCategoryPillTextPressed,
+          ]}>+ New</Text>
+        )}
       </Pressable>
     </ScrollView>
   );

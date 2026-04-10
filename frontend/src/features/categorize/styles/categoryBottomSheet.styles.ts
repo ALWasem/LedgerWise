@@ -7,24 +7,19 @@ export const createCategoryBottomSheetStyles = (deps: StyleDeps) => StyleSheet.c
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
 
   // --- Sheet ---
   sheet: {
     backgroundColor: deps.colors.surface.card,
-    borderTopLeftRadius: radius['2xl'],
-    borderTopRightRadius: radius['2xl'],
+    borderRadius: radius['2xl'],
+    width: '100%',
+    maxWidth: 400,
+    paddingBottom: 20,
     ...deps.shadows.lg,
-  },
-  handle: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: deps.colors.border.default,
-    marginTop: 10,
-    marginBottom: 8,
   },
   sheetHeader: {
     flexDirection: 'row',

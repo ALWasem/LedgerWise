@@ -83,7 +83,11 @@ function CategoryListScreen({
   }, [editTarget, onDeleteCategory]);
 
   const renderCategory = useCallback(({ item }: { item: CategoryInfo }) => (
-    <View style={styles.categoryRow}>
+    <View
+      style={styles.categoryRow}
+      accessibilityRole="summary"
+      accessibilityLabel={`${item.name}, ${item.transactionCount} ${item.transactionCount === 1 ? 'transaction' : 'transactions'}`}
+    >
       <View style={[styles.categoryDot, { backgroundColor: item.color }]} />
       <Text style={styles.categoryName} numberOfLines={1}>{item.name}</Text>
       <Text style={styles.categoryCount}>{item.transactionCount}</Text>
@@ -139,13 +143,31 @@ function CategoryListScreen({
           keyExtractor={keyExtractor}
           ListFooterComponent={
             <Pressable
-              style={styles.newCategoryFooter}
+              style={({ pressed }) => [
+                styles.newCategoryFooter,
+                pressed && styles.newCategoryFooterPressed,
+              ]}
               onPress={handleAddPress}
               accessibilityRole="button"
               accessibilityLabel="Create new category"
             >
-              <Ionicons name="add" size={20} color={colors.text.tertiary} />
-              <Text style={styles.newCategoryFooterText}>New category</Text>
+              {({ pressed }) => (
+                <>
+                  <Ionicons
+                    name="add"
+                    size={20}
+                    color={
+                      pressed
+                        ? (colors.isDark ? colors.purple[400] : colors.purple[600])
+                        : colors.text.tertiary
+                    }
+                  />
+                  <Text style={[
+                    styles.newCategoryFooterText,
+                    pressed && styles.newCategoryFooterTextPressed,
+                  ]}>New category</Text>
+                </>
+              )}
             </Pressable>
           }
           ListEmptyComponent={

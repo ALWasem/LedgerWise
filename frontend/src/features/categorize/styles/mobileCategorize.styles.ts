@@ -123,9 +123,9 @@ export const createMobileCategorizeStyles = (deps: StyleDeps) => StyleSheet.crea
     color: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[600],
   },
   pencilButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: deps.colors.surface.card,
     borderWidth: 1,
     borderColor: deps.colors.border.default,
@@ -142,11 +142,20 @@ export const createMobileCategorizeStyles = (deps: StyleDeps) => StyleSheet.crea
     borderColor: deps.colors.border.default,
     borderStyle: 'dashed',
   },
+  newCategoryPillPressed: {
+    borderColor: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[500],
+    backgroundColor: deps.colors.isDark
+      ? deps.colors.purple[900] + '15'
+      : deps.colors.purple[50],
+  },
   newCategoryPillText: {
     fontFamily: typography.fontFamily.semiBold,
     fontSize: 13,
     fontWeight: '600',
     color: deps.colors.text.tertiary,
+  },
+  newCategoryPillTextPressed: {
+    color: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[600],
   },
 
   // --- Search ---

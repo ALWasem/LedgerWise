@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { ActivityIndicator, findNodeHandle, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useColors } from '../../contexts/ThemeContext';
 import { useThemeStyles } from '../../hooks/useThemeStyles';
@@ -76,22 +76,25 @@ export default function SpendingSummary({
     const target = rowRef ?? categorySectionRef.current;
     scrollTimerRef.current = setTimeout(() => {
       scrollTimerRef.current = null;
-      const scrollNode = scrollContentRef.current;
-      const nodeHandle = scrollNode ? findNodeHandle(scrollNode) : null;
-      if (target && nodeHandle !== null) {
-        target.measureLayout(
-          nodeHandle,
-          (_x, y) => {
-            scrollRef.current?.scrollTo({ y: Math.max(0, y - 20), animated: true });
-          },
-          () => {},
-        );
+      if (target) {
+        target.measure((_x, _y, _w, _h, _pageX, pageY) => {
+          scrollContentRef.current?.measure((_cx, _cy, _cw, _ch, _cpx, containerPageY) => {
+            const offset = pageY - containerPageY;
+            scrollRef.current?.scrollTo({ y: Math.max(0, offset - 20), animated: true });
+          });
+        });
       }
     }, 150);
   }, [onInitialOpenConsumed]);
 
-  const iconBgPurple = colors.isDark ? colors.purple[900] + '60' : colors.purple[100];
-  const iconBgGold = colors.isDark ? colors.gold[900] + '40' : colors.gold[100];
+  const iconBgPurple = useMemo(
+    () => colors.isDark ? colors.purple[900] + '60' : colors.purple[100],
+    [colors.isDark, colors.purple],
+  );
+  const iconBgGold = useMemo(
+    () => colors.isDark ? colors.gold[900] + '40' : colors.gold[100],
+    [colors.isDark, colors.gold],
+  );
 
   return (
     <View style={styles.container}>

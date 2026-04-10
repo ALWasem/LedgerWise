@@ -99,11 +99,20 @@ export const createCategoryListScreenStyles = (deps: StyleDeps) => StyleSheet.cr
     borderStyle: 'dashed',
     borderRadius: radius.md,
   },
+  newCategoryFooterPressed: {
+    borderColor: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[500],
+    backgroundColor: deps.colors.isDark
+      ? deps.colors.purple[900] + '15'
+      : deps.colors.purple[50],
+  },
   newCategoryFooterText: {
     fontFamily: typography.fontFamily.semiBold,
     fontSize: 14,
     fontWeight: '600',
     color: deps.colors.text.tertiary,
+  },
+  newCategoryFooterTextPressed: {
+    color: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[600],
   },
 
   // --- Empty State ---
