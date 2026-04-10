@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { Platform, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, runOnJS, type SharedValue } from 'react-native-reanimated';
@@ -23,7 +23,7 @@ interface Props {
   onDragEnd: () => void;
 }
 
-export default function MobileDraggableRow({
+function MobileDraggableRow({
   transaction,
   draggedTransactionId,
   dragX,
@@ -145,3 +145,5 @@ export default function MobileDraggableRow({
     </GestureDetector>
   );
 }
+
+export default memo(MobileDraggableRow);

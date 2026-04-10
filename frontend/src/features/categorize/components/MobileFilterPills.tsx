@@ -1,5 +1,7 @@
-import { memo, useCallback } from 'react';
+import { memo } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createMobileCategorizeStyles } from '../styles/mobileCategorize.styles';
 import type { CategoryInfo, TransactionFilter } from '../../../types/categorize';
@@ -10,6 +12,8 @@ interface Props {
   categories: CategoryInfo[];
   uncategorizedCount: number;
   totalCount: number;
+  onEditCategories: () => void;
+  onNewCategory: () => void;
 }
 
 function MobileFilterPills({
@@ -18,13 +22,11 @@ function MobileFilterPills({
   categories,
   uncategorizedCount,
   totalCount,
+  onEditCategories,
+  onNewCategory,
 }: Props) {
+  const colors = useColors();
   const styles = useThemeStyles(createMobileCategorizeStyles);
-
-  const handlePress = useCallback(
-    (filter: TransactionFilter) => onFilterChange(filter),
-    [onFilterChange],
-  );
 
   return (
     <ScrollView
@@ -33,8 +35,22 @@ function MobileFilterPills({
       contentContainerStyle={styles.filterPillsContent}
       style={styles.filterPillsScroll}
     >
+      {/* Pencil icon — opens category list */}
       <Pressable
-        onPress={() => handlePress('uncategorized')}
+        style={styles.pencilButton}
+        onPress={onEditCategories}
+        accessibilityRole="button"
+        accessibilityLabel="Edit categories"
+      >
+        <Ionicons
+          name="pencil-outline"
+          size={16}
+          color={colors.text.secondary}
+        />
+      </Pressable>
+
+      <Pressable
+        onPress={() => onFilterChange('uncategorized')}
         style={[
           styles.filterPill,
           filterMode === 'uncategorized' && styles.filterPillActive,
@@ -61,40 +77,12 @@ function MobileFilterPills({
         </Text>
       </Pressable>
 
-      <Pressable
-        onPress={() => handlePress('all')}
-        style={[
-          styles.filterPill,
-          filterMode === 'all' && styles.filterPillActive,
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel={`All transactions, ${totalCount}`}
-        accessibilityState={{ selected: filterMode === 'all' }}
-      >
-        <Text
-          style={[
-            styles.filterPillText,
-            filterMode === 'all' && styles.filterPillTextActive,
-          ]}
-        >
-          All
-        </Text>
-        <Text
-          style={[
-            styles.filterPillCount,
-            filterMode === 'all' && styles.filterPillCountActive,
-          ]}
-        >
-          {totalCount}
-        </Text>
-      </Pressable>
-
       {categories.map((cat) => {
         const selected = filterMode === cat.name;
         return (
           <Pressable
             key={cat.id}
-            onPress={() => handlePress(cat.name)}
+            onPress={() => onFilterChange(cat.name)}
             style={[styles.filterPill, selected && styles.filterPillActive]}
             accessibilityRole="button"
             accessibilityLabel={`${cat.name}, ${cat.transactionCount} transactions`}
@@ -115,6 +103,16 @@ function MobileFilterPills({
           </Pressable>
         );
       })}
+
+      {/* + New pill — opens create sheet directly */}
+      <Pressable
+        style={styles.newCategoryPill}
+        onPress={onNewCategory}
+        accessibilityRole="button"
+        accessibilityLabel="Create new category"
+      >
+        <Text style={styles.newCategoryPillText}>+ New</Text>
+      </Pressable>
     </ScrollView>
   );
 }

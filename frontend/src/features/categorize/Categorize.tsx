@@ -25,6 +25,7 @@ import NewCategoryCard from './components/NewCategoryCard';
 import CategoryModal from './components/CategoryModal';
 import DeleteCategoryModal from './components/DeleteCategoryModal';
 import CategoryMenu from './components/CategoryMenu';
+import { getEmptyStateText } from './utils/emptyStateText';
 import type { Transaction } from '../../types/transaction';
 import type { CategoryInfo } from '../../types/categorize';
 
@@ -165,7 +166,7 @@ export default function Categorize() {
       items.push(SPACER);
     }
     return items;
-  }, [categories]);
+  }, [categories, newCard]);
 
   const renderCategory = useCallback(
     ({ item }: { item: CategoryListItem }) => {
@@ -191,29 +192,13 @@ export default function Categorize() {
   const keyExtractorTx = useCallback((item: Transaction) => item.id, []);
   const keyExtractorCat = useCallback((item: CategoryListItem) => item.id, []);
 
-  const emptyTitle = transactionSearch
-    ? 'No matches found'
-    : filterMode === 'uncategorized'
-      ? 'All done!'
-      : 'No transactions';
-
-  const emptySubtitle = transactionSearch
-    ? 'Try a different search term'
-    : filterMode === 'uncategorized'
-      ? 'All transactions have been categorized'
-      : filterMode === 'all'
-        ? 'No spending transactions found'
-        : `No transactions in ${filterMode}`;
+  const emptyState = getEmptyStateText(filterMode, !!transactionSearch);
 
   const transactionEmptyState = (
     <View style={styles.emptyContainer}>
-      <Ionicons
-        name={filterMode === 'uncategorized' && !transactionSearch ? 'checkmark-circle-outline' : 'search-outline'}
-        size={48}
-        color={colors.text.tertiary}
-      />
-      <Text style={styles.emptyTitle}>{emptyTitle}</Text>
-      <Text style={styles.emptyText}>{emptySubtitle}</Text>
+      <Ionicons name={emptyState.icon} size={48} color={colors.text.tertiary} />
+      <Text style={styles.emptyTitle}>{emptyState.title}</Text>
+      <Text style={styles.emptyText}>{emptyState.subtitle}</Text>
     </View>
   );
 
@@ -261,6 +246,10 @@ export default function Categorize() {
         transactionSearch={transactionSearch}
         setTransactionSearch={setTransactionSearch}
         assignToCategory={assignToCategory}
+        existingCategoryNames={existingCategoryNames}
+        onCreateCategory={handleCreateCategory}
+        onUpdateCategory={updateCategory}
+        onDeleteCategory={deleteCategory}
       />
     );
   }

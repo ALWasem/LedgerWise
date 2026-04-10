@@ -18,6 +18,8 @@ import CategoryGridOverlay from './CategoryGridOverlay';
 import MobileDraggableRow from './MobileDraggableRow';
 import useCategorizeDrag from '../useCategorizeDrag';
 import MobileFilterPills from './MobileFilterPills';
+import CategoryListScreen from './CategoryListScreen';
+import { getEmptyStateText } from '../utils/emptyStateText';
 import type { Transaction } from '../../../types/transaction';
 import type { CategoryInfo, TransactionFilter } from '../../../types/categorize';
 import type { ToastData } from '../../../components/BrandedToast';
@@ -33,6 +35,10 @@ interface Props {
   transactionSearch: string;
   setTransactionSearch: (text: string) => void;
   assignToCategory: (transactionId: string, categoryName: string) => void;
+  existingCategoryNames: string[];
+  onCreateCategory: (name: string, color: string) => Promise<void>;
+  onUpdateCategory: (id: string, updates: { name?: string; color?: string }, oldName: string) => Promise<void>;
+  onDeleteCategory: (id: string, categoryName: string) => Promise<void>;
 }
 
 export default function MobileCategorizeList({
@@ -46,6 +52,10 @@ export default function MobileCategorizeList({
   transactionSearch,
   setTransactionSearch,
   assignToCategory,
+  existingCategoryNames,
+  onCreateCategory,
+  onUpdateCategory,
+  onDeleteCategory,
 }: Props) {
   const colors = useColors();
   const styles = useThemeStyles(createMobileCategorizeStyles);
@@ -54,6 +64,10 @@ export default function MobileCategorizeList({
   const toastOpacity = useSharedValue(0);
   const toastScale = useSharedValue(0.8);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Category management state
+  const [categoryListVisible, setCategoryListVisible] = useState(false);
+  const [categoryListCreateMode, setCategoryListCreateMode] = useState(false);
 
   const percentage = totalTransactions > 0
     ? Math.round((categorizedCount / totalTransactions) * 100)
@@ -149,31 +163,29 @@ export default function MobileCategorizeList({
     transform: [{ scale: listScale.value }],
   }));
 
-  const emptyTitle = transactionSearch
-    ? 'No matches found'
-    : filterMode === 'uncategorized'
-      ? 'All done!'
-      : 'No transactions';
+  // Category management handlers
+  const handleEditCategories = useCallback(() => {
+    setCategoryListCreateMode(false);
+    setCategoryListVisible(true);
+  }, []);
+  const handleCloseCategoryList = useCallback(() => {
+    setCategoryListVisible(false);
+    setCategoryListCreateMode(false);
+  }, []);
+  const handleNewCategory = useCallback(() => {
+    setCategoryListCreateMode(true);
+    setCategoryListVisible(true);
+  }, []);
 
-  const emptySubtitle = transactionSearch
-    ? 'Try a different search term'
-    : filterMode === 'uncategorized'
-      ? 'All transactions have been categorized'
-      : filterMode === 'all'
-        ? 'No spending transactions found'
-        : `No transactions in ${filterMode}`;
-
-  const emptyIcon = filterMode === 'uncategorized' && !transactionSearch
-    ? 'checkmark-circle-outline' as const
-    : 'search-outline' as const;
+  const emptyText = getEmptyStateText(filterMode, !!transactionSearch);
 
   const emptyState = useMemo(() => (
     <View style={styles.emptyContainer}>
-      <Ionicons name={emptyIcon} size={48} color={colors.text.tertiary} />
-      <Text style={styles.emptyTitle}>{emptyTitle}</Text>
-      <Text style={styles.emptyText}>{emptySubtitle}</Text>
+      <Ionicons name={emptyText.icon} size={48} color={colors.text.tertiary} />
+      <Text style={styles.emptyTitle}>{emptyText.title}</Text>
+      <Text style={styles.emptyText}>{emptyText.subtitle}</Text>
     </View>
-  ), [emptyTitle, emptySubtitle, emptyIcon, styles, colors]);
+  ), [emptyText, styles, colors]);
 
   return (
     <View style={styles.container}>
@@ -212,6 +224,8 @@ export default function MobileCategorizeList({
               categories={allCategories}
               uncategorizedCount={totalTransactions - categorizedCount}
               totalCount={totalTransactions}
+              onEditCategories={handleEditCategories}
+              onNewCategory={handleNewCategory}
             />
 
             {/* Search */}
@@ -284,6 +298,18 @@ export default function MobileCategorizeList({
           </View>
         </Animated.View>
       )}
+
+      {/* Category List Screen — pencil opens list, + New opens list with create sheet */}
+      <CategoryListScreen
+        visible={categoryListVisible}
+        onClose={handleCloseCategoryList}
+        categories={allCategories}
+        existingNames={existingCategoryNames}
+        onCreateCategory={onCreateCategory}
+        onUpdateCategory={onUpdateCategory}
+        onDeleteCategory={onDeleteCategory}
+        openCreateOnMount={categoryListCreateMode}
+      />
     </View>
   );
 }

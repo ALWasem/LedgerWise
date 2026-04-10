@@ -81,6 +81,7 @@ export const createMobileCategorizeStyles = (deps: StyleDeps) => StyleSheet.crea
   },
   filterPillsContent: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   filterPill: {
@@ -120,6 +121,32 @@ export const createMobileCategorizeStyles = (deps: StyleDeps) => StyleSheet.crea
   },
   filterPillCountActive: {
     color: deps.colors.isDark ? deps.colors.purple[400] : deps.colors.purple[600],
+  },
+  pencilButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: deps.colors.surface.card,
+    borderWidth: 1,
+    borderColor: deps.colors.border.default,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  newCategoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: deps.colors.border.default,
+    borderStyle: 'dashed',
+  },
+  newCategoryPillText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 13,
+    fontWeight: '600',
+    color: deps.colors.text.tertiary,
   },
 
   // --- Search ---
