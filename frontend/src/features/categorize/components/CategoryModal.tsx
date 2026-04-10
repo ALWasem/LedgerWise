@@ -25,28 +25,36 @@ interface Props {
 function CategoryModal({ visible, onClose, onSave, initialName, initialColor, existingNames }: Props) {
   const colors = useColors();
   const styles = useThemeStyles(createCategoryModalStyles);
-  const isEditing = !!initialName;
 
   const [name, setName] = useState('');
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [closing, setClosing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Reset state when modal opens
+  // Snapshot props into local state when modal opens — stable during fade-out
   useEffect(() => {
     if (visible) {
       setName(initialName ?? '');
       setColor(initialColor ?? PRESET_COLORS[0]);
+      setIsEditing(!!initialName);
       setError('');
       setSaving(false);
+      setClosing(false);
     }
   }, [visible, initialName, initialColor]);
 
   const trimmedName = name.trim();
-  const isDuplicate = existingNames.some(
+  const isDuplicate = !closing && existingNames.some(
     (n) => n.toLowerCase() === trimmedName.toLowerCase() && n.toLowerCase() !== initialName?.toLowerCase(),
   );
   const isValid = trimmedName.length > 0 && trimmedName.length <= 100 && !isDuplicate;
+
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    onClose();
+  }, [onClose]);
 
   const handleSave = useCallback(async () => {
     if (!isValid || saving) return;
@@ -54,20 +62,20 @@ function CategoryModal({ visible, onClose, onSave, initialName, initialColor, ex
     setError('');
     try {
       await onSave(trimmedName, color);
-      onClose();
+      handleClose();
     } catch {
       setError('Failed to save category. Please try again.');
     } finally {
       setSaving(false);
     }
-  }, [isValid, saving, trimmedName, color, onSave, onClose]);
+  }, [isValid, saving, trimmedName, color, onSave, handleClose]);
 
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={styles.backdrop}>
         <View style={styles.card}>
@@ -140,7 +148,7 @@ function CategoryModal({ visible, onClose, onSave, initialName, initialColor, ex
           <View style={styles.buttonRow}>
             <Pressable
               style={(state) => [styles.button, isHovered(state) && styles.buttonHovered]}
-              onPress={onClose}
+              onPress={handleClose}
               disabled={saving}
               accessibilityRole="button"
               accessibilityLabel="Cancel"

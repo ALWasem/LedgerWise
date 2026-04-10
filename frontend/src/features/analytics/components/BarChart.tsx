@@ -1,4 +1,4 @@
-import { memo, useEffect, useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
@@ -45,13 +45,15 @@ function BarChart({ months, categoryLabel, barColor, timePeriod, onTimePeriodCha
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-  const peakTotal = Math.max(...months.map((m) => m.total), 1);
 
-  // Grid step rounded to a nice number
-  const rawStep = peakTotal / GRID_LINES;
-  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
-  const gridStep = Math.ceil(rawStep / magnitude) * magnitude;
-  const gridMax = gridStep * GRID_LINES;
+  // Grid step rounded to a nice number — only recompute when months data changes
+  const { gridStep, gridMax } = useMemo(() => {
+    const peakTotal = Math.max(...months.map((m) => m.total), 1);
+    const rawStep = peakTotal / GRID_LINES;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const step = Math.ceil(rawStep / magnitude) * magnitude;
+    return { gridStep: step, gridMax: step * GRID_LINES };
+  }, [months]);
 
   const effectiveColor = barColor ?? (
     colors.isDark ? colors.purple[500] : colors.purple[600]

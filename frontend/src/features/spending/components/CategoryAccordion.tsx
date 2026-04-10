@@ -9,11 +9,11 @@ import type { SpendingSummaryData } from '../../../types/spending';
 import type { Transaction } from '../../../types/transaction';
 import { getCategoryColor } from '../../../utils/categoryColors';
 import { normalizeCategory } from '../../../utils/normalizeCategory';
-import { formatCurrency, formatLocalDate } from '../../../utils/formatters';
+import { formatCurrency } from '../../../utils/formatters';
 import { isPayment } from '../../../utils/transactionFilters';
 import { isHovered } from '../../../utils/pressable';
-import AccordionReveal from '../../../components/AccordionReveal';
 import useAccordionHeight from '../useAccordionHeight';
+import ExpandedCategoryContent from './ExpandedCategoryContent';
 
 interface CategoryAccordionProps {
   data: SpendingSummaryData;
@@ -182,50 +182,15 @@ export default function CategoryAccordion({
                   pointerEvents="none"
                   onLayout={(e) => handleMeasure(cat.name, e.nativeEvent.layout.height)}
                 >
-                  <View style={styles.expandedContainer}>
-                    <View style={styles.expandedHeader}>
-                      <Ionicons name="card-outline" size={13} color={colors.text.tertiary} />
-                      <Text style={styles.expandedHeaderText}>Recent Transactions</Text>
-                    </View>
-                    {categoryTransactions.map((txn) => (
-                      <View key={txn.id} style={styles.expandedTxn}>
-                        <View style={[
-                          styles.txnIconBox,
-                          { backgroundColor: color + (colors.isDark ? '30' : '18') },
-                        ]}>
-                          <Ionicons
-                            name="card-outline"
-                            size={14}
-                            color={color}
-                          />
-                        </View>
-                        <View style={styles.expandedTxnLeft}>
-                          <Text style={styles.expandedTxnDesc} numberOfLines={1}>
-                            {txn.description}
-                          </Text>
-                          <Text style={styles.expandedTxnMeta}>
-                            {formatLocalDate(txn.date, { includeYear: true })}
-                          </Text>
-                        </View>
-                        <Text style={styles.expandedTxnAmount}>
-                          {isRefund ? '+' : ''}{formatCurrency(Math.abs(parseFloat(txn.amount)))}
-                        </Text>
-                      </View>
-                    ))}
-                    <View style={[
-                      styles.expandedFooter,
-                      isUncategorized && styles.expandedFooterGold,
-                    ]}>
-                      <Text style={styles.expandedFooterLabel}>Category Total</Text>
-                      <Text style={[
-                        styles.expandedFooterAmount,
-                        isUncategorized && styles.expandedFooterAmountGold,
-                        isRefund && styles.expandedFooterAmountRefund,
-                      ]}>
-                        {isRefund ? '+' : ''}{formatCurrency(cat.total)}
-                      </Text>
-                    </View>
-                  </View>
+                  <ExpandedCategoryContent
+                    transactions={categoryTransactions}
+                    categoryName={cat.name}
+                    categoryTotal={cat.total}
+                    color={color}
+                    isRefund={isRefund}
+                    isUncategorized={isUncategorized}
+                    animated={false}
+                  />
                 </View>
 
                 {/* Animated container — drops height constraint once spring settles */}
@@ -235,81 +200,17 @@ export default function CategoryAccordion({
                     overflow: 'hidden' as const,
                   }}
                 >
-                  <View style={[styles.expandedContainer, !isSettled && styles.expandedContainerAnimating]}>
-                    <View style={styles.expandedHeader}>
-                      <Ionicons name="card-outline" size={13} color={colors.text.tertiary} />
-                      <Text style={styles.expandedHeaderText}>Recent Transactions</Text>
-                    </View>
-                    {categoryTransactions.map((txn, txnIndex) => {
-                      const amt = parseFloat(txn.amount);
-                      const isLarge = Math.abs(amt) > 100;
-                      return (
-                        <AccordionReveal
-                          key={txn.id}
-                          index={txnIndex}
-                          total={categoryTransactions.length}
-                          trigger={cat.name}
-                          visible={!isClosing}
-                        >
-                          <View style={styles.expandedTxn}>
-                            <View style={[
-                              styles.txnIconBox,
-                              { backgroundColor: color + (colors.isDark ? '30' : '18') },
-                            ]}>
-                              <Ionicons
-                                name="card-outline"
-                                size={14}
-                                color={color}
-                              />
-                            </View>
-                            <View style={styles.expandedTxnLeft}>
-                              <View style={styles.expandedTxnDescRow}>
-                                <Text style={styles.expandedTxnDesc} numberOfLines={1}>
-                                  {txn.description}
-                                </Text>
-                                {isLarge && !isRefund && (
-                                  <View style={styles.largeBadge}>
-                                    <Text style={styles.largeBadgeText}>Large</Text>
-                                  </View>
-                                )}
-                              </View>
-                              <Text style={styles.expandedTxnMeta}>
-                                {formatLocalDate(txn.date, { includeYear: true })}
-                              </Text>
-                            </View>
-                            <Text
-                              style={[
-                                styles.expandedTxnAmount,
-                                isRefund && styles.expandedTxnRefund,
-                              ]}
-                            >
-                              {isRefund ? '+' : ''}{formatCurrency(Math.abs(amt))}
-                            </Text>
-                          </View>
-                        </AccordionReveal>
-                      );
-                    })}
-                    <AccordionReveal
-                      index={categoryTransactions.length}
-                      total={categoryTransactions.length + 1}
-                      trigger={cat.name}
-                      visible={!isClosing}
-                    >
-                      <View style={[
-                        styles.expandedFooter,
-                        isUncategorized && styles.expandedFooterGold,
-                      ]}>
-                        <Text style={styles.expandedFooterLabel}>Category Total</Text>
-                        <Text style={[
-                          styles.expandedFooterAmount,
-                          isUncategorized && styles.expandedFooterAmountGold,
-                          isRefund && styles.expandedFooterAmountRefund,
-                        ]}>
-                          {isRefund ? '+' : ''}{formatCurrency(cat.total)}
-                        </Text>
-                      </View>
-                    </AccordionReveal>
-                  </View>
+                  <ExpandedCategoryContent
+                    transactions={categoryTransactions}
+                    categoryName={cat.name}
+                    categoryTotal={cat.total}
+                    color={color}
+                    isRefund={isRefund}
+                    isUncategorized={isUncategorized}
+                    animated
+                    isClosing={isClosing}
+                    containerStyle={!isSettled ? styles.expandedContainerAnimating : undefined}
+                  />
                 </Animated.View>
               </>
             )}
