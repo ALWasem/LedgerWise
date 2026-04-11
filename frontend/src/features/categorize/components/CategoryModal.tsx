@@ -120,7 +120,7 @@ function CategoryModal({ visible, onClose, onSave, initialName, initialColorId, 
                     key={c.id}
                     style={[
                       styles.colorCircle,
-                      { backgroundColor: c.hex, opacity: isTaken ? 0.3 : 1 },
+                      { backgroundColor: c.hex, opacity: isTaken ? 0.4 : 1 },
                       isSelected && styles.colorCircleSelected,
                     ]}
                     onPress={() => { if (!isTaken) setColorId(c.id); }}
@@ -129,6 +129,7 @@ function CategoryModal({ visible, onClose, onSave, initialName, initialColorId, 
                     accessibilityLabel={`${c.name}${isTaken ? ' (taken)' : ''}`}
                     accessibilityState={{ selected: isSelected, disabled: isTaken }}
                   >
+                    {isTaken && <View style={styles.colorSlash} />}
                     {isSelected && (
                       <Ionicons name="checkmark" size={16} color="#FFFFFF" />
                     )}
