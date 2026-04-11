@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, field_validator
 
+from app.schemas.merchant_rule import MerchantMatchPreview
+
 
 class TokenRequest(BaseModel):
     access_token: str
@@ -36,6 +38,7 @@ class TransactionResponse(BaseModel):
     pending: bool = False
     authorized_date: str | None = None
     plaid_transaction_id: str | None = None
+    merchant_match: MerchantMatchPreview | None = None
 
 
 class CategoryUpdateRequest(BaseModel):

@@ -1,5 +1,4 @@
 import logging
-import re
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
@@ -10,11 +9,10 @@ from app.dependencies import get_db
 from app.middleware.auth import get_current_user_id
 from app.schemas import AccountResponse, CategoryUpdateRequest, TokenRequest, TransactionResponse
 from app.services import banking as banking_service
+from app.services import merchant_rule as merchant_rule_service
 from app.services import teller as teller_service
 from app.utils.logging import log_data_access, log_security_event
-
-# Transaction IDs (Teller and Plaid) are alphanumeric with underscores/hyphens
-_TRANSACTION_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_\-]+$")
+from app.utils.validation import TRANSACTION_ID_PATTERN
 
 logger = logging.getLogger("ledgerwise.audit")
 
@@ -80,7 +78,7 @@ async def update_category(
     db: AsyncSession = Depends(get_db),
 ) -> TransactionResponse:
     """Update the category of a single transaction."""
-    if not _TRANSACTION_ID_PATTERN.match(transaction_id):
+    if not TRANSACTION_ID_PATTERN.match(transaction_id):
         raise HTTPException(status_code=400, detail="Invalid transaction ID format.")
     log_data_access(user_id, f"transaction_category_update:{transaction_id}")
     try:
@@ -97,6 +95,19 @@ async def update_category(
         raise HTTPException(status_code=500, detail="Failed to update transaction category.")
     if result is None:
         raise HTTPException(status_code=404, detail="Transaction not found.")
+    # Attach merchant match preview so frontend can prompt batch-apply
+    try:
+        preview = await merchant_rule_service.preview_merchant_match(
+            db, user_id, transaction_id
+        )
+        result.merchant_match = preview
+    except Exception:
+        logger.warning(
+            "Failed to compute merchant match preview for user=%s transaction=%s",
+            user_id,
+            transaction_id,
+            exc_info=True,
+        )
     return result
 
 

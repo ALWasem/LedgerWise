@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from app.config import settings
 from app.middleware.auth import get_current_user_id
 from app.middleware.rate_limit import rate_limit_middleware
-from app.routers import category, plaid, spending, teller
+from app.routers import category, merchant_rule, plaid, spending, teller
 from app.utils.logging import audit_logging_middleware
 
 logger = logging.getLogger("ledgerwise.audit")
@@ -68,6 +68,7 @@ app.include_router(teller.router, prefix="/api/v1")
 app.include_router(plaid.router, prefix="/api/v1")
 app.include_router(spending.router, prefix="/api/v1")
 app.include_router(category.router, prefix="/api/v1")
+app.include_router(merchant_rule.router, prefix="/api/v1")
 
 
 class HealthResponse(BaseModel):

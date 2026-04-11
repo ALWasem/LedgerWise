@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.models import Account, Transaction
 from app.schemas import AccountResponse
+from app.services.merchant_rule import apply_rules_to_transactions
 from app.utils.encryption import encrypt
 from app.utils.logging import log_enrollment
 
@@ -105,7 +106,8 @@ async def enroll_accounts(
         *(get_transactions(access_token, acct["id"]) for _, acct in account_ids)
     )
 
-    # Persist all transactions
+    # Persist all transactions and collect IDs for rule application
+    new_transaction_ids: list[str] = []
     for (account_db_id, _), teller_txns in zip(account_ids, txn_results):
         for txn in teller_txns:
             txn_stmt = pg_insert(Transaction).values(
@@ -129,6 +131,10 @@ async def enroll_accounts(
                 },
             )
             await db.execute(txn_stmt)
+            new_transaction_ids.append(txn["id"])
+
+    # Apply merchant rules to newly synced transactions
+    await apply_rules_to_transactions(db, user_id, new_transaction_ids)
 
     try:
         await db.commit()

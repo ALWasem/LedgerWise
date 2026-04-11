@@ -4,6 +4,11 @@ from app.schemas.category import (
     UserCategoryResponse,
     UserCategoryUpdateRequest,
 )
+from app.schemas.merchant_rule import (
+    MerchantMatchPreview,
+    MerchantRuleCreateRequest,
+    MerchantRuleResponse,
+)
 from app.schemas.spending import CategoryResponse, SpendingSummaryResponse
 from app.schemas.transaction import (
     AccountResponse,
@@ -23,6 +28,9 @@ __all__ = [
     "DeleteCategoryResponse",
     "ExchangeTokenResponse",
     "LinkTokenResponse",
+    "MerchantMatchPreview",
+    "MerchantRuleCreateRequest",
+    "MerchantRuleResponse",
     "PlaidItemResponse",
     "PublicTokenRequest",
     "SpendingSummaryResponse",

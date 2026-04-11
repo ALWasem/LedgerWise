@@ -11,7 +11,6 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
-import { formatCurrency } from '../../../utils/formatters';
 import { createMobileCategorizeStyles } from '../styles/mobileCategorize.styles';
 import StaggeredView from '../../../components/StaggeredView';
 import CategoryGridOverlay from './CategoryGridOverlay';
@@ -21,8 +20,9 @@ import MobileFilterPills from './MobileFilterPills';
 import CategoryListScreen from './CategoryListScreen';
 import { getEmptyStateText } from '../utils/emptyStateText';
 import type { Transaction } from '../../../types/transaction';
-import type { CategoryInfo, TransactionFilter } from '../../../types/categorize';
+import type { CategoryInfo, MerchantRulePromptData, TransactionFilter } from '../../../types/categorize';
 import type { ToastData } from '../../../components/BrandedToast';
+import MerchantRulePrompt from './MerchantRulePrompt';
 
 interface Props {
   transactions: Transaction[];
@@ -35,6 +35,10 @@ interface Props {
   transactionSearch: string;
   setTransactionSearch: (text: string) => void;
   assignToCategory: (transactionId: string, categoryName: string) => void;
+  assignWithRuleCheck: (transactionId: string, categoryName: string) => void;
+  rulePrompt: MerchantRulePromptData | null;
+  onRuleApplyAll: () => Promise<{ type: 'bulk'; count: number; categoryName: string; merchant: string } | { type: 'single'; categoryName: string; merchant: string; amount: string } | undefined>;
+  onRuleJustThisOne: () => { type: 'single'; categoryName: string; merchant: string; amount: string } | undefined;
   existingCategoryNames: string[];
   onCreateCategory: (name: string, colorId: number) => Promise<void>;
   onUpdateCategory: (id: string, updates: { name?: string; color_id?: number }, oldName: string) => Promise<void>;
@@ -53,6 +57,10 @@ export default function MobileCategorizeList({
   transactionSearch,
   setTransactionSearch,
   assignToCategory,
+  assignWithRuleCheck,
+  rulePrompt,
+  onRuleApplyAll,
+  onRuleJustThisOne,
   existingCategoryNames,
   onCreateCategory,
   onUpdateCategory,
@@ -103,18 +111,10 @@ export default function MobileCategorizeList({
     return () => { if (toastTimer.current) clearTimeout(toastTimer.current); };
   }, []);
 
-  // Drag handling with confirmation toast
+  // Drag handling — triggers rule check, toast shown after user responds to prompt
   const handleAssign = useCallback((transactionId: string, categoryName: string) => {
-    const tx = transactions.find(t => t.id === transactionId);
-    assignToCategory(transactionId, categoryName);
-    if (tx) {
-      showToast({
-        categoryName,
-        merchant: tx.description,
-        amount: formatCurrency(parseFloat(tx.amount)),
-      });
-    }
-  }, [transactions, assignToCategory, showToast]);
+    assignWithRuleCheck(transactionId, categoryName);
+  }, [assignWithRuleCheck]);
 
   const {
     draggedTransaction,
@@ -140,6 +140,37 @@ export default function MobileCategorizeList({
     registerTileBounds,
     registerCancelBounds,
   } = useCategorizeDrag(categories, handleAssign);
+
+  // Merchant rule prompt callbacks — show mobile toast after user responds
+  const handlePromptApplyAll = useCallback(async () => {
+    const result = await onRuleApplyAll();
+    if (result?.type === 'bulk') {
+      showToast({
+        categoryName: result.categoryName,
+        merchant: result.merchant,
+        amount: `${result.count} transactions`,
+        bulk: true,
+        bulkCount: result.count,
+      });
+    } else if (result?.type === 'single') {
+      showToast({
+        categoryName: result.categoryName,
+        merchant: result.merchant,
+        amount: result.amount,
+      });
+    }
+  }, [onRuleApplyAll, showToast]);
+
+  const handlePromptJustThisOne = useCallback(() => {
+    const result = onRuleJustThisOne();
+    if (result) {
+      showToast({
+        categoryName: result.categoryName,
+        merchant: result.merchant,
+        amount: result.amount,
+      });
+    }
+  }, [onRuleJustThisOne, showToast]);
 
   const draggedTransactionId = draggedTransaction?.id ?? null;
 
@@ -286,15 +317,28 @@ export default function MobileCategorizeList({
         />
       )}
 
+      {/* Merchant rule prompt */}
+      <MerchantRulePrompt
+        data={rulePrompt}
+        onApplyAll={handlePromptApplyAll}
+        onJustThisOne={handlePromptJustThisOne}
+      />
+
       {/* Toast */}
       {toast && (
         <Animated.View style={[styles.toastContainer, toastAnimatedStyle]} pointerEvents="none">
           <View style={styles.toast}>
             <Ionicons name="checkmark-circle" size={20} color={colors.text.inverse} />
             <View>
-              <Text style={styles.toastText}>Assigned to {toast.categoryName}</Text>
+              <Text style={styles.toastText}>
+                {toast.bulk
+                  ? `${toast.bulkCount} transactions categorized`
+                  : `Assigned to ${toast.categoryName}`}
+              </Text>
               <Text style={styles.toastDetail}>
-                {toast.merchant} · {toast.amount}
+                {toast.bulk
+                  ? `${toast.merchant} → ${toast.categoryName}`
+                  : `${toast.merchant} · ${toast.amount}`}
               </Text>
             </View>
           </View>

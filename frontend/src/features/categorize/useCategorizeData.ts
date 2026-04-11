@@ -2,16 +2,20 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTransactionData } from '../../contexts/TransactionDataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import {
+  clearApiCache,
   createCategoryApi,
+  createMerchantRule,
   deleteCategoryApi,
+  fetchMerchantMatchPreview,
   updateCategoryApi,
   updateTransactionCategory,
 } from '../../api/client';
 import { isSpending } from '../../utils/transactionFilters';
-import { getCategoryColor, hashCategoryColorId } from '../../utils/categoryColors';
+import { hashCategoryColorId } from '../../utils/categoryColors';
 import { normalizeCategory } from '../../utils/normalizeCategory';
+import { formatCurrency } from '../../utils/formatters';
 import type { Transaction } from '../../types/transaction';
-import type { CategoryInfo, TransactionFilter } from '../../types/categorize';
+import type { CategoryInfo, MerchantRulePromptData, TransactionFilter } from '../../types/categorize';
 
 export default function useCategorizeData() {
   const { allTransactions, transactionsLoading, updateTransactionLocally, refresh, userCategories, setUserCategories } =
@@ -225,6 +229,83 @@ export default function useCategorizeData() {
     [token, refresh, userCategories],
   );
 
+  // --- Merchant rule prompt ---
+  const [rulePrompt, setRulePrompt] = useState<MerchantRulePromptData | null>(null);
+
+  const assignWithRuleCheck = useCallback(
+    async (transactionId: string, categoryName: string) => {
+      if (!token) return;
+
+      const tx = allTransactions.find((t) => t.id === transactionId);
+      if (!tx) return;
+
+      try {
+        const preview = await fetchMerchantMatchPreview(token, transactionId);
+
+        if (preview && preview.matching_count > 0) {
+          setRulePrompt({
+            transactionId,
+            categoryName,
+            merchantPattern: preview.merchant_pattern,
+            matchField: preview.match_field,
+            matchingCount: preview.matching_count,
+            merchant: tx.description,
+            amount: formatCurrency(parseFloat(tx.amount)),
+          });
+          return;
+        }
+      } catch {
+        // Preview failed — fall through to single categorization
+      }
+
+      assignToCategory(transactionId, categoryName);
+    },
+    [token, allTransactions, assignToCategory],
+  );
+
+  const handleRuleApplyAll = useCallback(async () => {
+    if (!rulePrompt || !token) return;
+    const { transactionId, categoryName } = rulePrompt;
+
+    try {
+      const result = await createMerchantRule(token, transactionId, categoryName);
+
+      // Backend already updated all matching transactions — refresh to pick up changes
+      clearApiCache();
+      await refresh();
+      setRulePrompt(null);
+
+      return {
+        type: 'bulk' as const,
+        count: result.transactions_updated,
+        categoryName,
+        merchant: rulePrompt.merchant,
+      };
+    } catch {
+      assignToCategory(transactionId, categoryName);
+      setRulePrompt(null);
+      return {
+        type: 'single' as const,
+        categoryName,
+        merchant: rulePrompt.merchant,
+        amount: rulePrompt.amount,
+      };
+    }
+  }, [rulePrompt, token, refresh, assignToCategory]);
+
+  const handleRuleJustThisOne = useCallback(() => {
+    if (!rulePrompt) return;
+    assignToCategory(rulePrompt.transactionId, rulePrompt.categoryName);
+    const result = {
+      type: 'single' as const,
+      categoryName: rulePrompt.categoryName,
+      merchant: rulePrompt.merchant,
+      amount: rulePrompt.amount,
+    };
+    setRulePrompt(null);
+    return result;
+  }, [rulePrompt, assignToCategory]);
+
   // Search/filter
   const [transactionSearch, setTransactionSearch] = useState('');
   const [categorySearch, setCategorySearch] = useState('');
@@ -261,6 +342,10 @@ export default function useCategorizeData() {
     setTransactionSearch,
     setCategorySearch,
     assignToCategory,
+    rulePrompt,
+    assignWithRuleCheck,
+    handleRuleApplyAll,
+    handleRuleJustThisOne,
     createCategory,
     updateCategory,
     deleteCategory,

@@ -17,6 +17,8 @@ export interface ToastData {
   categoryName: string;
   merchant: string;
   amount: string;
+  bulk?: boolean;
+  bulkCount?: number;
 }
 
 interface Props {
@@ -53,7 +55,7 @@ export default function BrandedToast({ data, onDismiss }: Props) {
         scale.value = withTiming(0.85, { duration: 300 });
       }, DISPLAY_DURATION);
     }
-  }, [data]);
+  }, [data, dismiss, opacity, scale]);
 
   useEffect(() => {
     return () => { if (timer.current) clearTimeout(timer.current); };
@@ -84,9 +86,15 @@ export default function BrandedToast({ data, onDismiss }: Props) {
             <Ionicons name="checkmark" size={26} color="#FFFFFF" />
           </View>
           <View style={styles.textBlock}>
-            <Text style={styles.heading}>Successfully Categorized</Text>
+            <Text style={styles.heading}>
+              {data.bulk
+                ? `${data.bulkCount} transactions categorized`
+                : 'Successfully Categorized'}
+            </Text>
             <Text style={styles.subheading} numberOfLines={1}>
-              Assigned to {data.categoryName}
+              {data.bulk
+                ? `${data.merchant} → ${data.categoryName}`
+                : `Assigned to ${data.categoryName}`}
             </Text>
           </View>
         </View>
@@ -94,9 +102,13 @@ export default function BrandedToast({ data, onDismiss }: Props) {
         {/* Transaction details card */}
         <View style={styles.detailCard}>
           <Text style={styles.merchantName} numberOfLines={1}>
-            {data.merchant}
+            {data.bulk ? 'Rule created for future transactions' : data.merchant}
           </Text>
-          <Text style={styles.amount}>{data.amount}</Text>
+          {data.bulk ? (
+            <Ionicons name="add-circle-outline" size={16} color="rgba(255,255,255,0.7)" />
+          ) : (
+            <Text style={styles.amount}>{data.amount}</Text>
+          )}
         </View>
       </LinearGradient>
     </Animated.View>

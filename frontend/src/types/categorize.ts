@@ -21,3 +21,32 @@ export interface UserCategory {
 
 /** Filter mode for the categorize transaction list. */
 export type TransactionFilter = 'uncategorized' | 'all' | string;
+
+/** API response for merchant match preview. */
+export interface MerchantMatchPreview {
+  merchant_pattern: string;
+  match_field: string;
+  matching_count: number;
+}
+
+/** API response when creating a merchant rule. */
+export interface MerchantRuleResponse {
+  id: string;
+  merchant_pattern: string;
+  match_field: string;
+  category_name: string;
+  transactions_updated: number;
+  created_at: string;
+}
+
+/** Pending merchant rule prompt state. */
+export interface MerchantRulePromptData {
+  transactionId: string;
+  categoryName: string;
+  merchantPattern: string;
+  matchField: string;
+  matchingCount: number;
+  /** Original transaction details for the toast */
+  merchant: string;
+  amount: string;
+}

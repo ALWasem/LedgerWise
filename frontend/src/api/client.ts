@@ -1,5 +1,5 @@
 import type { Account, ExchangeTokenResponse, PlaidItem } from '../types/account';
-import type { UserCategory } from '../types/categorize';
+import type { MerchantMatchPreview, MerchantRuleResponse, UserCategory } from '../types/categorize';
 import type { SpendingSummaryData } from '../types/spending';
 import type { Transaction } from '../types/transaction';
 
@@ -220,6 +220,35 @@ export async function deleteCategoryApi(
     },
   );
   const data = await handleResponse<{ deleted: boolean; transactions_affected: number }>(res);
+  clearApiCache();
+  return data;
+}
+
+// --- Merchant rules ---
+
+export async function fetchMerchantMatchPreview(
+  token: string,
+  transactionId: string,
+): Promise<MerchantMatchPreview | null> {
+  const res = await fetch(
+    `${API_URL}/api/v1/merchant-rules/preview/${encodeURIComponent(transactionId)}`,
+    { headers: authHeaders(token) },
+  );
+  if (res.status === 204) return null;
+  return handleResponse<MerchantMatchPreview>(res);
+}
+
+export async function createMerchantRule(
+  token: string,
+  transactionId: string,
+  categoryName: string,
+): Promise<MerchantRuleResponse> {
+  const res = await fetch(`${API_URL}/api/v1/merchant-rules/`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ transaction_id: transactionId, category_name: categoryName }),
+  });
+  const data = await handleResponse<MerchantRuleResponse>(res);
   clearApiCache();
   return data;
 }

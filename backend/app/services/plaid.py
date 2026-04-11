@@ -28,6 +28,7 @@ from app.schemas.transaction import PlaidItemResponse
 from app.config import settings
 from app.services.plaid_client import get_plaid_client
 from app.services.category import consolidate_categories
+from app.services.merchant_rule import apply_rules_to_transactions
 from app.utils.encryption import encrypt
 from app.utils.logging import log_data_access, log_enrollment
 
@@ -206,6 +207,7 @@ async def sync_transactions(
         accounts = {acct.persistent_account_id: acct.id for acct in acct_result.scalars().all()}
 
     total_synced = 0
+    synced_transaction_ids: list[str] = []
     has_more = True
 
     while has_more:
@@ -244,6 +246,7 @@ async def sync_transactions(
                 set_=update_fields,
             )
             await db.execute(txn_stmt)
+            synced_transaction_ids.append(txn.transaction_id)
             total_synced += 1
 
         # Handle removed transactions (scoped to user's accounts)
@@ -263,6 +266,9 @@ async def sync_transactions(
 
         cursor = sync_response.next_cursor
         has_more = sync_response.has_more
+
+    # Apply merchant rules to newly synced transactions
+    await apply_rules_to_transactions(db, user_id, synced_transaction_ids)
 
     # Update cursor on the PlaidItem
     if plaid_item and cursor:

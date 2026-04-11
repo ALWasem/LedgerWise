@@ -16,7 +16,7 @@ GLOBAL_RATE_LIMIT = {"window_seconds": 60, "max_requests": 60}
 SENSITIVE_RATE_LIMIT = {"window_seconds": 60, "max_requests": 5}
 DATA_RATE_LIMIT = {"window_seconds": 60, "max_requests": 30}
 
-SENSITIVE_PATHS = {"/api/v1/teller/enroll", "/api/v1/plaid/exchange-token"}
+SENSITIVE_PATHS = {"/api/v1/teller/enroll", "/api/v1/plaid/exchange-token", "/api/v1/merchant-rules/"}
 DATA_PATHS = {
     "/api/v1/teller/accounts",
     "/api/v1/teller/transactions",
@@ -24,9 +24,10 @@ DATA_PATHS = {
     "/api/v1/plaid/items",
     "/api/v1/plaid/create-link-token",
     "/api/v1/categories",
+    "/api/v1/categories/",
 }
 # Paths where rate limiting applies to any sub-path (e.g. /categories/{id})
-DATA_PATH_PREFIXES = ("/api/v1/categories/",)
+DATA_PATH_PREFIXES = ("/api/v1/categories/", "/api/v1/merchant-rules/preview/")
 
 # Max unique keys per store before forced eviction (prevents unbounded growth)
 _MAX_KEYS = 10_000

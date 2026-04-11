@@ -8,7 +8,6 @@ import { useThemeStyles } from '../../hooks/useThemeStyles';
 import { usePlaidLink } from '../../hooks/usePlaidLink';
 import { createCategorizeStyles } from './styles/categorize.styles';
 import { isHovered } from '../../utils/pressable';
-import { formatCurrency } from '../../utils/formatters';
 import { COMPACT_BREAKPOINT, SIDEBAR_BREAKPOINT } from '../../utils/responsive';
 import StaggeredView from '../../components/StaggeredView';
 import EmptyState from '../../components/EmptyState';
@@ -21,6 +20,7 @@ import CategoryTarget from './components/CategoryTarget';
 import ProgressHeader from './components/ProgressHeader';
 import TransactionFilterDropdown from './components/TransactionFilterDropdown';
 import MobileCategorizeList from './components/MobileCategorizeList';
+import MerchantRulePrompt from './components/MerchantRulePrompt';
 import NewCategoryCard from './components/NewCategoryCard';
 import CategoryModal from './components/CategoryModal';
 import DeleteCategoryModal from './components/DeleteCategoryModal';
@@ -67,6 +67,10 @@ export default function Categorize() {
     setTransactionSearch,
     setCategorySearch,
     assignToCategory,
+    rulePrompt,
+    assignWithRuleCheck,
+    handleRuleApplyAll,
+    handleRuleJustThisOne,
     createCategory,
     updateCategory,
     deleteCategory,
@@ -144,18 +148,40 @@ export default function Categorize() {
 
   const handleAssignToCategory = useCallback(
     (transactionId: string, categoryName: string) => {
-      const tx = transactions.find((t) => t.id === transactionId);
-      assignToCategory(transactionId, categoryName);
-      if (tx) {
-        setToast({
-          categoryName,
-          merchant: tx.description,
-          amount: formatCurrency(parseFloat(tx.amount)),
-        });
-      }
+      assignWithRuleCheck(transactionId, categoryName);
     },
-    [transactions, assignToCategory],
+    [assignWithRuleCheck],
   );
+
+  const handleApplyAll = useCallback(async () => {
+    const result = await handleRuleApplyAll();
+    if (result?.type === 'bulk') {
+      setToast({
+        categoryName: result.categoryName,
+        merchant: result.merchant,
+        amount: `${result.count} transactions`,
+        bulk: true,
+        bulkCount: result.count,
+      });
+    } else if (result?.type === 'single') {
+      setToast({
+        categoryName: result.categoryName,
+        merchant: result.merchant,
+        amount: result.amount,
+      });
+    }
+  }, [handleRuleApplyAll]);
+
+  const handleJustThisOne = useCallback(() => {
+    const result = handleRuleJustThisOne();
+    if (result) {
+      setToast({
+        categoryName: result.categoryName,
+        merchant: result.merchant,
+        amount: result.amount,
+      });
+    }
+  }, [handleRuleJustThisOne]);
 
   const renderTransaction = useCallback(
     ({ item }: { item: Transaction }) => <TransactionRow transaction={item} />,
@@ -252,6 +278,10 @@ export default function Categorize() {
         transactionSearch={transactionSearch}
         setTransactionSearch={setTransactionSearch}
         assignToCategory={assignToCategory}
+        assignWithRuleCheck={assignWithRuleCheck}
+        rulePrompt={rulePrompt}
+        onRuleApplyAll={handleRuleApplyAll}
+        onRuleJustThisOne={handleRuleJustThisOne}
         existingCategoryNames={existingCategoryNames}
         onCreateCategory={handleCreateCategory}
         onUpdateCategory={updateCategory}
@@ -395,6 +425,13 @@ export default function Categorize() {
           </StaggeredView>
         </View>
       </View>
+
+      {/* Merchant rule prompt — shown when other transactions share the same merchant */}
+      <MerchantRulePrompt
+        data={rulePrompt}
+        onApplyAll={handleApplyAll}
+        onJustThisOne={handleJustThisOne}
+      />
 
       {/* Branded toast — bottom-right confirmation on successful categorization */}
       <BrandedToast data={toast} onDismiss={clearToast} />
