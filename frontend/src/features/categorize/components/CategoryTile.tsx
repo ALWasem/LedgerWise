@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { LayoutChangeEvent, View } from 'react-native';
 import Animated, {
   interpolateColor,
@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
+import { getCategoryColorHex } from '../../../utils/categoryColors';
 import { createMobileCategorizeStyles } from '../styles/mobileCategorize.styles';
 import { HOVER_SPRING } from '../useCategorizeDrag';
 import type { CategoryInfo } from '../../../types/categorize';
@@ -30,7 +31,7 @@ interface Props {
   onLayout: (index: number, pageX: number, pageY: number, width: number, height: number) => void;
 }
 
-export default function CategoryTile({ category, index, activeTileSV, isPulsing, onLayout }: Props) {
+function CategoryTile({ category, index, activeTileSV, isPulsing, onLayout }: Props) {
   const styles = useThemeStyles(createMobileCategorizeStyles);
   const colors = useColors();
   const wrapperRef = useRef<View>(null);
@@ -128,7 +129,7 @@ export default function CategoryTile({ category, index, activeTileSV, isPulsing,
           tileAnimatedStyle,
         ]}
       >
-        <View style={[styles.tileDot, { backgroundColor: category.color }]} />
+        <View style={[styles.tileDot, { backgroundColor: getCategoryColorHex(category.colorId) }]} />
         <Animated.Text
           style={[styles.tileName, nameAnimatedStyle]}
           numberOfLines={2}
@@ -142,3 +143,5 @@ export default function CategoryTile({ category, index, activeTileSV, isPulsing,
     </Animated.View>
   );
 }
+
+export default memo(CategoryTile);

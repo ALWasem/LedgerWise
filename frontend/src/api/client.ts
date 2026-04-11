@@ -178,12 +178,12 @@ export async function fetchCategories(token: string): Promise<UserCategory[]> {
 export async function createCategoryApi(
   token: string,
   name: string,
-  color: string,
+  colorId: number,
 ): Promise<UserCategory> {
   const res = await fetch(`${API_URL}/api/v1/categories/`, {
     method: 'POST',
     headers: authHeaders(token),
-    body: JSON.stringify({ name, color }),
+    body: JSON.stringify({ name, color_id: colorId }),
   });
   const data = await handleResponse<UserCategory>(res);
   clearApiCache();
@@ -193,7 +193,7 @@ export async function createCategoryApi(
 export async function updateCategoryApi(
   token: string,
   id: string,
-  updates: { name?: string; color?: string },
+  updates: { name?: string; color_id?: number },
 ): Promise<UserCategory> {
   const res = await fetch(
     `${API_URL}/api/v1/categories/${encodeURIComponent(id)}`,

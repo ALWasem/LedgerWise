@@ -4,22 +4,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createCategoryBottomSheetStyles } from '../styles/categoryBottomSheet.styles';
-
-/** First 12 colors from the category palette — used as preset options. */
-const PRESET_COLORS = [
-  '#D8B4FE', '#F43F5E', '#F97316', '#FBBF24',
-  '#86EFAC', '#99F6E4', '#C4B5FD', '#22D3EE',
-  '#3B82F6', '#F9A8D4', '#FB7185', '#A3E635',
-];
+import { CATEGORY_COLORS, getFirstAvailableColor } from '../../../utils/categoryColors';
+import type { CategoryColor } from '../../../utils/categoryColors';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSave: (name: string, color: string) => Promise<void>;
+  onSave: (name: string, colorId: number) => Promise<void>;
   onDelete?: () => Promise<void>;
   initialName?: string;
-  initialColor?: string;
+  initialColorId?: number;
   existingNames: string[];
+  takenColorIds: number[];
 }
 
 function CategoryBottomSheet({
@@ -28,13 +24,14 @@ function CategoryBottomSheet({
   onSave,
   onDelete,
   initialName,
-  initialColor,
+  initialColorId,
   existingNames,
+  takenColorIds,
 }: Props) {
   const colors = useColors();
   const styles = useThemeStyles(createCategoryBottomSheetStyles);
   const [name, setName] = useState('');
-  const [color, setColor] = useState(PRESET_COLORS[0]);
+  const [colorId, setColorId] = useState(1);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
@@ -43,13 +40,13 @@ function CategoryBottomSheet({
   useEffect(() => {
     if (visible) {
       setName(initialName ?? '');
-      setColor(initialColor ?? PRESET_COLORS[0]);
+      setColorId(initialColorId ?? getFirstAvailableColor(takenColorIds)?.id ?? 1);
       setIsEditing(!!initialName);
       setError('');
       setSaving(false);
       setDeleting(false);
     }
-  }, [visible, initialName, initialColor]);
+  }, [visible, initialName, initialColorId, takenColorIds]);
 
   const trimmedName = name.trim();
   const isDuplicate = existingNames.some(
@@ -62,14 +59,14 @@ function CategoryBottomSheet({
     setSaving(true);
     setError('');
     try {
-      await onSave(trimmedName, color);
+      await onSave(trimmedName, colorId);
       onClose();
     } catch {
       setError('Failed to save category. Please try again.');
     } finally {
       setSaving(false);
     }
-  }, [isValid, saving, deleting, trimmedName, color, onSave, onClose]);
+  }, [isValid, saving, deleting, trimmedName, colorId, onSave, onClose]);
 
   const handleDelete = useCallback(async () => {
     if (!onDelete || deleting || saving) return;
@@ -86,6 +83,13 @@ function CategoryBottomSheet({
   }, [onDelete, deleting, saving, onClose]);
 
   const busy = saving || deleting;
+
+  // Determine which color IDs are unavailable (taken by other categories, excluding current)
+  const unavailableIds = new Set(
+    isEditing && initialColorId
+      ? takenColorIds.filter((id) => id !== initialColorId)
+      : takenColorIds,
+  );
 
   return (
     <Modal
@@ -144,24 +148,29 @@ function CategoryBottomSheet({
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Color</Text>
               <View style={styles.colorGrid}>
-                {PRESET_COLORS.map((c) => (
-                  <Pressable
-                    key={c}
-                    style={[
-                      styles.colorCircle,
-                      { backgroundColor: c },
-                      color === c && styles.colorCircleSelected,
-                    ]}
-                    onPress={() => setColor(c)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Select color ${c}`}
-                    accessibilityState={{ selected: color === c }}
-                  >
-                    {color === c && (
-                      <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-                    )}
-                  </Pressable>
-                ))}
+                {CATEGORY_COLORS.map((c: CategoryColor) => {
+                  const isTaken = unavailableIds.has(c.id);
+                  const isSelected = colorId === c.id;
+                  return (
+                    <Pressable
+                      key={c.id}
+                      style={[
+                        styles.colorCircle,
+                        { backgroundColor: c.hex, opacity: isTaken ? 0.3 : 1 },
+                        isSelected && styles.colorCircleSelected,
+                      ]}
+                      onPress={() => { if (!isTaken) setColorId(c.id); }}
+                      disabled={isTaken}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${c.name}${isTaken ? ' (taken)' : ''}`}
+                      accessibilityState={{ selected: isSelected, disabled: isTaken }}
+                    >
+                      {isSelected && (
+                        <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                      )}
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
 

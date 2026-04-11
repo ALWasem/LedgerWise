@@ -6,6 +6,7 @@ import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createCategoryListScreenStyles } from '../styles/categoryListScreen.styles';
 import CategoryBottomSheet from './CategoryBottomSheet';
+import { getCategoryColorHex } from '../../../utils/categoryColors';
 import type { CategoryInfo } from '../../../types/categorize';
 
 interface Props {
@@ -13,9 +14,10 @@ interface Props {
   onClose: () => void;
   categories: CategoryInfo[];
   existingNames: string[];
-  onCreateCategory: (name: string, color: string) => Promise<void>;
-  onUpdateCategory: (id: string, updates: { name?: string; color?: string }, oldName: string) => Promise<void>;
+  onCreateCategory: (name: string, colorId: number) => Promise<void>;
+  onUpdateCategory: (id: string, updates: { name?: string; color_id?: number }, oldName: string) => Promise<void>;
   onDeleteCategory: (id: string, categoryName: string) => Promise<void>;
+  takenColorIds: number[];
   /** When true, auto-open the create sheet when the screen becomes visible. */
   openCreateOnMount?: boolean;
 }
@@ -28,6 +30,7 @@ function CategoryListScreen({
   onCreateCategory,
   onUpdateCategory,
   onDeleteCategory,
+  takenColorIds,
   openCreateOnMount,
 }: Props) {
   const colors = useColors();
@@ -68,11 +71,11 @@ function CategoryListScreen({
     setEditTarget(null);
   }, []);
 
-  const handleSheetSave = useCallback(async (name: string, color: string) => {
+  const handleSheetSave = useCallback(async (name: string, colorId: number) => {
     if (sheetMode === 'create') {
-      await onCreateCategory(name, color);
+      await onCreateCategory(name, colorId);
     } else if (sheetMode === 'edit' && editTarget) {
-      await onUpdateCategory(editTarget.id, { name, color }, editTarget.name);
+      await onUpdateCategory(editTarget.id, { name, color_id: colorId }, editTarget.name);
     }
   }, [sheetMode, editTarget, onCreateCategory, onUpdateCategory]);
 
@@ -88,7 +91,7 @@ function CategoryListScreen({
       accessibilityRole="summary"
       accessibilityLabel={`${item.name}, ${item.transactionCount} ${item.transactionCount === 1 ? 'transaction' : 'transactions'}`}
     >
-      <View style={[styles.categoryDot, { backgroundColor: item.color }]} />
+      <View style={[styles.categoryDot, { backgroundColor: getCategoryColorHex(item.colorId) }]} />
       <Text style={styles.categoryName} numberOfLines={1}>{item.name}</Text>
       <Text style={styles.categoryCount}>{item.transactionCount}</Text>
       <Pressable
@@ -185,8 +188,9 @@ function CategoryListScreen({
           onSave={handleSheetSave}
           onDelete={sheetMode === 'edit' ? handleSheetDelete : undefined}
           initialName={editTarget?.name}
-          initialColor={editTarget?.color}
+          initialColorId={editTarget?.colorId}
           existingNames={existingNames}
+          takenColorIds={takenColorIds}
         />
       </View>
     </Modal>

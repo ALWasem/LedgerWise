@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createMobileCategorizeStyles } from '../styles/mobileCategorize.styles';
+import { getCategoryColorHex } from '../../../utils/categoryColors';
 import type { CategoryInfo, TransactionFilter } from '../../../types/categorize';
 
 interface Props {
@@ -116,7 +117,7 @@ function MobileFilterPills({
             accessibilityLabel={`${cat.name}, ${cat.transactionCount} transactions`}
             accessibilityState={{ selected }}
           >
-            <View style={[styles.filterPillDot, { backgroundColor: cat.color }]} />
+            <View style={[styles.filterPillDot, { backgroundColor: getCategoryColorHex(cat.colorId) }]} />
             <Text
               style={[styles.filterPillText, selected && styles.filterPillTextActive]}
               numberOfLines={1}

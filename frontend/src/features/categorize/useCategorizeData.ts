@@ -8,7 +8,7 @@ import {
   updateTransactionCategory,
 } from '../../api/client';
 import { isSpending } from '../../utils/transactionFilters';
-import { getCategoryColor } from '../../utils/categoryColors';
+import { getCategoryColor, hashCategoryColorId } from '../../utils/categoryColors';
 import { normalizeCategory } from '../../utils/normalizeCategory';
 import type { Transaction } from '../../types/transaction';
 import type { CategoryInfo, TransactionFilter } from '../../types/categorize';
@@ -75,7 +75,7 @@ export default function useCategorizeData() {
     const cats = sorted.map(([name, info]): CategoryInfo => {
       spendingTotal += info.totalAmount;
 
-      // Find matching user category for the DB id
+      // Find matching user category for the DB id and color_id
       const userCat = userCategories.find(
         (uc) => uc.name.toLowerCase() === name.toLowerCase(),
       );
@@ -83,7 +83,7 @@ export default function useCategorizeData() {
       return {
         id: userCat?.id ?? name.toLowerCase().replace(/\s+/g, '-'),
         name,
-        color: getCategoryColor(name, userCategories),
+        colorId: userCat?.color_id ?? hashCategoryColorId(name),
         transactionCount: info.count,
         totalAmount: info.totalAmount,
         lastAssignedMerchant: info.lastTx?.description,
@@ -155,16 +155,16 @@ export default function useCategorizeData() {
   // --- Category CRUD ---
 
   const createCategory = useCallback(
-    async (name: string, color: string) => {
+    async (name: string, colorId: number) => {
       if (!token) return;
-      const created = await createCategoryApi(token, name, color);
+      const created = await createCategoryApi(token, name, colorId);
       setUserCategories((prev) => [...prev, created]);
     },
     [token],
   );
 
   const updateCategory = useCallback(
-    async (id: string, updates: { name?: string; color?: string }, oldName?: string) => {
+    async (id: string, updates: { name?: string; color_id?: number }, oldName?: string) => {
       if (!token) return;
 
       // Resolve the DB UUID — prefer the id if already a UUID, otherwise look up by name
@@ -180,7 +180,7 @@ export default function useCategorizeData() {
           resolvedId = existing.id;
         } else {
           // Create a new DB entry for this transaction-derived category
-          const created = await createCategoryApi(token, oldName, updates.color ?? '#9333EA');
+          const created = await createCategoryApi(token, oldName, updates.color_id ?? hashCategoryColorId(oldName));
           setUserCategories((prev) => [...prev, created]);
           // If only color changed, we're done
           if (!updates.name || updates.name === oldName) return;

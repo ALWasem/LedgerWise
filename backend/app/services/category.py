@@ -13,27 +13,20 @@ from app.schemas.category import UserCategoryResponse
 
 logger = logging.getLogger("ledgerwise.audit")
 
-# --- Color palette (mirrors frontend src/utils/categoryColors.ts) ---
-
-_CATEGORY_COLORS = [
-    '#9333EA', '#10B981', '#F43F5E', '#0EA5E9',
-    '#F97316', '#14B8A6', '#D946EF', '#84CC16',
-    '#3B82F6', '#DC2626', '#06B6D4', '#E67E22',
-    '#6366F1', '#22C55E', '#EC4899', '#65A30D',
-    '#818CF8', '#EF4444', '#16A34A', '#7C3AED',
-    '#B45309', '#64748B', '#475569',
-]
+# --- Canonical 24-color palette (mirrors frontend CATEGORY_COLORS) ---
+# color_id -> hex  (IDs are 1-indexed)
+PALETTE_SIZE = 24
 
 
-def _hash_color(name: str) -> str:
-    """Deterministic hash-based color — same algorithm as the frontend."""
+def _hash_color_id(name: str) -> int:
+    """Deterministic hash-based color_id — same algorithm as the frontend."""
     h = 0
     for ch in name:
         h = (h * 31 + ord(ch)) & 0xFFFFFFFF
     # Convert to signed 32-bit then abs, matching JS (hash * 31 + charCode) | 0
     if h >= 0x80000000:
         h -= 0x100000000
-    return _CATEGORY_COLORS[abs(h) % len(_CATEGORY_COLORS)]
+    return (abs(h) % PALETTE_SIZE) + 1
 
 
 def _normalize_name(raw: str) -> str:
@@ -77,7 +70,7 @@ def _to_response(cat: Category, transaction_count: int = 0) -> UserCategoryRespo
     return UserCategoryResponse(
         id=str(cat.id),
         name=cat.name,
-        color=cat.color,
+        color_id=cat.color_id,
         display_order=cat.display_order,
         transaction_count=transaction_count,
         created_at=cat.created_at,
@@ -102,6 +95,35 @@ async def _count_transactions_for_category(
         )
     )
     return result.scalar_one()
+
+
+async def _get_taken_color_ids(db: AsyncSession, user_id: str) -> set[int]:
+    """Return the set of color_ids already used by this user's categories."""
+    result = await db.execute(
+        select(Category.color_id).where(Category.user_id == user_id)
+    )
+    return {row[0] for row in result.all()}
+
+
+async def _pick_available_color_id(
+    db: AsyncSession, user_id: str, preferred: int, exclude_category_id: str | None = None,
+) -> int:
+    """Return preferred color_id if available, otherwise the first free one."""
+    result = await db.execute(
+        select(Category.color_id).where(
+            Category.user_id == user_id,
+            *([Category.id != exclude_category_id] if exclude_category_id else []),
+        )
+    )
+    taken = {row[0] for row in result.all()}
+
+    if preferred not in taken:
+        return preferred
+    for candidate in range(1, PALETTE_SIZE + 1):
+        if candidate not in taken:
+            return candidate
+    # All 24 taken — should be impossible in practice, but return preferred anyway
+    return preferred
 
 
 async def list_categories(
@@ -141,9 +163,14 @@ async def list_categories(
 
 
 async def create_category(
-    db: AsyncSession, user_id: str, name: str, color: str,
+    db: AsyncSession, user_id: str, name: str, color_id: int,
 ) -> UserCategoryResponse:
-    cat = Category(user_id=user_id, name=name, color=color)
+    # Validate color_id uniqueness for this user
+    taken = await _get_taken_color_ids(db, user_id)
+    if color_id in taken:
+        raise ValueError(f"Color {color_id} is already assigned to another category.")
+
+    cat = Category(user_id=user_id, name=name, color_id=color_id)
     db.add(cat)
     try:
         await db.commit()
@@ -164,7 +191,7 @@ async def update_category(
     user_id: str,
     category_id: str,
     name: str | None = None,
-    color: str | None = None,
+    color_id: int | None = None,
 ) -> UserCategoryResponse | None:
     result = await db.execute(
         select(Category).where(
@@ -180,8 +207,19 @@ async def update_category(
 
     if name is not None:
         cat.name = name
-    if color is not None:
-        cat.color = color
+
+    if color_id is not None:
+        # Validate color_id uniqueness (excluding this category)
+        taken_result = await db.execute(
+            select(Category.color_id).where(
+                Category.user_id == user_id,
+                Category.id != category_id,
+            )
+        )
+        taken = {row[0] for row in taken_result.all()}
+        if color_id in taken:
+            raise ValueError(f"Color {color_id} is already assigned to another category.")
+        cat.color_id = color_id
 
     # Cascade rename to matching transactions
     # Normalize underscores to spaces so Plaid raw categories (e.g. "food_and_drink")
@@ -266,7 +304,7 @@ async def consolidate_categories(
     1. Collects distinct transaction categories for the user.
     2. For each, finds a matching existing Category (exact or token-subset).
        If matched, renames the transactions to the existing category name.
-       If unmatched, creates a new Category entry with a hash-based color.
+       If unmatched, creates a new Category entry with a hash-based color_id.
     3. Skips 'general' / null categories.
 
     Returns the number of new Category entries created.
@@ -290,6 +328,7 @@ async def consolidate_categories(
     cat_result = await db.execute(cat_stmt)
     existing_cats: list[Category] = list(cat_result.scalars().all())
     existing_names: list[str] = [c.name for c in existing_cats]
+    taken_ids: set[int] = {c.color_id for c in existing_cats}
 
     created = 0
 
@@ -316,11 +355,20 @@ async def consolidate_categories(
                     .values(category=match_lower)
                 )
         else:
-            # New category — create DB entry with hash-based color
-            color = _hash_color(normalized)
-            cat = Category(user_id=user_id, name=normalized, color=color)
+            # New category — create DB entry with hash-based color_id
+            preferred_id = _hash_color_id(normalized)
+            # Find an available color_id
+            color_id = preferred_id
+            if color_id in taken_ids:
+                for candidate in range(1, PALETTE_SIZE + 1):
+                    if candidate not in taken_ids:
+                        color_id = candidate
+                        break
+
+            cat = Category(user_id=user_id, name=normalized, color_id=color_id)
             db.add(cat)
             existing_names.append(normalized)
+            taken_ids.add(color_id)
             created += 1
 
     if created:

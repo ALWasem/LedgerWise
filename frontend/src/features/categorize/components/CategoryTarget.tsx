@@ -6,6 +6,7 @@ import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { formatCurrency, formatLocalDate } from '../../../utils/formatters';
 import { createCategorizeStyles } from '../styles/categorize.styles';
 import { isHovered } from '../../../utils/pressable';
+import { getCategoryColorHex } from '../../../utils/categoryColors';
 import useDropTarget from '../useDropTarget';
 import ProgressRing from './ProgressRing';
 import type { CategoryInfo } from '../../../types/categorize';
@@ -63,14 +64,14 @@ function CategoryTarget({ category, totalSpending, onDrop, onMenuOpen, compact }
       <View style={styles.categoryCardRow}>
         <ProgressRing
           progress={progress}
-          color={category.color}
+          color={getCategoryColorHex(category.colorId) ?? '#999'}
           trackColor={colors.border.default}
           size={40}
         />
 
         <View style={styles.categoryCardInfo}>
           <View style={styles.categoryNameRow}>
-            <View style={[styles.categoryDot, { backgroundColor: category.color }]} />
+            <View style={[styles.categoryDot, { backgroundColor: getCategoryColorHex(category.colorId) }]} />
             <Text style={styles.categoryName} numberOfLines={1}>
               {category.name}
             </Text>

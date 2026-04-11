@@ -5,6 +5,7 @@ import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createCategorizeStyles } from '../styles/categorize.styles';
 import { isHovered } from '../../../utils/pressable';
+import { getCategoryColorHex } from '../../../utils/categoryColors';
 import type { CategoryInfo, TransactionFilter } from '../../../types/categorize';
 
 interface TransactionFilterDropdownProps {
@@ -74,7 +75,7 @@ function TransactionFilterDropdown({
               label: cat.name,
               filter: cat.name,
               count: cat.transactionCount,
-              color: cat.color,
+              color: getCategoryColorHex(cat.colorId),
             }),
           ),
         ]

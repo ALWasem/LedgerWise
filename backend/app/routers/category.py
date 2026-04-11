@@ -48,12 +48,12 @@ async def create_category(
     log_security_event("category_create", {"user_id": user_id, "name": body.name})
     try:
         return await category_service.create_category(
-            db, user_id, body.name, body.color,
+            db, user_id, body.name, body.color_id,
         )
-    except ValueError:
-        raise HTTPException(
-            status_code=409, detail="A category with this name already exists.",
-        )
+    except ValueError as exc:
+        detail = str(exc)
+        status = 409 if "already" in detail.lower() else 422
+        raise HTTPException(status_code=status, detail=detail)
     except Exception:
         logger.error("Failed to create category for user=%s", user_id, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to create category.")
@@ -77,12 +77,12 @@ async def update_category(
     )
     try:
         result = await category_service.update_category(
-            db, user_id, category_id, name=body.name, color=body.color,
+            db, user_id, category_id, name=body.name, color_id=body.color_id,
         )
-    except ValueError:
-        raise HTTPException(
-            status_code=409, detail="A category with this name already exists.",
-        )
+    except ValueError as exc:
+        detail = str(exc)
+        status = 409 if "already" in detail.lower() else 422
+        raise HTTPException(status_code=status, detail=detail)
     except Exception:
         logger.error("Failed to update category for user=%s", user_id, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to update category.")

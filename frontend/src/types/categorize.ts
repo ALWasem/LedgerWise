@@ -1,7 +1,7 @@
 export interface CategoryInfo {
   id: string;
   name: string;
-  color: string;
+  colorId: number;
   transactionCount: number;
   totalAmount: number;
   lastAssignedMerchant?: string;
@@ -12,7 +12,7 @@ export interface CategoryInfo {
 export interface UserCategory {
   id: string;
   name: string;
-  color: string;
+  color_id: number;
   display_order: number | null;
   transaction_count: number;
   created_at: string;

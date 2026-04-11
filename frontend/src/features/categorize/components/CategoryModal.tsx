@@ -5,29 +5,25 @@ import { useColors } from '../../../contexts/ThemeContext';
 import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createCategoryModalStyles } from '../styles/categoryModal.styles';
 import { isHovered } from '../../../utils/pressable';
-
-/** First 12 colors from the category palette — used as preset options. */
-const PRESET_COLORS = [
-  '#9333EA', '#10B981', '#F43F5E', '#0EA5E9',
-  '#F97316', '#14B8A6', '#D946EF', '#84CC16',
-  '#3B82F6', '#DC2626', '#06B6D4', '#E67E22',
-];
+import { CATEGORY_COLORS, getCategoryColorHex, getFirstAvailableColor } from '../../../utils/categoryColors';
+import type { CategoryColor } from '../../../utils/categoryColors';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSave: (name: string, color: string) => Promise<void>;
+  onSave: (name: string, colorId: number) => Promise<void>;
   initialName?: string;
-  initialColor?: string;
+  initialColorId?: number;
   existingNames: string[];
+  takenColorIds: number[];
 }
 
-function CategoryModal({ visible, onClose, onSave, initialName, initialColor, existingNames }: Props) {
+function CategoryModal({ visible, onClose, onSave, initialName, initialColorId, existingNames, takenColorIds }: Props) {
   const colors = useColors();
   const styles = useThemeStyles(createCategoryModalStyles);
 
   const [name, setName] = useState('');
-  const [color, setColor] = useState(PRESET_COLORS[0]);
+  const [colorId, setColorId] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [closing, setClosing] = useState(false);
@@ -37,13 +33,13 @@ function CategoryModal({ visible, onClose, onSave, initialName, initialColor, ex
   useEffect(() => {
     if (visible) {
       setName(initialName ?? '');
-      setColor(initialColor ?? PRESET_COLORS[0]);
+      setColorId(initialColorId ?? getFirstAvailableColor(takenColorIds)?.id ?? 1);
       setIsEditing(!!initialName);
       setError('');
       setSaving(false);
       setClosing(false);
     }
-  }, [visible, initialName, initialColor]);
+  }, [visible, initialName, initialColorId, takenColorIds]);
 
   const trimmedName = name.trim();
   const isDuplicate = !closing && existingNames.some(
@@ -61,14 +57,21 @@ function CategoryModal({ visible, onClose, onSave, initialName, initialColor, ex
     setSaving(true);
     setError('');
     try {
-      await onSave(trimmedName, color);
+      await onSave(trimmedName, colorId);
       handleClose();
     } catch {
       setError('Failed to save category. Please try again.');
     } finally {
       setSaving(false);
     }
-  }, [isValid, saving, trimmedName, color, onSave, handleClose]);
+  }, [isValid, saving, trimmedName, colorId, onSave, handleClose]);
+
+  // Determine which color IDs are unavailable (taken by other categories, excluding current)
+  const unavailableIds = new Set(
+    isEditing && initialColorId
+      ? takenColorIds.filter((id) => id !== initialColorId)
+      : takenColorIds,
+  );
 
   return (
     <Modal
@@ -109,24 +112,29 @@ function CategoryModal({ visible, onClose, onSave, initialName, initialColor, ex
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Color</Text>
             <View style={styles.colorGrid}>
-              {PRESET_COLORS.map((c) => (
-                <Pressable
-                  key={c}
-                  style={[
-                    styles.colorCircle,
-                    { backgroundColor: c },
-                    color === c && styles.colorCircleSelected,
-                  ]}
-                  onPress={() => setColor(c)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Select color ${c}`}
-                  accessibilityState={{ selected: color === c }}
-                >
-                  {color === c && (
-                    <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                  )}
-                </Pressable>
-              ))}
+              {CATEGORY_COLORS.map((c: CategoryColor) => {
+                const isTaken = unavailableIds.has(c.id);
+                const isSelected = colorId === c.id;
+                return (
+                  <Pressable
+                    key={c.id}
+                    style={[
+                      styles.colorCircle,
+                      { backgroundColor: c.hex, opacity: isTaken ? 0.3 : 1 },
+                      isSelected && styles.colorCircleSelected,
+                    ]}
+                    onPress={() => { if (!isTaken) setColorId(c.id); }}
+                    disabled={isTaken}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${c.name}${isTaken ? ' (taken)' : ''}`}
+                    accessibilityState={{ selected: isSelected, disabled: isTaken }}
+                  >
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    )}
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
 
@@ -134,7 +142,7 @@ function CategoryModal({ visible, onClose, onSave, initialName, initialColor, ex
           <View style={styles.previewContainer}>
             <Text style={styles.label}>Preview</Text>
             <View style={styles.previewCard}>
-              <View style={[styles.previewDot, { backgroundColor: color }]} />
+              <View style={[styles.previewDot, { backgroundColor: getCategoryColorHex(colorId) }]} />
               <Text style={styles.previewName} numberOfLines={1}>
                 {trimmedName || 'Category Name'}
               </Text>

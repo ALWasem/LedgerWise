@@ -1,34 +1,78 @@
-// Category color palette — ordered for max adjacent contrast in charts.
-// Gold is reserved for uncategorized. Colors are assigned by name hash
-// so the same category always gets the same color across all pages.
+// Canonical 24-color palette for user-assignable category colors.
+// This file is the single source of truth — no category color hex values
+// should be hardcoded anywhere else in the frontend.
 
-const CATEGORY_COLORS = [
-  '#9333EA', // 1.  Purple (brand primary)
-  '#10B981', // 2.  Emerald
-  '#F43F5E', // 3.  Rose
-  '#0EA5E9', // 4.  Sky
-  '#F97316', // 5.  Coral
-  '#14B8A6', // 6.  Teal
-  '#D946EF', // 7.  Fuchsia
-  '#84CC16', // 8.  Lime
-  '#3B82F6', // 9.  Blue
-  '#DC2626', // 10. Crimson
-  '#06B6D4', // 11. Cyan
-  '#E67E22', // 12. Amber
-  '#6366F1', // 13. Indigo
-  '#22C55E', // 14. Green
-  '#EC4899', // 15. Pink
-  '#65A30D', // 16. Olive
-  '#818CF8', // 17. Slate Blue
-  '#EF4444', // 18. Red
-  '#16A34A', // 19. Warm Green
-  '#7C3AED', // 20. Violet
-  '#B45309', // 21. Bronze
-  '#64748B', // 22. Steel
-  '#475569', // 23. Graphite
+export const CATEGORY_COLORS = [
+  { id: 1, name: 'Red', hex: '#EF4444' },
+  { id: 2, name: 'Orange', hex: '#F97316' },
+  { id: 3, name: 'Rose', hex: '#F43F5E' },
+  { id: 4, name: 'Pink', hex: '#EC4899' },
+  { id: 5, name: 'Fuchsia', hex: '#D946EF' },
+  { id: 6, name: 'Violet', hex: '#8B5CF6' },
+  { id: 7, name: 'Indigo', hex: '#6366F1' },
+  { id: 8, name: 'Blue', hex: '#3B82F6' },
+  { id: 9, name: 'Sky', hex: '#0EA5E9' },
+  { id: 10, name: 'Cyan', hex: '#06B6D4' },
+  { id: 11, name: 'Teal', hex: '#14B8A6' },
+  { id: 12, name: 'Emerald', hex: '#10B981' },
+  { id: 13, name: 'Green', hex: '#22C55E' },
+  { id: 14, name: 'Lime', hex: '#84CC16' },
+  { id: 15, name: 'Yellow', hex: '#EAB308' },
+  { id: 16, name: 'Stone', hex: '#78716C' },
+  { id: 17, name: 'Gray', hex: '#6B7280' },
+  { id: 18, name: 'Slate', hex: '#64748B' },
+  { id: 19, name: 'Lavender', hex: '#A78BFA' },
+  { id: 20, name: 'Tangerine', hex: '#FB923C' },
+  { id: 21, name: 'Light Blue', hex: '#38BDF8' },
+  { id: 22, name: 'Mint', hex: '#4ADE80' },
+  { id: 23, name: 'Coral', hex: '#FB7185' },
+  { id: 24, name: 'Aqua', hex: '#2DD4BF' },
 ] as const;
 
-const UNCATEGORIZED_COLOR = '#F59E0B'; // Brand gold — exclusive to uncategorized
+export type CategoryColor = (typeof CATEGORY_COLORS)[number];
+
+/** Brand colors — reserved for UI elements, never assignable to categories. */
+export const BRAND_COLORS = {
+  purple: '#9333EA',
+  purpleLight: '#A855F7',
+  gold: '#F59E0B',
+} as const;
+
+// --- Lookup helpers ---
+
+/** Get the hex string for a color_id. Used everywhere we render a category color. */
+export function getCategoryColorHex(colorId: number): string | undefined {
+  return CATEGORY_COLORS.find((c) => c.id === colorId)?.hex;
+}
+
+/** Get the full color object by ID. */
+export function getCategoryColorById(id: number): CategoryColor | undefined {
+  return CATEGORY_COLORS.find((c) => c.id === id);
+}
+
+/** Get the full color object by hex value. */
+export function getCategoryColorByHex(hex: string): CategoryColor | undefined {
+  const upper = hex.toUpperCase();
+  return CATEGORY_COLORS.find((c) => c.hex.toUpperCase() === upper);
+}
+
+/** Filter out colors already assigned to other categories. */
+export function getAvailableColors(takenColorIds: number[]): readonly CategoryColor[] {
+  const taken = new Set(takenColorIds);
+  return CATEGORY_COLORS.filter((c) => !taken.has(c.id));
+}
+
+/** Return the first color not in use — for auto-selecting on new category creation. */
+export function getFirstAvailableColor(takenColorIds: number[]): CategoryColor | undefined {
+  const taken = new Set(takenColorIds);
+  return CATEGORY_COLORS.find((c) => !taken.has(c.id));
+}
+
+// --- Hash-based fallback ---
+// Used for display only: categories from transaction data that don't have
+// a user-assigned color_id yet (e.g. Teller/Plaid-provided categories).
+
+const UNCATEGORIZED_COLOR = BRAND_COLORS.gold;
 
 /** Simple string hash → stable index into the color palette. */
 function hashName(name: string): number {
@@ -39,20 +83,26 @@ function hashName(name: string): number {
   return Math.abs(hash);
 }
 
+/** Hash a category name to a color_id (1-24). Display-only fallback. */
+export function hashCategoryColorId(name: string): number {
+  return (hashName(name) % CATEGORY_COLORS.length) + 1;
+}
+
 /**
- * Returns a deterministic color for a spending category.
- * If userCategories is provided, user-defined colors take precedence over hash-based ones.
+ * Resolve the display hex color for a category.
+ * Priority: user-defined color_id > hash-based fallback > uncategorized gold.
  */
 export function getCategoryColor(
   name: string,
-  userCategories?: readonly { name: string; color: string }[],
+  userCategories?: readonly { name: string; color_id: number }[],
 ): string {
   if (userCategories) {
     const match = userCategories.find(
       (uc) => uc.name.toLowerCase() === name.toLowerCase(),
     );
-    if (match) return match.color;
+    if (match) return getCategoryColorHex(match.color_id) ?? UNCATEGORIZED_COLOR;
   }
   if (name === 'General') return UNCATEGORIZED_COLOR;
-  return CATEGORY_COLORS[hashName(name) % CATEGORY_COLORS.length];
+  const fallbackId = hashCategoryColorId(name);
+  return getCategoryColorHex(fallbackId) ?? UNCATEGORIZED_COLOR;
 }

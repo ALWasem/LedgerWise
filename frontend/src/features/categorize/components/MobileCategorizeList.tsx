@@ -36,9 +36,10 @@ interface Props {
   setTransactionSearch: (text: string) => void;
   assignToCategory: (transactionId: string, categoryName: string) => void;
   existingCategoryNames: string[];
-  onCreateCategory: (name: string, color: string) => Promise<void>;
-  onUpdateCategory: (id: string, updates: { name?: string; color?: string }, oldName: string) => Promise<void>;
+  onCreateCategory: (name: string, colorId: number) => Promise<void>;
+  onUpdateCategory: (id: string, updates: { name?: string; color_id?: number }, oldName: string) => Promise<void>;
   onDeleteCategory: (id: string, categoryName: string) => Promise<void>;
+  takenColorIds: number[];
 }
 
 export default function MobileCategorizeList({
@@ -56,6 +57,7 @@ export default function MobileCategorizeList({
   onCreateCategory,
   onUpdateCategory,
   onDeleteCategory,
+  takenColorIds,
 }: Props) {
   const colors = useColors();
   const styles = useThemeStyles(createMobileCategorizeStyles);
@@ -309,6 +311,7 @@ export default function MobileCategorizeList({
         onUpdateCategory={onUpdateCategory}
         onDeleteCategory={onDeleteCategory}
         openCreateOnMount={categoryListCreateMode}
+        takenColorIds={takenColorIds}
       />
     </View>
   );

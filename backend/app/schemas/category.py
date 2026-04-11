@@ -1,4 +1,3 @@
-import re
 from datetime import datetime
 
 from pydantic import BaseModel, field_validator
@@ -6,11 +5,12 @@ from pydantic import BaseModel, field_validator
 
 class UserCategoryCreateRequest(BaseModel):
     name: str
-    color: str
+    color_id: int
 
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
+        import re
         v = v.strip()
         if not v:
             raise ValueError("name must not be empty")
@@ -20,24 +20,24 @@ class UserCategoryCreateRequest(BaseModel):
             raise ValueError("name contains invalid characters")
         return v
 
-    @field_validator("color")
+    @field_validator("color_id")
     @classmethod
-    def validate_color(cls, v: str) -> str:
-        v = v.strip()
-        if not re.match(r"^#[0-9A-Fa-f]{6}$", v):
-            raise ValueError("color must be a valid hex color (e.g. #9333EA)")
+    def validate_color_id(cls, v: int) -> int:
+        if not (1 <= v <= 24):
+            raise ValueError("color_id must be between 1 and 24")
         return v
 
 
 class UserCategoryUpdateRequest(BaseModel):
     name: str | None = None
-    color: str | None = None
+    color_id: int | None = None
 
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str | None) -> str | None:
         if v is None:
             return v
+        import re
         v = v.strip()
         if not v:
             raise ValueError("name must not be empty")
@@ -47,21 +47,20 @@ class UserCategoryUpdateRequest(BaseModel):
             raise ValueError("name contains invalid characters")
         return v
 
-    @field_validator("color")
+    @field_validator("color_id")
     @classmethod
-    def validate_color(cls, v: str | None) -> str | None:
+    def validate_color_id(cls, v: int | None) -> int | None:
         if v is None:
             return v
-        v = v.strip()
-        if not re.match(r"^#[0-9A-Fa-f]{6}$", v):
-            raise ValueError("color must be a valid hex color (e.g. #9333EA)")
+        if not (1 <= v <= 24):
+            raise ValueError("color_id must be between 1 and 24")
         return v
 
 
 class UserCategoryResponse(BaseModel):
     id: str
     name: str
-    color: str
+    color_id: int
     display_order: int | None = None
     transaction_count: int = 0
     created_at: datetime

@@ -55,6 +55,7 @@ export default function Categorize() {
     transactions,
     categories,
     allCategories,
+    userCategories,
     categorizedCount,
     totalTransactions,
     totalSpendingAmount,
@@ -93,20 +94,25 @@ export default function Categorize() {
     [allCategories],
   );
 
+  const takenColorIds = useMemo(
+    () => userCategories.map((uc) => uc.color_id),
+    [userCategories],
+  );
+
   const handleOpenCreateModal = useCallback(() => setCreateModalVisible(true), []);
   const handleCloseCreateModal = useCallback(() => setCreateModalVisible(false), []);
 
   const handleCreateCategory = useCallback(
-    async (name: string, color: string) => {
-      await createCategory(name, color);
+    async (name: string, colorId: number) => {
+      await createCategory(name, colorId);
     },
     [createCategory],
   );
 
   const handleEditCategory = useCallback(
-    async (name: string, color: string) => {
+    async (name: string, colorId: number) => {
       if (!editTarget) return;
-      await updateCategory(editTarget.id, { name, color }, editTarget.name);
+      await updateCategory(editTarget.id, { name, color_id: colorId }, editTarget.name);
     },
     [editTarget, updateCategory],
   );
@@ -250,6 +256,7 @@ export default function Categorize() {
         onCreateCategory={handleCreateCategory}
         onUpdateCategory={updateCategory}
         onDeleteCategory={deleteCategory}
+        takenColorIds={takenColorIds}
       />
     );
   }
@@ -398,6 +405,7 @@ export default function Categorize() {
         onClose={handleCloseCreateModal}
         onSave={handleCreateCategory}
         existingNames={existingCategoryNames}
+        takenColorIds={takenColorIds}
       />
 
       <CategoryModal
@@ -405,8 +413,9 @@ export default function Categorize() {
         onClose={handleCloseEditModal}
         onSave={handleEditCategory}
         initialName={editTarget?.name}
-        initialColor={editTarget?.color}
+        initialColorId={editTarget?.colorId}
         existingNames={existingCategoryNames}
+        takenColorIds={takenColorIds}
       />
 
       <DeleteCategoryModal
