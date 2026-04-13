@@ -212,13 +212,14 @@ export default function MobileCategorizeList({
 
   const emptyText = getEmptyStateText(filterMode, !!transactionSearch);
 
+  const tertiaryColor = colors.text.tertiary;
   const emptyState = useMemo(() => (
     <View style={styles.emptyContainer}>
-      <Ionicons name={emptyText.icon} size={48} color={colors.text.tertiary} />
+      <Ionicons name={emptyText.icon} size={48} color={tertiaryColor} />
       <Text style={styles.emptyTitle}>{emptyText.title}</Text>
       <Text style={styles.emptyText}>{emptyText.subtitle}</Text>
     </View>
-  ), [emptyText, styles, colors]);
+  ), [emptyText, styles.emptyContainer, styles.emptyTitle, styles.emptyText, tertiaryColor]);
 
   return (
     <View style={styles.container}>

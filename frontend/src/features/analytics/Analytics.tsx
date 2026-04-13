@@ -65,7 +65,9 @@ export default function Analytics() {
             </View>
           </StaggeredView>
         </View>
-        <ActivityIndicator size="large" color={colors.brand.primary} style={styles.spinner} />
+        <View accessibilityLiveRegion="polite">
+          <ActivityIndicator size="large" color={colors.brand.primary} style={styles.spinner} />
+        </View>
       </View>
     );
   }

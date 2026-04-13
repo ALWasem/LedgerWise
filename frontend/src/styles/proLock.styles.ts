@@ -8,14 +8,27 @@ export const createProLockStyles = ({ colors, shadows }: StyleDeps) =>
       position: 'relative',
       overflow: 'hidden',
       borderRadius: 16,
+      minHeight: 300,
+      flex: 1,
     },
 
-    /** Blurred content sits behind the overlay */
+    /** Web: CSS blur + reduced opacity gives a frosted teaser */
     blurredContent: {
       opacity: 0.35,
       ...(Platform.OS === 'web'
         ? ({ filter: 'blur(6px)' } as never)
         : {}),
+    },
+
+    /** Native: content renders normally — BlurView handles obscuring */
+    nativeContent: {
+      opacity: 0.6,
+    },
+
+    /** Native: expo-blur overlay covering the content */
+    nativeBlur: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 5,
     },
 
     overlay: {

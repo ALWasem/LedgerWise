@@ -14,7 +14,6 @@
     },
     "ios": {
       "bundleIdentifier": "com.ledgerwise.app",
-      "ascAppId": "6762071709",
       "appleTeamId": "HF8D5YMKV9",
       "supportsTablet": true,
       "infoPlist": {

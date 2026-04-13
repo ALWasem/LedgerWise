@@ -193,17 +193,18 @@ export default function Categorize() {
 
   const emptyState = getEmptyStateText(filterMode, !!transactionSearch);
 
+  const tertiaryColor = colors.text.tertiary;
   const transactionEmptyState = useMemo(() => (
     <View style={styles.emptyContainer}>
-      <Ionicons name={emptyState.icon} size={48} color={colors.text.tertiary} />
+      <Ionicons name={emptyState.icon} size={48} color={tertiaryColor} />
       <Text style={styles.emptyTitle}>{emptyState.title}</Text>
       <Text style={styles.emptyText}>{emptyState.subtitle}</Text>
     </View>
-  ), [emptyState, styles, colors]);
+  ), [emptyState, styles.emptyContainer, styles.emptyTitle, styles.emptyText, tertiaryColor]);
 
   if (loading || accountsLoading || enrolling || linkLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.loadingContainer} accessibilityLiveRegion="polite">
         <ActivityIndicator size="large" color={colors.brand.primary} />
       </View>
     );

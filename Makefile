@@ -1,4 +1,4 @@
-.PHONY: backend frontend install migrate
+.PHONY: backend frontend install migrate grant-pro revoke-pro
 
 LAN_IP := $(shell ipconfig getifaddr en0)
 
@@ -18,6 +18,14 @@ frontend:
 # Run Alembic migrations
 migrate:
 	cd backend && . venv/bin/activate && alembic upgrade head
+
+# Grant pro status: make grant-pro EMAIL=user@example.com
+grant-pro:
+	cd backend && . venv/bin/activate && python grant_pro.py $(EMAIL)
+
+# Revoke pro status: make revoke-pro EMAIL=user@example.com
+revoke-pro:
+	cd backend && . venv/bin/activate && python revoke_pro.py $(EMAIL)
 
 # Install all dependencies (backend venv + frontend node_modules)
 install:
