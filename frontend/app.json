@@ -25,6 +25,7 @@
       }
     },
     "android": {
+      "package": "com.ledgerwise.app",
       "adaptiveIcon": {
         "backgroundColor": "#F3E8FF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -38,6 +39,7 @@
       "bundler": "metro"
     },
     "plugins": [
+      "expo-dev-client",
       "expo-web-browser",
       "expo-router",
       "expo-font"
