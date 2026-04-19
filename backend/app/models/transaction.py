@@ -11,7 +11,6 @@ from app.models.base import Base
 class Transaction(Base):
     __tablename__ = "transactions"
     __table_args__ = (
-        UniqueConstraint("teller_transaction_id", "account_id", name="uq_transaction_per_account"),
         UniqueConstraint("plaid_transaction_id", "account_id", name="uq_plaid_transaction_per_account"),
         Index("ix_transactions_account_id", "account_id"),
         Index("ix_transactions_date", "date"),
@@ -25,12 +24,8 @@ class Transaction(Base):
         ForeignKey("accounts.id", ondelete="CASCADE"),
         nullable=False,
     )
-    provider: Mapped[str] = mapped_column(String(20), nullable=False, server_default="teller")
+    provider: Mapped[str] = mapped_column(String(20), nullable=False, server_default="plaid")
 
-    # Teller-specific (nullable for Plaid-only transactions)
-    teller_transaction_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-
-    # Plaid-specific
     plaid_transaction_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     personal_finance_category_primary: Mapped[str | None] = mapped_column(String(100))
     personal_finance_category_detailed: Mapped[str | None] = mapped_column(String(100))

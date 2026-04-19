@@ -75,7 +75,7 @@ async function cachedGet<T>(url: string, token: string): Promise<T> {
 // --- API functions ---
 
 export async function fetchAccounts(token: string): Promise<Account[]> {
-  return cachedGet<Account[]>(`${API_URL}/api/v1/teller/accounts?account_type=credit`, token);
+  return cachedGet<Account[]>(`${API_URL}/api/v1/banking/accounts?account_type=credit`, token);
 }
 
 export async function fetchTransactions(
@@ -88,7 +88,7 @@ export async function fetchTransactions(
   if (startDate) params.set('start_date', startDate);
   if (endDate) params.set('end_date', endDate);
   return cachedGet<Transaction[]>(
-    `${API_URL}/api/v1/teller/transactions?${params.toString()}`,
+    `${API_URL}/api/v1/banking/transactions?${params.toString()}`,
     token,
   );
 }
@@ -114,7 +114,7 @@ export async function updateTransactionCategory(
   category: string,
 ): Promise<Transaction> {
   const res = await fetch(
-    `${API_URL}/api/v1/teller/transactions/${encodeURIComponent(transactionId)}/category`,
+    `${API_URL}/api/v1/banking/transactions/${encodeURIComponent(transactionId)}/category`,
     {
       method: 'PATCH',
       headers: authHeaders(token),
@@ -122,20 +122,6 @@ export async function updateTransactionCategory(
     },
   );
   const data = await handleResponse<Transaction>(res);
-  clearApiCache();
-  return data;
-}
-
-export async function enrollAccount(
-  token: string,
-  tellerAccessToken: string,
-): Promise<Account[]> {
-  const res = await fetch(`${API_URL}/api/v1/teller/enroll`, {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ access_token: tellerAccessToken }),
-  });
-  const data = await handleResponse<Account[]>(res);
   clearApiCache();
   return data;
 }

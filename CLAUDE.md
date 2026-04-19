@@ -5,7 +5,7 @@
 Full-stack fintech app connecting to real bank accounts for transaction viewing, balances, and spending analysis. React Native Web frontend (Expo) + FastAPI backend + Supabase (PostgreSQL). Targets friends & family initially (5–50 users), designed to scale.
 
 **Current state:**
-- Teller bank linking, transaction list, spending summary, analytics — working on web + iOS (Expo Go)
+- Plaid bank linking, transaction list, spending summary, analytics ��� working on web + iOS (Expo Go)
 - Transaction categorization with drag & drop (HTML5 on web, gesture-based on mobile)
 - Google OAuth via Supabase Auth (web redirect flow + native `expo-auth-session` + `signInWithIdToken`)
 - Database: SQLAlchemy + Alembic + Supabase PostgreSQL, auth middleware with user-scoped queries
@@ -18,14 +18,14 @@ Full-stack fintech app connecting to real bank accounts for transaction viewing,
 ## Development Phases
 
 ### Phase 1 — Web App (CURRENT)
-**Done:** Teller Connect + transaction list (1.0) → spending summary + feature modules (1.5) → Google OAuth + JWT auth + user-scoped queries (1.75) → Expo Router + dashboard layout + time period selector (1.9) → TransactionDataContext + overview page + Railway deploy + security headers (1.95) → analytics page + dark mode + theme system + ErrorBoundary + accessibility + frontend cleanup (1.96) → categorize page with drag & drop (web HTML5 + mobile gesture-based), optimistic updates, PATCH endpoint (1.97).
-**Next (Iteration 2):** Re-enable live Teller data, persist enrolled tokens, native session persistence (AsyncStorage).
+**Done:** Bank linking + transaction list (1.0) → spending summary + feature modules (1.5) → Google OAuth + JWT auth + user-scoped queries (1.75) → Expo Router + dashboard layout + time period selector (1.9) ��� TransactionDataContext + overview page + Railway deploy + security headers (1.95) → analytics page + dark mode + theme system + ErrorBoundary + accessibility + frontend cleanup (1.96) → categorize page with drag & drop (web HTML5 + mobile gesture-based), optimistic updates, PATCH endpoint (1.97) → Plaid Connect v1.0 (2.0).
+**Next (Iteration 2):** Native session persistence (AsyncStorage), push notifications.
 
 ### Phase 2 — Mobile (FUTURE)
 Build iOS app from same Expo codebase via EAS Build. Push notifications, biometric auth, widgets. Evaluate Android.
 
 ### Phase 3 — Scale (FUTURE)
-Migrate Teller → Plaid if >100 connections. Celery + Redis for background jobs. Cloudflare for caching + DDoS. Supabase Pro if DB >500MB. Push notifications via Expo/FCM.
+Celery + Redis for background jobs. Cloudflare for caching + DDoS. Supabase Pro if DB >500MB. Push notifications via Expo/FCM.
 
 ## Code Organization & Best Practices
 
@@ -56,7 +56,7 @@ These rules apply to all new code and refactors.
 - Feature-specific hooks live in the feature root (e.g. `useAccordionHeight.ts`, `useAnalyticsData.ts`).
 
 ### Custom Hooks
-- Shared/cross-feature hooks → `src/hooks/` (e.g. `useTellerConnect.ts`, `useThemeStyles.ts`).
+- Shared/cross-feature hooks → `src/hooks/` (e.g. `useThemeStyles.ts`).
 - Feature-specific hooks → feature root (e.g. `src/features/analytics/useAnalyticsData.ts`).
 - One responsibility per hook.
 
@@ -100,7 +100,7 @@ These rules apply to all new code and refactors.
 | Backend | FastAPI + Uvicorn | Python 3.11+, pip |
 | Hosting (API) | Railway | Free tier ($5/mo credit) |
 | Database | Supabase (PostgreSQL) | SQLAlchemy 2.0 async + Alembic |
-| Banking API | Teller | httpx mTLS, sandbox → production |
+| Banking API | Plaid | SDK, sandbox → production |
 | Cache | Upstash Redis | **PLANNED** — cache-aside pattern |
 | File Storage | Cloudflare R2 | **PLANNED** — receipts, exports |
 
@@ -123,16 +123,18 @@ Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
 │   │   ├── models/               User, Account, Transaction (SQLAlchemy)
 │   │   ├── schemas/              spending.py, transaction.py (Pydantic)
 │   │   ├── routers/
-│   │   │   ├── teller.py         GET /accounts, GET /transactions, POST /enroll, PATCH /transactions/{id}/category
+│   │   │   ├── banking.py        GET /accounts, GET /transactions, PATCH /transactions/{id}/category
+│   │   │   ├── plaid.py          POST /create-link-token, POST /exchange-token, POST /sync, POST /backfill, GET /items, POST /webhook
 │   │   │   └── spending.py       GET /spending/summary
 │   │   ├── services/
-│   │   │   ├── teller.py         Teller API integration + DB persistence
+│   │   │   ├── banking.py        Provider-agnostic account/transaction queries
+│   │   │   ├── plaid.py          Plaid API integration + DB persistence
 │   │   │   └── spending.py       Spending summary aggregation
 │   │   └── utils/
-│   │       ├── encryption.py     AES-GCM encrypt/decrypt for Teller tokens
+│   │       ├── encryption.py     AES-GCM encrypt/decrypt for Plaid tokens
 │   │       └── logging.py        Structured audit logging (auth, data access, enrollment)
 │   ├── alembic/                  Database migrations
-│   ├── certs/                    Teller mTLS certs (gitignored)
+│   ├── certs/                    (legacy, gitignored)
 │   └── requirements.txt
 ├── frontend/
 │   ├── app/                      Expo Router screens (file-based routing)
@@ -143,7 +145,7 @@ Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
 │   │       ├── _layout.tsx       Dashboard layout (sidebar on web, bottom tabs on mobile)
 │   │       ├── index.tsx         Redirects to /dashboard/spending
 │   │       ├── overview.tsx      Overview page (stats, alerts)
-│   │       ├── spending.tsx      Spending page (Teller connect, time period, summary)
+│   │       ├── spending.tsx      Spending page (time period, summary)
 │   │       ├── analytics.tsx     Analytics page (bar chart, category filters, stats)
 │   │       ├── categorize.tsx    Categorize page (drag & drop transaction categorization)
 │   │       └── settings.tsx      Settings page (placeholder)
@@ -157,7 +159,7 @@ Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
 │       │   ├── LoginScreen.tsx
 │       │   ├── StaggeredView.tsx
 │       │   ├── StatCard.tsx
-│       │   ├── TellerModal.tsx
+│       │   ├── PlaidModal.tsx
 │       │   ├── ThemeToggle.tsx
 │       │   ├── TimePeriodSelector.tsx
 │       │   └── icons/            LedgerWiseLogo, GoogleIcon
@@ -215,7 +217,6 @@ Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
 │       │           ├── categoryRanking.ts
 │       │           └── spendingSummary.ts  computeSpendingSummary + re-exports from transactionFilters
 │       ├── hooks/
-│       │   ├── useTellerConnect.ts  Teller Connect widget integration
 │       │   └── useThemeStyles.ts   Theme-aware StyleSheet factory hook
 │       ├── styles/               Shared/layout StyleSheet files
 │       │   ├── auth.styles.ts
@@ -225,7 +226,7 @@ Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
 │       │   ├── placeholder.styles.ts
 │       │   ├── shared.styles.ts
 │       │   ├── statCard.styles.ts
-│       │   ├── tellerModal.styles.ts
+│       │   ├── plaidModal.styles.ts
 │       │   └── timePeriod.styles.ts
 │       ├── theme/                Design tokens
 │       │   ├── colors.ts         Light mode palette
@@ -253,7 +254,7 @@ Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
 1. **Monorepo** — backend + frontend in one repo. No Turborepo/Nx needed at this scale.
 2. **React Native Web from day one** — RN primitives compile to HTML/CSS via Expo. Mobile-ready without rewrite.
 3. **API-first** — frontend is a thin client. All business logic in FastAPI.
-4. **Teller tokens encrypted at rest** — AES-encrypted in DB. Key in env vars, never in code.
+4. **Plaid tokens encrypted at rest** — AES-encrypted in DB. Key in env vars, never in code.
 5. **Cache-aside** — Redis is optional. App works without it (just slower).
 6. **Platform-aware auth** — Web uses Supabase `signInWithOAuth` (browser redirect). Native iOS uses `expo-auth-session` Google provider to get an ID token, then `signInWithIdToken` to create a Supabase session. Supabase's OAuth redirect flow doesn't work in Expo Go because `ASWebAuthenticationSession` can't intercept `exp://` scheme 302 redirects.
 7. **Expo Router with platform-aware navigation** — File-based routing in `app/` directory. Dashboard layout renders a sidebar (256px) on web and bottom tabs on mobile. Auth gate at root redirects unauthenticated users to `/login`.
@@ -268,22 +269,23 @@ Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
 
 Backend (`backend/.env`):
 ```
-# Active
-TELLER_CERT_PATH=certs/certificate.pem
-TELLER_KEY_PATH=certs/private_key.pem
-TELLER_ENV=sandbox
 CORS_ORIGINS=["http://localhost:8081"]
 DATABASE_URL=          # Supabase Postgres connection string
 SUPABASE_URL=
 SUPABASE_KEY=
 
-ENCRYPTION_KEY=        # AES-256-GCM key (64 hex chars) — encrypts Teller tokens at rest
+PLAID_CLIENT_ID=
+PLAID_SECRET=
+PLAID_ENV=sandbox
+PLAID_REDIRECT_URI=
+PLAID_WEBHOOK_URL=
+
+ENCRYPTION_KEY=        # AES-256-GCM key (64 hex chars) — encrypts Plaid tokens at rest
 ```
 
 Frontend (`frontend/.env`):
 ```
 EXPO_PUBLIC_API_URL=http://localhost:8000
-EXPO_PUBLIC_TELLER_APP_ID=
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=    # Google Cloud Console → Web OAuth client
@@ -337,25 +339,25 @@ This is a **financial application** with access to real bank accounts. Security 
 
 ### Security Principles
 - **Defense in depth** — never rely on a single layer. Auth middleware + user-scoped queries + (planned) RLS.
-- **Least privilege** — Teller integration is read-only (GET only). No payment/transfer endpoints.
+- **Least privilege** — Plaid integration is read-only (transactions). No payment/transfer endpoints.
 - **Fail closed** — if auth fails, deny access. If encryption fails, reject the operation. Never fall back to plaintext.
 - **No secrets in code** — all credentials in env vars. `.env` files gitignored. Never log tokens, passwords, or keys.
 
 ### Implemented Security Controls
-- **Teller tokens encrypted at rest** — AES-256-GCM (`app/utils/encryption.py`). Key in `ENCRYPTION_KEY` env var. Tokens are encrypted before DB storage and decrypted only when needed for Teller API calls.
+- **Plaid tokens encrypted at rest** — AES-256-GCM (`app/utils/encryption.py`). Key in `ENCRYPTION_KEY` env var. Tokens are encrypted before DB storage and decrypted only when needed for Plaid API calls.
 - **HTTPS only** — enforced by Railway in production.
 - **CORS restricted** — only known frontend origins, explicit methods (`GET`, `POST`, `OPTIONS`), explicit headers (`Authorization`, `Content-Type`).
-- **JWT validation** — JWKS-based (`middleware/auth.py`), validates signature, audience, expiration, and **issuer** (must match Supabase project URL). Guards all teller + spending routes.
+- **JWT validation** — JWKS-based (`middleware/auth.py`), validates signature, audience, expiration, and **issuer** (must match Supabase project URL). Guards all banking + spending routes.
 - **User-scoped queries** — all data endpoints filter by authenticated `user_id`. No cross-user data access.
 - **Rate limiting** — in-memory sliding-window (`middleware/rate_limit.py`). 60 req/min global per IP, 5 req/min on sensitive endpoints (`/enroll`).
 - **Input validation** — Pydantic schemas with strict validators. `TokenRequest` validates token format, length, and allowed characters.
 - **Generic error responses** — internal exceptions are logged server-side but never exposed to clients. All user-facing errors return safe, generic messages.
 - **Audit logging** — structured logs (`utils/logging.py`) for: auth success/failure with IP, data access by user, enrollment events, request method/path/status/duration. Sensitive values (tokens, passwords) are **never** logged.
-- **WebView origin restriction** — `TellerModal` restricts `originWhitelist` to HTTPS origins only.
+- **Plaid webhook verification** — JWT signature verification with body hash matching for incoming Plaid webhooks.
 - **Google OAuth client IDs are public** — they are not secrets (validated server-side by Google).
 
 ### Security Rules for All Code Changes
-1. **Never log or expose Teller access tokens** — they grant direct bank access.
+1. **Never log or expose Plaid access tokens** — they grant direct bank access.
 2. **Never store sensitive data in plaintext** — encrypt at rest using `app/utils/encryption.py`.
 3. **Never return raw exception messages to clients** — log internally, return generic error.
 4. **Never use `allow_origins=["*"]`** or `allow_methods=["*"]` in CORS.
@@ -369,6 +371,6 @@ This is a **financial application** with access to real bank accounts. Security 
 ### Planned Security Enhancements
 - Supabase RLS on all user tables (defense in depth at DB level)
 - Migrate rate limiter to Redis (Upstash) for multi-instance support
-- Teller token rotation mechanism
+- Plaid token rotation mechanism
 - CSP headers on WebView content
 - `npm audit` / `pip audit` in CI pipeline

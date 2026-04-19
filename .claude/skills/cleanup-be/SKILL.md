@@ -2,7 +2,7 @@
 name: cleanup-be
 description: Post-feature backend cleanup — enforce CLAUDE.md layering, fintech security hardening, SQLAlchemy best practices, API correctness, and performance optimizations
 disable-model-invocation: true
-argument-hint: [scope e.g. app/services/teller.py, or blank for changed files]
+argument-hint: [scope e.g. app/services/plaid.py, or blank for changed files]
 allowed-tools: Bash Grep Read Edit Glob Agent
 effort: max
 ---
@@ -30,8 +30,8 @@ Work through each section in order. For every issue found, fix it — don't just
 
 ### 2. Sensitive Data Protection
 
-- **Teller access tokens must be encrypted at rest** — verify `encrypt()` is called before any DB write of access tokens
-- `decrypt()` should only be called at the moment of Teller API calls — never store decrypted tokens in variables longer than the scope of that call
+- **Plaid access tokens must be encrypted at rest** — verify `encrypt()` is called before any DB write of access tokens
+- `decrypt()` should only be called at the moment of Plaid API calls — never store decrypted tokens in variables longer than the scope of that call
 - **Never log tokens, secrets, encryption keys, or full account numbers** — grep for `logger.*token`, `logger.*key`, `logger.*secret`, `print(` and flag any hits
 - No `print()` statements anywhere — use structured logging only
 - Error responses to clients must never include stack traces, SQL queries, internal paths, or ORM details — only safe generic messages
@@ -45,13 +45,13 @@ Work through each section in order. For every issue found, fix it — don't just
 - SQLAlchemy ORM queries and `select()` with `.where()` are safe — but audit any raw `text()` calls or `session.execute(text(...))` for parameter binding
 - All user-facing inputs must be validated with Pydantic schemas — check every route parameter, query param, and request body
 - Pydantic validators must enforce: max length, allowed characters (regex), format constraints
-- Path parameters used in DB lookups (e.g. `transaction_id`) must be validated — reject if not matching expected format (UUID or Teller ID pattern)
+- Path parameters used in DB lookups (e.g. `transaction_id`) must be validated — reject if not matching expected format (UUID or Plaid ID pattern)
 - `Query()` params with string types must have reasonable `max_length` constraints
 
 ### 4. Rate Limiting & Abuse Prevention
 
 - Verify rate limiter covers ALL routes, not just a subset — check that the middleware runs before auth
-- Sensitive operations (`/enroll`, any future write endpoints) must have stricter per-endpoint limits
+- Sensitive operations (`/exchange-token`, any future write endpoints) must have stricter per-endpoint limits
 - Rate limit responses must not leak internal details — just `429` with a generic message
 - If rate limiter is in-memory: verify it prunes stale entries to prevent unbounded memory growth (add periodic cleanup or max-size eviction)
 
@@ -80,9 +80,9 @@ Work through each section in order. For every issue found, fix it — don't just
   - `403` — authorization failure (valid token but not allowed — for future use)
   - `404` — resource not found (but don't reveal whether it exists for another user — just "not found")
   - `429` — rate limited
-  - `502` — upstream service failure (Teller API down)
+  - `502` — upstream service failure (Plaid API down)
   - `500` — unexpected internal error (log full details, return generic message)
-- External API call failures (Teller, Supabase) must be caught and wrapped — never let `httpx` or `requests` exceptions propagate raw
+- External API call failures (Plaid, Supabase) must be caught and wrapped — never let SDK or HTTP exceptions propagate raw
 - Log the full exception with traceback server-side for every 5xx error
 
 ### 7. Database Best Practices
@@ -93,17 +93,16 @@ Work through each section in order. For every issue found, fix it — don't just
 - Write operations (`INSERT`, `UPDATE`) must be wrapped in an explicit transaction scope — verify `await db.commit()` is called and `await db.rollback()` on failure
 - Upsert operations (`ON CONFLICT DO UPDATE`) must specify the correct constraint name and update only the fields that should change
 - Verify all ForeignKey definitions include `ondelete="CASCADE"` where parent deletion should cascade
-- Check for missing indexes on frequently filtered columns (`user_id`, `account_id`, `teller_transaction_id`, `date`)
+- Check for missing indexes on frequently filtered columns (`user_id`, `account_id`, `plaid_transaction_id`, `date`)
 - Never use `db.execute(text("DROP ..."))` or `db.execute(text("TRUNCATE ..."))` outside of migrations
 - Verify `statement_cache_size=0` is set if using Supabase transaction pooler (pgbouncer compatibility)
 
 ### 8. Async & Concurrency
 
 - Every route handler must be `async def` — never `def` (blocks the event loop)
-- External HTTP calls (Teller API) must use `httpx.AsyncClient`, never `requests` or sync `httpx`
-- Where multiple independent external calls are needed (e.g. fetching transactions for N accounts), use `asyncio.gather()` to parallelize — not sequential `await` in a loop
-- `httpx.AsyncClient` should be used as a context manager (`async with`) to ensure connections are closed — never leave clients open
-- Set reasonable timeouts on all external HTTP calls (`timeout=30.0` or similar) — never use infinite timeout
+- External API calls (Plaid SDK) should be dispatched via `asyncio.to_thread()` since the Plaid SDK is synchronous
+- Where multiple independent external calls are needed (e.g. syncing transactions for N items), use `asyncio.gather()` to parallelize — not sequential `await` in a loop
+- Set reasonable timeouts on all external calls — never use infinite timeout
 - DB session lifecycle: one session per request via `Depends(get_db)` — never share sessions across requests or create global sessions
 
 ### 9. Audit Logging
@@ -164,7 +163,7 @@ Work through each section in order. For every issue found, fix it — don't just
 
 - No file over ~200 lines — extract if growing
 - Utility functions must be in `utils/`, not inline in services or routers
-- Shared constants (rate limit values, Teller base URL) should be defined once and imported — not duplicated
+- Shared constants (rate limit values, etc.) should be defined once and imported — not duplicated
 - `__init__.py` barrel exports for `models/`, `schemas/`, `services/` — keep them up to date
 - Migration files should have descriptive names — not auto-generated hashes only
 

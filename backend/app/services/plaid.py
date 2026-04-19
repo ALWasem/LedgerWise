@@ -1,6 +1,6 @@
 """Plaid banking integration service.
 
-Mirrors the Teller service pattern: API calls → DB persistence → response mapping.
+API calls → DB persistence → response mapping.
 All Plaid SDK calls are synchronous and run via asyncio.to_thread().
 """
 
@@ -14,7 +14,6 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 import jwt
-from jwt import PyJWK
 from plaid.exceptions import ApiException as PlaidApiException
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode

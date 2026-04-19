@@ -21,11 +21,11 @@ migrate:
 
 # Grant pro status: make grant-pro EMAIL=user@example.com
 grant-pro:
-	cd backend && . venv/bin/activate && python scripts/grant_pro.py $(EMAIL)
+	cd backend && . venv/bin/activate && PYTHONPATH=. python scripts/grant_pro.py $(EMAIL)
 
 # Revoke pro status: make revoke-pro EMAIL=user@example.com
 revoke-pro:
-	cd backend && . venv/bin/activate && python scripts/revoke_pro.py $(EMAIL)
+	cd backend && . venv/bin/activate && PYTHONPATH=. python scripts/revoke_pro.py $(EMAIL)
 
 # Install all dependencies (backend venv + frontend node_modules)
 install:

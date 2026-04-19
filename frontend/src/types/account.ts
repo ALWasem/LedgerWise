@@ -1,7 +1,6 @@
 export interface Account {
   id: string;
   provider: string;
-  teller_account_id: string | null;
   institution_name: string | null;
   account_name: string | null;
   account_type: string | null;

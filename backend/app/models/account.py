@@ -11,7 +11,6 @@ from app.models.base import Base
 class Account(Base):
     __tablename__ = "accounts"
     __table_args__ = (
-        UniqueConstraint("teller_account_id", "user_id", name="uq_account_per_user"),
         UniqueConstraint("item_id", "persistent_account_id", name="uq_plaid_account_per_item"),
         Index("ix_accounts_user_id", "user_id"),
         Index("ix_accounts_item_id", "item_id"),
@@ -23,13 +22,8 @@ class Account(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    provider: Mapped[str] = mapped_column(String(20), nullable=False, server_default="teller")
+    provider: Mapped[str] = mapped_column(String(20), nullable=False, server_default="plaid")
 
-    # Teller-specific (nullable for Plaid-only accounts)
-    teller_account_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    teller_access_token: Mapped[str | None] = mapped_column(String(512), nullable=True)
-
-    # Plaid-specific
     item_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     persistent_account_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

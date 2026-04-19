@@ -6,23 +6,6 @@ from pydantic import BaseModel, field_validator
 from app.schemas.merchant_rule import MerchantMatchPreview
 
 
-class TokenRequest(BaseModel):
-    access_token: str
-
-    @field_validator("access_token")
-    @classmethod
-    def validate_token_format(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("access_token must not be empty")
-        if len(v) > 512:
-            raise ValueError("access_token exceeds maximum length")
-        # Teller tokens are alphanumeric with underscores/hyphens
-        if not re.match(r"^[a-zA-Z0-9_\-]+$", v):
-            raise ValueError("access_token contains invalid characters")
-        return v
-
-
 class TransactionResponse(BaseModel):
     id: str
     date: str
@@ -30,7 +13,7 @@ class TransactionResponse(BaseModel):
     amount: str
     account_name: str
     category: str
-    provider: str = "teller"
+    provider: str = "plaid"
     merchant_name: str | None = None
     personal_finance_category_primary: str | None = None
     personal_finance_category_detailed: str | None = None
@@ -59,8 +42,7 @@ class CategoryUpdateRequest(BaseModel):
 
 class AccountResponse(BaseModel):
     id: str
-    provider: str = "teller"
-    teller_account_id: str | None = None
+    provider: str = "plaid"
     institution_name: str | None = None
     account_name: str | None = None
     account_type: str | None = None

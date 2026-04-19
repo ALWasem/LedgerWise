@@ -2,13 +2,13 @@
 
 A personal finance app that connects to real bank accounts for transaction viewing, balances, and spending analysis. Built for a small friends & family user base, with an architecture designed to scale.
 
-**Stack:** React Native (Expo SDK 54) · FastAPI · Supabase (PostgreSQL) · Teller API
+**Stack:** React Native (Expo SDK 54) · FastAPI · Supabase (PostgreSQL) · Plaid API
 
 ---
 
 ## Features
 
-- **Bank linking** — Connect your bank account via [Teller](https://teller.io) (supports 10,000+ US institutions)
+- **Bank linking** — Connect your bank account via [Plaid](https://plaid.com) (supports 12,000+ US institutions)
 - **Transaction feed** — View all transactions across linked accounts in a single feed
 - **Spending summary** — Category breakdown with proportional bars, summary chips, and expandable category detail
 - **Analytics** — Monthly spending trend bar chart, category filter pills, and summary stats
@@ -25,13 +25,13 @@ A personal finance app that connects to real bank accounts for transaction viewi
 ## Project structure
 
 ```
-├── backend/          FastAPI — auth, Teller proxy, spending analysis, database
+├── backend/          FastAPI — auth, Plaid integration, spending analysis, database
 │   ├── app/
 │   │   ├── middleware/   JWT validation (Supabase JWKS), rate limiting
 │   │   ├── models/       SQLAlchemy models (User, Account, Transaction)
-│   │   ├── routers/      API endpoints (teller, spending)
+│   │   ├── routers/      API endpoints (banking, plaid, spending)
 │   │   ├── schemas/      Pydantic request/response validation
-│   │   ├── services/     Business logic (teller, spending)
+│   │   ├── services/     Business logic (banking, plaid, spending)
 │   │   └── utils/        Encryption, audit logging
 │   └── alembic/          Database migrations
 └── frontend/         Expo app — web + iOS
@@ -47,7 +47,7 @@ A personal finance app that connects to real bank accounts for transaction viewi
         │   ├── analytics/    Analytics feature (BarChart, CategoryFilterPills, SummaryStatsRow)
         │   ├── categorize/   Categorize feature (drag & drop, desktop + mobile, category grid)
         │   └── spending/     Spending feature (SpendingSummary, CategoryAccordion, ProportionBar)
-        ├── hooks/        useTellerConnect, useThemeStyles
+        ├── hooks/        useThemeStyles
         ├── styles/       Shared/layout StyleSheet files
         ├── theme/        Design tokens (colors, dark colors, spacing, typography, shadows)
         ├── types/        Shared TypeScript interfaces
@@ -63,32 +63,28 @@ A personal finance app that connects to real bank accounts for transaction viewi
 - Python 3.11+
 - Node.js 18+
 - A [Supabase](https://supabase.com) project (free tier)
-- Teller credentials (App ID + certificate files) — ask the project owner
+- Plaid credentials (client ID + secret) — from [Plaid Dashboard](https://dashboard.plaid.com)
 - Google OAuth client IDs (Web + iOS) from [Google Cloud Console](https://console.cloud.google.com)
 
 ### 1. Set up credentials
 
-Place the Teller certificate files in `backend/certs/`:
-- `backend/certs/certificate.pem`
-- `backend/certs/private_key.pem`
-
 Create `backend/.env`:
 
 ```
-TELLER_CERT_PATH=certs/certificate.pem
-TELLER_KEY_PATH=certs/private_key.pem
-TELLER_ENV=sandbox
 CORS_ORIGINS=["http://localhost:8081"]
 DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/dbname
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-supabase-anon-key
+PLAID_CLIENT_ID=your-plaid-client-id
+PLAID_SECRET=your-plaid-secret
+PLAID_ENV=sandbox
+ENCRYPTION_KEY=          # 64 hex chars — python -c "import os; print(os.urandom(32).hex())"
 ```
 
 Create `frontend/.env`:
 
 ```
 EXPO_PUBLIC_API_URL=http://localhost:8000
-EXPO_PUBLIC_TELLER_APP_ID=your_teller_app_id
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-google-web-client-id
@@ -143,7 +139,7 @@ make frontend
 # Press 'i' to open in iOS simulator
 ```
 
-> **Tip:** In the Simulator menu bar, go to **I/O → Keyboard → disable "Connect Hardware Keyboard"**, otherwise typing in WebViews (like Teller Connect) will cause the page to refresh.
+> **Tip:** In the Simulator menu bar, go to **I/O → Keyboard → disable "Connect Hardware Keyboard"**, otherwise typing in WebViews will cause the page to refresh.
 
 ### Physical phone
 
@@ -167,12 +163,6 @@ Your phone can't reach `localhost` — use your Mac's local network IP instead.
 4. Restart both servers (frontend needs `npx expo start --clear` after `.env` changes).
 
 > Your Mac's local IP can change when you reconnect to WiFi. Re-run `ipconfig getifaddr en0` if it stops working.
-
-### Teller sandbox credentials
-
-When prompted by Teller Connect in sandbox mode, use:
-- **Username:** `username`
-- **Password:** `password`
 
 ---
 
@@ -202,7 +192,7 @@ Google OAuth is configured through three services:
 | Auth | Supabase Auth + Google OAuth | expo-auth-session on native |
 | Backend | FastAPI + Uvicorn | Python 3.11+, async |
 | Database | Supabase (PostgreSQL) | SQLAlchemy 2.0 async + Alembic |
-| Banking API | Teller | mTLS, sandbox → production |
+| Banking API | Plaid | SDK, sandbox → production |
 | Hosting | Railway | Auto-deploys from `main` |
 
 ---

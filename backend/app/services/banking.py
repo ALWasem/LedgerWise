@@ -58,13 +58,7 @@ def map_transactions(rows: list[Transaction]) -> list[TransactionResponse]:
         if category == "Refund":
             amount = abs(amount)
 
-        # Use the appropriate provider-specific ID, fall back to DB primary key
-        if txn.provider == "plaid" and txn.plaid_transaction_id:
-            txn_id = txn.plaid_transaction_id
-        elif txn.teller_transaction_id:
-            txn_id = txn.teller_transaction_id
-        else:
-            txn_id = str(txn.id)
+        txn_id = txn.plaid_transaction_id or str(txn.id)
 
         results.append(TransactionResponse(
             id=txn_id,
@@ -96,10 +90,7 @@ async def update_transaction_category(
         select(Transaction)
         .join(Account)
         .where(Account.user_id == user_id)
-        .where(
-            (Transaction.teller_transaction_id == transaction_id)
-            | (Transaction.plaid_transaction_id == transaction_id)
-        )
+        .where(Transaction.plaid_transaction_id == transaction_id)
         .options(joinedload(Transaction.account))
     )
     result = await db.execute(stmt)

@@ -22,10 +22,7 @@ async def _lookup_transaction(
         select(Transaction)
         .join(Account)
         .where(Account.user_id == user_id)
-        .where(
-            (Transaction.teller_transaction_id == transaction_id)
-            | (Transaction.plaid_transaction_id == transaction_id)
-        )
+        .where(Transaction.plaid_transaction_id == transaction_id)
         .options(joinedload(Transaction.account))
     )
     result = await db.execute(stmt)
@@ -173,10 +170,7 @@ async def apply_rules_to_transactions(
         return 0
 
     user_account_ids = select(Account.id).where(Account.user_id == user_id).scalar_subquery()
-    txn_id_filter = (
-        (Transaction.teller_transaction_id.in_(transaction_ids))
-        | (Transaction.plaid_transaction_id.in_(transaction_ids))
-    )
+    txn_id_filter = Transaction.plaid_transaction_id.in_(transaction_ids)
     uncategorized_filter = (
         (Transaction.category.is_(None))
         | (func.lower(Transaction.category) == "general")

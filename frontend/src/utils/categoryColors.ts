@@ -54,7 +54,7 @@ export function getFirstAvailableColor(takenColorIds: number[]): CategoryColor |
 
 // --- Hash-based fallback ---
 // Used for display only: categories from transaction data that don't have
-// a user-assigned color_id yet (e.g. Teller/Plaid-provided categories).
+// a user-assigned color_id yet (e.g. Plaid-provided categories).
 
 const UNCATEGORIZED_COLOR = BRAND_COLORS.gold;
 

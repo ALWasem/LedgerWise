@@ -37,7 +37,7 @@ Work through each section in order. For every issue found, fix it — don't just
 ### 3. Sensitive Data Handling
 - No `console.log` / `console.warn` / `console.error` that outputs transaction data, amounts, user info, or tokens
 - Auth tokens must never exist in React state or context — Supabase session only
-- Teller access tokens must never appear in frontend code — backend only
+- Plaid access tokens must never appear in frontend code — backend only
 - No hardcoded secrets, API keys, or URLs — must come from env vars
 - `EXPO_PUBLIC_API_URL` in production must be HTTPS
 - Sensitive text (`Text` components showing account numbers) should use `selectable={false}`
@@ -108,7 +108,7 @@ Work through each section in order. For every issue found, fix it — don't just
 - `overflow: 'hidden'` with `borderRadius` behaves differently — test both platforms
 - `Pressable` hover is web-only — verify graceful degradation on mobile
 - `window` / `document` references must be guarded with `Platform.OS === 'web'`
-- Web-only code (HTML5 drag/drop, Teller script injection) must not load on native
+- Web-only code (HTML5 drag/drop) must not load on native
 - `ScrollView` `contentContainerStyle` flexGrow differs between web and native
 - Use `Platform.select()` for platform-specific workarounds, not runtime `if (Platform.OS)` checks
 

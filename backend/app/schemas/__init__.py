@@ -20,7 +20,6 @@ from app.schemas.transaction import (
     PlaidItemResponse,
     PublicTokenRequest,
     SyncResponse,
-    TokenRequest,
     TransactionResponse,
 )
 
@@ -41,7 +40,6 @@ __all__ = [
     "PublicTokenRequest",
     "SpendingSummaryResponse",
     "SyncResponse",
-    "TokenRequest",
     "TransactionResponse",
     "UserCategoryCreateRequest",
     "UserCategoryResponse",

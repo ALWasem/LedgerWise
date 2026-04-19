@@ -1,4 +1,4 @@
-"""AES-GCM encryption for sensitive data at rest (e.g. Teller access tokens).
+"""AES-GCM encryption for sensitive data at rest.
 
 Uses Fernet-style envelope: 12-byte nonce || ciphertext || 16-byte tag,
 base64-encoded for safe storage in text columns.
