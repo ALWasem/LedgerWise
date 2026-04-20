@@ -194,7 +194,7 @@ export function TransactionDataProvider({ token, children }: ProviderProps) {
       userCategories,
       setUserCategories,
     }),
-    [accounts, allTransactions, hasAccounts, accountsLoading, transactionsLoading, error, refresh, updateTransactionLocally, selectedPeriod, highlightCategory, userCategories],
+    [accounts, allTransactions, hasAccounts, accountsLoading, transactionsLoading, error, refresh, updateTransactionLocally, selectedPeriod, setSelectedPeriod, highlightCategory, setHighlightCategory, userCategories, setUserCategories],
   );
 
   return (

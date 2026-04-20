@@ -245,27 +245,7 @@ export default function Categorize() {
           </View>
         </StaggeredView>
         <ProLockOverlay message="Categorize Transactions is a Pro feature">
-          <MobileCategorizeList
-            transactions={transactions}
-            categories={categories}
-            allCategories={allCategories}
-            categorizedCount={categorizedCount}
-            totalTransactions={totalTransactions}
-            filterMode={filterMode}
-            setFilterMode={setFilterMode}
-            transactionSearch={transactionSearch}
-            setTransactionSearch={setTransactionSearch}
-            assignToCategory={assignToCategory}
-            assignWithRuleCheck={assignWithRuleCheck}
-            rulePrompt={rulePrompt}
-            onRuleApplyAll={handleRuleApplyAll}
-            onRuleJustThisOne={handleRuleJustThisOne}
-            existingCategoryNames={existingCategoryNames}
-            onCreateCategory={handleCreateCategory}
-            onUpdateCategory={updateCategory}
-            onDeleteCategory={deleteCategory}
-            takenColorIds={takenColorIds}
-          />
+          <View style={styles.lockedPlaceholder} />
         </ProLockOverlay>
       </View>
     );
@@ -312,52 +292,7 @@ export default function Categorize() {
       {/* Progress Bar + Two Panel Layout */}
       {!isPro ? (
         <ProLockOverlay message="Categorize Transactions is a Pro feature">
-          <View style={styles.panelOuterContainer}>
-            <ProgressHeader
-              categorizedCount={categorizedCount}
-              totalCount={totalTransactions}
-            />
-            <View style={styles.panelRow}>
-              <View style={styles.transactionsPanelWrapper}>
-                <View style={styles.transactionsPanel}>
-                  <View style={styles.panelHeader}>
-                    <View style={styles.panelHeaderRow}>
-                      <Text style={styles.panelTitle}>Uncategorized Transactions</Text>
-                      <Text style={styles.countBadge}>{transactions.length}</Text>
-                    </View>
-                  </View>
-                  <FlatList
-                    data={transactions}
-                    renderItem={renderTransaction}
-                    keyExtractor={keyExtractorTx}
-                    style={styles.transactionList}
-                    contentContainerStyle={styles.transactionListContent}
-                    showsVerticalScrollIndicator={false}
-                    initialNumToRender={10}
-                  />
-                </View>
-              </View>
-              <View style={styles.categoriesPanelWrapper}>
-                <View style={styles.categoriesPanel}>
-                  <View style={styles.panelHeader}>
-                    <View style={styles.panelHeaderRow}>
-                      <Text style={styles.panelTitle}>Categories</Text>
-                    </View>
-                  </View>
-                  <FlatList
-                    data={categoryData}
-                    renderItem={renderCategory}
-                    keyExtractor={keyExtractorCat}
-                    numColumns={2}
-                    style={styles.categoryList}
-                    contentContainerStyle={styles.categoryListContent}
-                    columnWrapperStyle={styles.categoryColumnWrapper}
-                    showsVerticalScrollIndicator={false}
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
+          <View style={styles.lockedPlaceholder} />
         </ProLockOverlay>
       ) : (
         <View style={styles.panelOuterContainer}>

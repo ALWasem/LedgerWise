@@ -230,11 +230,7 @@ export default function SpendingSummary({
             ) : (
               <StaggeredView index={2} trigger={periodKey}>
                 <ProLockOverlay message="Upgrade to Pro to see spending by category">
-                  <ProportionBar categories={data.categories} accountCount={accountCount} />
-                  <CategoryAccordion
-                    data={data}
-                    transactions={transactions}
-                  />
+                  <View style={styles.lockedPlaceholder} />
                 </ProLockOverlay>
               </StaggeredView>
             )}

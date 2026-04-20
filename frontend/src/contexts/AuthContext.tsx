@@ -82,14 +82,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     let stale = false;
-    supabase
-      .from('users')
-      .select('is_pro')
-      .eq('id', session.user.id)
-      .single()
-      .then(({ data }) => {
-        if (!stale) setIsPro(data?.is_pro ?? false);
-      });
+    Promise.resolve(
+      supabase
+        .from('users')
+        .select('is_pro')
+        .eq('id', session.user.id)
+        .single(),
+    ).then(({ data }) => {
+      if (!stale) setIsPro(data?.is_pro ?? false);
+    }).catch(() => {
+      if (!stale) setIsPro(false);
+    });
     return () => { stale = true; };
   }, [session?.user?.id]);
 

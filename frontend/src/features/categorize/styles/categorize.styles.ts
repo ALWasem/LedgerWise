@@ -599,4 +599,9 @@ export const createCategorizeStyles = (deps: StyleDeps) => StyleSheet.create({
     fontSize: 13,
     color: deps.colors.text.secondary,
   },
+  lockedPlaceholder: {
+    height: 480,
+    borderRadius: radius.lg,
+    backgroundColor: deps.colors.surface.card,
+  },
 });

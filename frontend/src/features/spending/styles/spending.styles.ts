@@ -547,4 +547,9 @@ export const createSpendingStyles = (deps: StyleDeps) => StyleSheet.create({
   refundTotal: {
     color: deps.colors.semantic.success,
   },
+  lockedPlaceholder: {
+    height: 400,
+    borderRadius: radius.lg,
+    backgroundColor: deps.colors.surface.card,
+  },
 });
