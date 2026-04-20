@@ -22,7 +22,8 @@ SENSITIVE_PATHS = {
     "/api/v1/plaid/backfill",
     "/api/v1/merchant-rules/",
     "/api/v1/billing/create-checkout-session",
-    "/api/v1/billing/webhook",
+    # /billing/webhook intentionally excluded — Stripe signature verification
+    # is sufficient, and rate limiting can drop legitimate webhook retries.
 }
 DATA_PATHS = {
     "/api/v1/banking/accounts",
@@ -100,6 +101,21 @@ async def rate_limit_middleware(
         )
     _global_hits[client_ip].append(now)
 
+    # --- extract user_id from JWT for per-user limiting (best-effort) ---
+    user_id: str | None = None
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        try:
+            import jwt as _jwt
+
+            token = auth_header[7:]
+            # Decode without verification — we only need the sub claim for
+            # rate-limit keying. Auth middleware validates the JWT separately.
+            payload = _jwt.decode(token, options={"verify_signature": False})
+            user_id = payload.get("sub")
+        except Exception:
+            pass
+
     # --- per-endpoint rate checks ---
     path = request.url.path
     is_data_path = path in DATA_PATHS or path.startswith(DATA_PATH_PREFIXES)
@@ -114,6 +130,16 @@ async def rate_limit_middleware(
                 content={"detail": "Rate limit exceeded for this action. Please wait."},
             )
         _sensitive_hits[key].append(now)
+        # Per-user limit on sensitive paths
+        if user_id:
+            user_key = f"user:{user_id}:{path}"
+            _sensitive_hits[user_key] = _prune(_sensitive_hits[user_key], sw, now)
+            if len(_sensitive_hits[user_key]) >= smax:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Rate limit exceeded for this action. Please wait."},
+                )
+            _sensitive_hits[user_key].append(now)
     elif is_data_path:
         dw = DATA_RATE_LIMIT["window_seconds"]
         dmax = DATA_RATE_LIMIT["max_requests"]
@@ -125,5 +151,15 @@ async def rate_limit_middleware(
                 content={"detail": "Too many requests. Please try again later."},
             )
         _data_hits[key].append(now)
+        # Per-user limit on data paths
+        if user_id:
+            user_key = f"user:{user_id}:{path}"
+            _data_hits[user_key] = _prune(_data_hits[user_key], dw, now)
+            if len(_data_hits[user_key]) >= dmax:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Too many requests. Please try again later."},
+                )
+            _data_hits[user_key].append(now)
 
     return await call_next(request)

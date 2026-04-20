@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
-from app.middleware.auth import get_current_user_id
+from app.middleware.auth import get_current_user_id, require_pro_user
 from app.schemas.category import (
     DeleteCategoryResponse,
     UserCategoryCreateRequest,
@@ -21,7 +21,25 @@ _UUID_PATTERN = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE,
 )
 
+# Safe ValueError messages that can be returned to clients.
+# Any unexpected message gets a generic fallback to prevent info leakage.
+_SAFE_ERROR_MESSAGES = {
+    "a category with this name already exists",
+    "category name is required",
+    "invalid color id",
+}
+
 logger = logging.getLogger("ledgerwise.audit")
+
+
+def _safe_value_error(exc: ValueError) -> tuple[int, str]:
+    """Map a ValueError to a safe (status_code, detail) tuple."""
+    detail = str(exc)
+    if detail.lower() in _SAFE_ERROR_MESSAGES:
+        status_code = 409 if "already" in detail.lower() else 422
+        return status_code, detail
+    logger.warning("Unexpected ValueError in category operation: %s", detail)
+    return 422, "Invalid category data."
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
@@ -42,7 +60,7 @@ async def list_categories(
 @router.post("/", response_model=UserCategoryResponse, status_code=201)
 async def create_category(
     body: UserCategoryCreateRequest,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(require_pro_user),
     db: AsyncSession = Depends(get_db),
 ) -> UserCategoryResponse:
     log_security_event("category_create", {"user_id": user_id, "name": body.name})
@@ -51,9 +69,8 @@ async def create_category(
             db, user_id, body.name, body.color_id,
         )
     except ValueError as exc:
-        detail = str(exc)
-        status = 409 if "already" in detail.lower() else 422
-        raise HTTPException(status_code=status, detail=detail)
+        code, msg = _safe_value_error(exc)
+        raise HTTPException(status_code=code, detail=msg)
     except Exception:
         logger.error("Failed to create category for user=%s", user_id, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to create category.")
@@ -68,7 +85,7 @@ def _validate_category_id(category_id: str) -> None:
 async def update_category(
     category_id: str = Path(..., max_length=36),
     body: UserCategoryUpdateRequest = ...,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(require_pro_user),
     db: AsyncSession = Depends(get_db),
 ) -> UserCategoryResponse:
     _validate_category_id(category_id)
@@ -80,9 +97,8 @@ async def update_category(
             db, user_id, category_id, name=body.name, color_id=body.color_id,
         )
     except ValueError as exc:
-        detail = str(exc)
-        status = 409 if "already" in detail.lower() else 422
-        raise HTTPException(status_code=status, detail=detail)
+        code, msg = _safe_value_error(exc)
+        raise HTTPException(status_code=code, detail=msg)
     except Exception:
         logger.error("Failed to update category for user=%s", user_id, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to update category.")
@@ -95,7 +111,7 @@ async def update_category(
 @router.delete("/{category_id}", response_model=DeleteCategoryResponse)
 async def delete_category(
     category_id: str = Path(..., max_length=36),
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(require_pro_user),
     db: AsyncSession = Depends(get_db),
 ) -> DeleteCategoryResponse:
     _validate_category_id(category_id)

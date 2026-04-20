@@ -5,7 +5,7 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
-from app.middleware.auth import get_current_user_id
+from app.middleware.auth import get_current_user_id, require_pro_user
 from app.schemas import MerchantMatchPreview, MerchantRuleCreateRequest, MerchantRuleResponse
 from app.services import merchant_rule as merchant_rule_service
 from app.utils.logging import log_data_access
@@ -50,7 +50,7 @@ async def preview_match(
 @router.post("/", response_model=MerchantRuleResponse, status_code=201)
 async def create_rule(
     body: MerchantRuleCreateRequest,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(require_pro_user),
     db: AsyncSession = Depends(get_db),
 ) -> MerchantRuleResponse:
     """Create a merchant rule and batch-apply to all matching transactions."""

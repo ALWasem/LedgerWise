@@ -2,6 +2,8 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import jwt
 from jwt import PyJWKClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.utils.logging import log_auth_failure, log_auth_success
@@ -56,4 +58,29 @@ async def get_current_user_id(
     # Store user_id on request state for audit logging middleware
     request.state.user_id = user_id
     log_auth_success(user_id)
+    return user_id
+
+
+async def require_pro_user(
+    user_id: str = Depends(get_current_user_id),
+) -> str:
+    """Verify the authenticated user has an active Pro subscription.
+
+    Raises 403 if not Pro. Uses its own DB session to avoid adding a
+    ``db`` parameter that would conflict with endpoint signatures.
+    """
+    from app.dependencies import async_session
+    from app.models.user import User
+
+    async with async_session() as session:
+        result = await session.execute(
+            select(User.is_pro).where(User.id == user_id)
+        )
+        is_pro = result.scalar()
+
+    if not is_pro:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Pro subscription required.",
+        )
     return user_id

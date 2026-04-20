@@ -61,7 +61,12 @@ async def security_headers_middleware(
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "frame-src https://checkout.stripe.com https://js.stripe.com; "
+        "script-src 'self' https://js.stripe.com; "
+        "connect-src 'self' https://api.stripe.com"
+    )
     return response
 
 app.include_router(banking.router, prefix="/api/v1")

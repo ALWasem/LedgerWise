@@ -41,7 +41,8 @@
       "expo-dev-client",
       "expo-web-browser",
       "expo-router",
-      "expo-font"
+      "expo-font",
+      "expo-secure-store"
     ],
     "extra": {
       "router": {},

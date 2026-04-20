@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_db
-from app.middleware.auth import get_current_user_id
+from app.middleware.auth import get_current_user_id, require_pro_user
 from app.schemas import AccountResponse, CategoryUpdateRequest, TransactionResponse
 from app.services import banking as banking_service
 from app.services import merchant_rule as merchant_rule_service
@@ -71,7 +71,7 @@ async def get_my_transactions(
 async def update_category(
     transaction_id: str = Path(..., max_length=255, description="Provider transaction ID"),
     body: CategoryUpdateRequest = ...,
-    user_id: str = Depends(get_current_user_id),
+    user_id: str = Depends(require_pro_user),
     db: AsyncSession = Depends(get_db),
 ) -> TransactionResponse:
     """Update the category of a single transaction."""
