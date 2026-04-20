@@ -12,6 +12,7 @@ import time
 import uuid
 from datetime import date, timedelta
 from decimal import Decimal
+from typing import Any
 
 import jwt
 from plaid.exceptions import ApiException as PlaidApiException
@@ -52,7 +53,7 @@ _TXN_UPDATE_COLUMNS = (
 )
 
 
-def _build_txn_values(txn, account_db_id: uuid.UUID) -> dict:
+def _build_txn_values(txn, account_db_id: uuid.UUID) -> dict[str, Any]:
     """Build a values dict for a single Plaid transaction row."""
     pfc = txn.personal_finance_category
     return {
@@ -222,8 +223,8 @@ async def exchange_public_token(
             account_name=acct.name,
             account_type=acct.type.value if acct.type else None,
             account_subtype=acct.subtype.value if acct.subtype else None,
-            balance_current=float(balance.current) if balance.current is not None else None,
-            balance_limit=float(balance.limit) if balance.limit is not None else None,
+            balance_current=str(balance.current) if balance.current is not None else None,
+            balance_limit=str(balance.limit) if balance.limit is not None else None,
             created_at=row.created_at,
         ))
 

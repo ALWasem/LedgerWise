@@ -5,8 +5,8 @@ export interface Account {
   account_name: string | null;
   account_type: string | null;
   account_subtype: string | null;
-  balance_current: number | null;
-  balance_limit: number | null;
+  balance_current: string | null;
+  balance_limit: string | null;
   item_id: string | null;
   persistent_account_id: string | null;
   created_at: string | null;

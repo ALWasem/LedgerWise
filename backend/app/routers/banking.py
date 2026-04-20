@@ -38,8 +38,8 @@ async def get_my_accounts(
             account_name=acct.account_name,
             account_type=acct.account_type,
             account_subtype=acct.account_subtype,
-            balance_current=float(acct.balance_current) if acct.balance_current is not None else None,
-            balance_limit=float(acct.balance_limit) if acct.balance_limit is not None else None,
+            balance_current=str(acct.balance_current) if acct.balance_current is not None else None,
+            balance_limit=str(acct.balance_limit) if acct.balance_limit is not None else None,
             item_id=acct.item_id,
             persistent_account_id=acct.persistent_account_id,
             created_at=acct.created_at,
@@ -53,6 +53,8 @@ async def get_my_transactions(
     start_date: date | None = Query(None, description="Filter from this date (inclusive)"),
     end_date: date | None = Query(None, description="Filter up to this date (inclusive)"),
     account_type: str | None = Query(None, max_length=50, pattern=r"^[a-zA-Z_]+$", description="Filter by account type (e.g. credit)"),
+    limit: int = Query(5000, ge=1, le=10000, description="Max transactions to return"),
+    offset: int = Query(0, ge=0, description="Number of transactions to skip"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> list[TransactionResponse]:
@@ -60,7 +62,7 @@ async def get_my_transactions(
     log_data_access(user_id, "transactions")
     try:
         return await banking_service.get_user_transactions(
-            db, user_id, start_date, end_date, account_type
+            db, user_id, start_date, end_date, account_type, limit, offset
         )
     except Exception:
         logger.error("Failed to fetch transactions for user=%s", user_id, exc_info=True)

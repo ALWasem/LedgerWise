@@ -1,5 +1,6 @@
 """Billing service — Stripe checkout and subscription management."""
 
+import asyncio
 import logging
 import random
 from datetime import datetime, timedelta, timezone
@@ -365,36 +366,47 @@ async def reconcile_subscriptions(db: AsyncSession) -> dict[str, Any]:
     )
     pro_users = result.scalars().all()
 
-    corrections = []
-    for user in pro_users:
-        if not user.stripe_customer_id:
-            # Pro without a Stripe customer — likely granted manually via script
-            continue
+    # Check Stripe subscriptions in parallel (batch of concurrent requests)
+    users_to_check = [u for u in pro_users if u.stripe_customer_id]
 
+    async def _check_user(user: User) -> dict[str, str] | None:
         try:
             subscriptions = await client.subscriptions.list_async(
                 params={"customer": user.stripe_customer_id, "status": "active", "limit": 1}
             )
             if not subscriptions.data:
-                # No active subscription in Stripe but is_pro=True locally
-                await db.execute(
-                    update(User)
-                    .where(User.id == user.id)
-                    .values(is_pro=False, updated_at=func.now())
-                )
-                corrections.append({
+                return {
                     "user_id": str(user.id),
+                    "customer_id": user.stripe_customer_id,
                     "action": "revoked_pro",
                     "reason": "no_active_stripe_subscription",
-                })
-                log_security_event(
-                    "stripe_reconciliation_revoke",
-                    {"user_id": str(user.id), "customer_id": user.stripe_customer_id},
-                )
+                }
         except stripe.StripeError:
             logger.error(
                 "Failed to check Stripe subscriptions for user=%s customer=%s",
                 user.id, user.stripe_customer_id, exc_info=True,
+            )
+        return None
+
+    results = await asyncio.gather(*[_check_user(u) for u in users_to_check])
+
+    corrections = []
+    for result in results:
+        if result is not None:
+            user_id = result["user_id"]
+            await db.execute(
+                update(User)
+                .where(User.id == user_id)
+                .values(is_pro=False, updated_at=func.now())
+            )
+            corrections.append({
+                "user_id": user_id,
+                "action": result["action"],
+                "reason": result["reason"],
+            })
+            log_security_event(
+                "stripe_reconciliation_revoke",
+                {"user_id": user_id, "customer_id": result["customer_id"]},
             )
 
     if corrections:

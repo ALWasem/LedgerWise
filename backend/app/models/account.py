@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import DateTime, ForeignKey, Index, Numeric, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -32,9 +33,9 @@ class Account(Base):
     account_name: Mapped[str | None] = mapped_column(String(255))
     account_type: Mapped[str | None] = mapped_column(String(50))
     account_subtype: Mapped[str | None] = mapped_column(String(50))
-    balance: Mapped[float | None] = mapped_column(Numeric(12, 2))
-    balance_current: Mapped[float | None] = mapped_column(Numeric(12, 2))
-    balance_limit: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    balance: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    balance_current: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    balance_limit: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
     currency: Mapped[str] = mapped_column(String(3), default="USD")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

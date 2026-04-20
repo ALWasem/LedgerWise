@@ -121,18 +121,19 @@ def _build_categories(
     uncategorized_pct = 0.0
 
     for row in rows:
-        pct = (float(row.total) / total_spent * 100) if total_spent else 0
+        row_total = float(row.total)
+        pct = (row_total / total_spent * 100) if total_spent else 0
         name = _title_case(row.category)
         categories.append(CategoryResponse(
             name=name,
-            total=round(float(row.total), 2),
+            total=str(round(row_total, 2)),
             count=row.count,
             percentage=round(pct, 1),
         ))
         if name == "General":
             uncategorized_count = row.count
             uncategorized_pct = (
-                round(float(row.total) / total_spent * 100, 1) if total_spent else 0
+                round(row_total / total_spent * 100, 1) if total_spent else 0
             )
 
     return categories, uncategorized_count, uncategorized_pct
@@ -162,12 +163,12 @@ async def get_spending_summary(
     )
 
     return SpendingSummaryResponse(
-        total_spent=round(total_spent - refund_total, 2),
+        total_spent=str(round(total_spent - refund_total, 2)),
         transaction_count=transaction_count,
         category_count=len(categories),
         categories=categories,
         uncategorized_count=uncategorized_count,
         uncategorized_percentage=uncategorized_pct,
-        refund_total=refund_total,
+        refund_total=str(refund_total),
         refund_count=refund_count,
     )

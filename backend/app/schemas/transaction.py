@@ -47,8 +47,8 @@ class AccountResponse(BaseModel):
     account_name: str | None = None
     account_type: str | None = None
     account_subtype: str | None = None
-    balance_current: float | None = None
-    balance_limit: float | None = None
+    balance_current: str | None = None
+    balance_limit: str | None = None
     item_id: str | None = None
     persistent_account_id: str | None = None
     created_at: datetime | None = None

@@ -27,6 +27,8 @@ async def get_user_transactions(
     start_date: date_type | None = None,
     end_date: date_type | None = None,
     account_type: str | None = None,
+    limit: int = 5000,
+    offset: int = 0,
 ) -> list[TransactionResponse]:
     """Fetch transactions for a specific user, joined with account info."""
     stmt = (
@@ -43,6 +45,8 @@ async def get_user_transactions(
         stmt = stmt.where(Transaction.date >= start_date)
     if end_date:
         stmt = stmt.where(Transaction.date <= end_date)
+
+    stmt = stmt.limit(limit).offset(offset)
 
     result = await db.execute(stmt)
     rows = result.unique().scalars().all()
