@@ -1,6 +1,6 @@
 ---
 name: cleanup-fe
-description: Post-feature frontend cleanup — enforce CLAUDE.md standards + RN performance, fintech data correctness, memory safety, accessibility, and security
+description: "Post-feature frontend cleanup — enforce CLAUDE.md standards + RN performance, fintech data correctness, paywall/entitlement integrity, memory safety, accessibility, and platform consistency. Security concerns are handled by the security-audit skill."
 disable-model-invocation: true
 argument-hint: [scope e.g. src/features/analytics, or blank for changed files]
 allowed-tools: Bash Grep Read Edit Glob Agent
@@ -11,9 +11,11 @@ effort: max
 
 Clean up frontend code after a feature push. Enforces CLAUDE.md project conventions AND industry best practices for React Native fintech apps.
 
-**Scope:** If `$ARGUMENTS` is provided, focus on those paths under `frontend/`. Otherwise, detect changed frontend files by running `git diff --name-only main...HEAD -- frontend/` (or `git diff --name-only HEAD~5 -- frontend/` if on main) and clean those up.
+**Scope:** If `$ARGUMENTS` is provided, focus on those paths under `frontend/`. Otherwise, detect changed frontend files by running `git diff --name-only main...HEAD -- frontend/`. If on `main`, default to `git diff --name-only HEAD~1 -- frontend/` (last commit only) and suggest the user pass an explicit scope via `$ARGUMENTS` if they want a wider sweep.
 
 Work through each section in order. For every issue found, fix it — don't just report it.
+
+> **Security scope:** Deep security review (auth flows, token storage, WebView origins, deep link validation, Stripe webhook integrity, etc.) is handled by the `security-audit` skill. This skill covers only the lightweight security sanity checks that are cheap to verify during routine cleanup. For anything beyond the basics here, run `security-audit`.
 
 ---
 
@@ -34,14 +36,28 @@ Work through each section in order. For every issue found, fix it — don't just
 - Supabase `onAuthStateChange` must return and call its unsubscribe function in cleanup
 - `Dimensions.addEventListener` (if used) must be cleaned up
 
-### 3. Sensitive Data Handling
-- No `console.log` / `console.warn` / `console.error` that outputs transaction data, amounts, user info, or tokens
-- Auth tokens must never exist in React state or context — Supabase session only
-- Plaid access tokens must never appear in frontend code — backend only
-- No hardcoded secrets, API keys, or URLs — must come from env vars
-- `EXPO_PUBLIC_API_URL` in production must be HTTPS
-- Sensitive text (`Text` components showing account numbers) should use `selectable={false}`
-- No `any` in TypeScript — type safety holes are security holes in fintech
+### 3. Security Sanity Checks (lightweight only)
+
+These are cheap, grep-able checks worth doing on every cleanup pass. For a full security review, run the `security-audit` skill instead.
+
+- No `console.log` / `console.warn` / `console.error` that outputs transaction data, amounts, emails, user IDs, or tokens
+- No `any` in TypeScript — type safety holes compound into runtime bugs, especially around money
+- No hardcoded secrets, API keys, or URLs — must come from `EXPO_PUBLIC_*` env vars
+- Grep for `sk_live_`, `sk_test_`, `access-production-`, `whsec_` under `frontend/` — none should exist in frontend code
+- No Plaid access tokens referenced in frontend at all — they are backend-only
+
+If anything in this section fails, fix it AND recommend running `security-audit` before the next release.
+
+### 3a. Entitlement & Paywall Integrity
+
+With Stripe now connected and the freemium paywall live, paywall bypass is the #1 billing risk on the frontend.
+
+- `isPro` / subscription state must come from the backend-verified user profile, never from local storage, URL params, or Stripe checkout success redirect params. A client-flipped flag is an open door to free Pro access.
+- Paywall-gated features must check entitlement on BOTH the frontend (for UX) and the backend endpoint (for security). Frontend-only gating can be bypassed with dev tools. If this skill finds a Pro-gated UI element that doesn't have an obvious corresponding server-verified API call, note it in the summary so `security-audit` can verify the backend side — the backend check itself is out of scope for this skill.
+- Stripe publishable key (`pk_live_`, `pk_test_`) is fine as `EXPO_PUBLIC_*`. Secret key (`sk_live_`, `sk_test_`) must never appear in frontend — grep to confirm.
+- Checkout success/cancel deep link handlers only update UI state (e.g. show a "processing" spinner). They never flip `isPro` locally. Entitlement updates come from the backend after webhook processing.
+- Stripe Checkout and Billing Portal URLs must be HTTPS and LedgerWise-controlled domains only — no open redirect surface.
+- Blur overlays and locked-state UI must not leak Pro-only data into the DOM / component tree just because the blur hides it visually. If the data isn't available, don't render it — render a locked placeholder.
 
 ---
 
@@ -57,6 +73,7 @@ Work through each section in order. For every issue found, fix it — don't just
 - Never create new object/array literals in render (`style={[styles.x, { marginTop: 10 }]}` creates a new ref every render)
 - Never use anonymous arrow functions as props to list items — extract to memoized callbacks
 - Heavy computations (`computeSpendingSummary`, analytics aggregation) must run in `useMemo`, not during render
+- List keys must be stable backend IDs (UUIDs, transaction IDs) — never derived composites like `merchant + date` that can change when data updates. A changed key forces full remount, loses animation state, and causes visible flashing when the user edits a row.
 
 ### 5. Error Handling & Resilience
 - Every data-driven screen must handle all three states: **loading** (skeleton/spinner), **empty** (helpful message), **error** (message + retry action)
@@ -65,8 +82,12 @@ Work through each section in order. For every issue found, fix it — don't just
 - Write operations (PATCH category): show retry button, never silent auto-retry
 - Feature-level error boundaries — a crash in analytics should not take down spending
 - `ErrorBoundary` does not catch async/event handler errors — those need try/catch
+- 401 handling must distinguish between "token expired, try refresh" and "refresh failed, redirect to login". Flag any 401 handler that redirects immediately without attempting a Supabase session refresh first.
+- After a successful token refresh, the in-flight request that got the 401 should be retried once — never silently fail user actions due to a transient expiry.
+- Data-dependent screens should detect offline state (via `@react-native-community/netinfo` or equivalent) and show a clear offline banner — not an endless loading spinner.
+- Mutations attempted offline must queue or fail with a clear message, never vanish into a rejected Promise.
 
-### 6. God File Detection & Extraction
+### 6. File Size & Extraction
 - Flag any component file over ~150 lines
 - Extract per CLAUDE.md rules:
   - Screen-level components → `src/features/<feature>/`
@@ -80,6 +101,56 @@ Work through each section in order. For every issue found, fix it — don't just
 - **Components render ONE thing** — extract single-item components, parent creates N instances
 - **No HTML elements** — only React Native primitives (`View`, `Text`, `Pressable`, `ScrollView`, etc.)
 - **Composition at parent level** — sub-components must not import sibling sub-components
+
+### 7a. Performance & Optimization
+
+Cross-cutting optimization review for every cleanup pass. React Native on mobile has a tight frame budget (16ms for 60fps) and startup time matters especially on lower-end devices.
+
+This section assumes sections 4 (list-specific memoization) and 11 (animation-specific perf) have already passed. Focus here on cross-cutting concerns — re-render cascades, bundle size, caching, module-level perf, and asset handling — not list or animation fundamentals. Flag each issue once, in the section where it most naturally belongs.
+
+**Re-render audit:**
+- Any component that re-renders more than necessary under normal interaction (typing, scrolling, navigating) is a bug. Use React DevTools Profiler or `why-did-you-render` mentally when reviewing: does this component re-render when props it doesn't care about change?
+- Context consumers re-render on every context value change. Split large contexts into smaller ones scoped by update frequency — a context that holds both `session` (rare) and `hoverIndex` (every frame) should be two contexts.
+- `Provider value={{ ... }}` without `useMemo` creates a new object every render and breaks all child memoization. Flag any context provider whose value is a literal object or array.
+- Components that take callbacks as props require those callbacks to be `useCallback`-wrapped at the parent. Flag inline arrow functions passed to memoized children.
+
+**Startup & bundle size:**
+- Heavy imports should be lazy-loaded where possible. Reanimated, date libraries, chart libraries, and PDF/image libraries are the usual offenders — flag any top-level import in a rarely-used screen that forces the bundle to include a large dep on app start.
+- Use `import('...')` dynamic imports for screens behind rare flows (settings, account deletion, Stripe billing portal webview).
+- Avoid importing the entire `lodash` — use `lodash/<function>` or native JS equivalents. Same for `date-fns`, `@expo/vector-icons` (import specific icon sets, not the full bundle).
+- On web, tree-shaking depends on named imports — flag `import * as X from ...` patterns in non-type contexts.
+
+**Image & asset handling:**
+- Remote images must use `expo-image` (or equivalent with caching), not bare `Image` — bare `Image` refetches on every mount.
+- Always provide explicit `width` / `height` on images to avoid layout thrashing.
+- Large local assets (institution logos, onboarding illustrations) should be compressed and served at multiple resolutions (`@2x`, `@3x`).
+- SVG icons preferred over PNG where possible — smaller and resolution-independent.
+
+**Expensive computation:**
+- Aggregations, sorts, filters, and date math over large transaction lists must run inside `useMemo` with a precise dependency array — never in render body, never in `useEffect` that sets state (causes double render).
+- Computations that don't depend on React state should live at module scope or in a pure helper — never recomputed inside a component.
+- Date formatting inside a list item (for 100+ rows) is a common hot path — memoize per-row or pre-compute in the list's parent before passing down.
+- Chart data transformations should be memoized and should not recalculate on unrelated state changes.
+
+**Network & data:**
+- API response caching (the in-memory cache in `api/client.ts`) should be used for reads that tolerate staleness — flag GET endpoints called directly via `fetch` that bypass `cachedGet`.
+- `clearApiCache()` must be called after mutations that invalidate the cache — flag mutation handlers that update local state without clearing the relevant cached read.
+- Polling intervals on screens (if any) must pause when the screen is unfocused — use `useFocusEffect` or equivalent. Background polling drains battery.
+- Pagination: list endpoints must not refetch from page 1 on every scroll — verify incremental loading with `onEndReached` / cursor.
+
+**Mobile-specific:**
+- Modal mount cost — modals that are always mounted (even when closed) add to initial render. Prefer conditionally rendering heavy modals (`{isOpen && <HeavyModal />}`) unless animation requires pre-mount.
+- `KeyboardAvoidingView` should wrap only the minimum subtree needed — wrapping the whole screen is expensive.
+- `useEffect` with an empty dep array running on every mount is fine; one that runs on every render (missing deps) is not — audit for missing dependency warnings.
+
+**Measurement:**
+- Any screen touched in this cleanup pass that has obvious perf cost (many list items, multiple API calls on mount, complex animation) should have a comment documenting the target frame rate or render budget.
+- If a component is memoized but the profiler still shows re-renders, the memo is lying — check for prop identity issues (new object/array/function every render).
+
+Do NOT optimize prematurely. Only flag and fix where:
+- The code is on a user-facing hot path (transaction list, dashboard, drag/drop interactions)
+- The cost is concrete (re-render cascade measured or obvious from code shape, >1MB bundle impact, >16ms frame on scroll)
+- The fix is low-risk and doesn't rearchitect the component
 
 ---
 
@@ -95,6 +166,7 @@ Work through each section in order. For every issue found, fix it — don't just
 - Minimum 44x44pt touch targets — audit filter pills, tab items, small buttons
 - Loading states: `accessibilityLiveRegion="polite"` on containers that update asynchronously
 - Transaction rows: announce merchant, amount, date, and category as a single accessible unit
+- Screen reader order for transaction rows must be deterministic: merchant, then amount, then date, then category. Don't let layout changes reshuffle the a11y tree as a side effect.
 
 ### 9. State Management
 - Context value objects must be wrapped in `useMemo` to prevent unnecessary consumer re-renders
@@ -111,6 +183,7 @@ Work through each section in order. For every issue found, fix it — don't just
 - Web-only code (HTML5 drag/drop) must not load on native
 - `ScrollView` `contentContainerStyle` flexGrow differs between web and native
 - Use `Platform.select()` for platform-specific workarounds, not runtime `if (Platform.OS)` checks
+- `localStorage` / `sessionStorage` on web are for non-sensitive UI preferences only (theme, sidebar collapsed, last-viewed filter). Never store tokens, user data, transaction data, Stripe customer IDs, or anything that would leak cross-user on a shared device. Grep `localStorage.setItem` under `frontend/` and flag any call that stores non-trivial data.
 
 ### 11. Animation Performance
 - `Animated` API: use `useNativeDriver: true` where possible (transform, opacity — not layout props)
@@ -135,7 +208,7 @@ Work through each section in order. For every issue found, fix it — don't just
 ### 13. Type & Interface Cleanup
 - All shared interfaces → `src/types/` (one file per domain). Never in feature folders.
 - Single-use types stay in the component file
-- Prefer `interface` over `type`. Remove unused type imports.
+- Prefer `interface` over `type` for object shapes. Use `type` for unions, intersections, and mapped types where `interface` doesn't apply. Remove unused type imports.
 
 ### 14. Hook Hygiene
 - One responsibility per hook
@@ -163,14 +236,14 @@ Work through each section in order. For every issue found, fix it — don't just
 
 1. **Identify scope** — determine which frontend files to review
 2. **Read each file** — understand before changing
-3. **Fix by priority** — P0 first (financial correctness, memory leaks, sensitive data), then P1, P2, P3
+3. **Fix by priority** — P0 first (financial correctness, memory leaks, security sanity, entitlement integrity), then P1, P2, P3
 4. **Verify after extraction** — grep for old import paths and update them
 5. **Summarize changes** — brief summary organized by priority level of what was found and fixed
 
 ## Rules
 
 - Follow existing codebase patterns — don't invent new structures
-- Don't add features, docstrings, or type annotations to code you didn't change
+- Don't add features, docstrings, or type annotations to code you didn't change, UNLESS the addition is trivial (one line, no behavior change) and directly adjacent to code you're already editing
 - Comments explain WHY, not WHAT
 - Prefer readable functions with clear names over clever one-liners
 - When extracting, update all import paths across the codebase
