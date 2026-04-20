@@ -43,10 +43,11 @@ export default function CategoryAccordion({
     const match = data.categories.find((c) => c.name === initialOpenCategory);
     if (match) {
       hasAutoOpened.current = true;
-      requestAnimationFrame(() => {
+      const raf = requestAnimationFrame(() => {
         toggle(match.name);
         onInitialOpenConsumed?.(rowRefs.current.get(match.name) ?? null);
       });
+      return () => cancelAnimationFrame(raf);
     }
   }, [initialOpenCategory, data.categories, isRefund, toggle, onInitialOpenConsumed]);
 

@@ -77,6 +77,7 @@ export default function SpendingSummary({
   const handleInitialOpenConsumed = useCallback((rowRef: View | null) => {
     onInitialOpenConsumed?.();
     const target = rowRef ?? categorySectionRef.current;
+    if (scrollTimerRef.current !== null) clearTimeout(scrollTimerRef.current);
     scrollTimerRef.current = setTimeout(() => {
       scrollTimerRef.current = null;
       if (target) {
