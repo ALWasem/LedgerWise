@@ -5,8 +5,13 @@
 Full-stack fintech app connecting to real bank accounts for transaction viewing, balances, and spending analysis. React Native Web frontend (Expo) + FastAPI backend + Supabase (PostgreSQL). Targets friends & family initially (5–50 users), designed to scale.
 
 **Current state:**
-- Plaid bank linking, transaction list, spending summary, analytics ��� working on web + iOS (Expo Go)
+- Plaid bank linking, transaction list, spending summary, analytics — working on web + iOS (Expo Go)
+- Multi-account management (add/remove linked bank accounts, account cards with balances)
 - Transaction categorization with drag & drop (HTML5 on web, gesture-based on mobile)
+- Custom category CRUD (create, rename, recolor, delete with transaction reassignment)
+- Merchant rules — batch-apply categories to all transactions sharing the same merchant
+- Stripe billing integration — Pro/Free tiers, checkout sessions, webhook-driven subscription lifecycle
+- Pro feature gating via `UpgradeContext` + `ProLockOverlay`
 - Google OAuth via Supabase Auth (web redirect flow + native `expo-auth-session` + `signInWithIdToken`)
 - Database: SQLAlchemy + Alembic + Supabase PostgreSQL, auth middleware with user-scoped queries
 - Expo Router file-based routing — sidebar nav (web), bottom tabs (mobile)
@@ -17,12 +22,12 @@ Full-stack fintech app connecting to real bank accounts for transaction viewing,
 
 ## Development Phases
 
-### Phase 1 — Web App (CURRENT)
-**Done:** Bank linking + transaction list (1.0) → spending summary + feature modules (1.5) → Google OAuth + JWT auth + user-scoped queries (1.75) → Expo Router + dashboard layout + time period selector (1.9) ��� TransactionDataContext + overview page + Railway deploy + security headers (1.95) → analytics page + dark mode + theme system + ErrorBoundary + accessibility + frontend cleanup (1.96) → categorize page with drag & drop (web HTML5 + mobile gesture-based), optimistic updates, PATCH endpoint (1.97) → Plaid Connect v1.0 (2.0).
-**Next (Iteration 2):** Native session persistence (AsyncStorage), push notifications.
+### Phase 1 — Web App (COMPLETE)
+Full web app with all current features shipped. See git history for details.
 
-### Phase 2 — Mobile (FUTURE)
-Build iOS app from same Expo codebase via EAS Build. Push notifications, biometric auth, widgets. Evaluate Android.
+### Phase 2 — Mobile (CURRENT)
+Building iOS app from same Expo codebase via EAS Build. EAS config in place (dev, preview, production profiles). Mobile gesture-based categorization already working. Native Google OAuth via `expo-auth-session` + `signInWithIdToken`.
+**Next:** Native session persistence (AsyncStorage), push notifications, biometric auth. Evaluate Android.
 
 ### Phase 3 — Scale (FUTURE)
 Celery + Redis for background jobs. Cloudflare for caching + DDoS. Supabase Pro if DB >500MB. Push notifications via Expo/FCM.
@@ -86,168 +91,56 @@ These rules apply to all new code and refactors.
 - Follow existing codebase patterns. Don't invent new structures.
 - Comments explain **why**, not **what**.
 
-## Tech Stack
+## Tech Stack & Architecture
 
-| Layer | Technology | Notes |
-|-------|-----------|-------|
-| Frontend | React Native + Expo SDK 54 | Web + iOS from one codebase |
-| Auth | Supabase Auth + Google OAuth | expo-auth-session on native |
-| Hosting (web) | Railway | Same platform as backend |
-| Routing | Expo Router (file-based) | `app/` directory, sidebar + bottom tabs |
-| State | React Context + custom hooks | TransactionDataContext + useDataSlice |
-| API Client | `src/api/client.ts` | All backend calls centralized |
-| Styling | StyleSheet API + theme factories | `src/styles/` (shared) + `src/features/*/styles/` |
-| Backend | FastAPI + Uvicorn | Python 3.11+, pip |
-| Hosting (API) | Railway | Free tier ($5/mo credit) |
-| Database | Supabase (PostgreSQL) | SQLAlchemy 2.0 async + Alembic |
-| Banking API | Plaid | SDK, sandbox → production |
-| Cache | Upstash Redis | **PLANNED** — cache-aside pattern |
-| File Storage | Cloudflare R2 | **PLANNED** — receipts, exports |
-
-Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React Native + Expo SDK 54 (web + iOS from one codebase) |
+| Backend | FastAPI + Uvicorn (Python 3.11+) |
+| Database | Supabase PostgreSQL + SQLAlchemy 2.0 async + Alembic |
+| Auth | Supabase Auth + Google OAuth (expo-auth-session on native) |
+| Banking | Plaid SDK (sandbox → production, read-only) |
+| Billing | Stripe (subscriptions, checkout sessions, webhooks) |
+| Hosting | Railway (backend + frontend, auto-deploy on push to `main`) |
+| Planned | Upstash Redis (cache-aside), Cloudflare R2 (file storage) |
 
 ## Project Structure
 
 ```
 /
 ├── CLAUDE.md
-├── Makefile                      make backend, make frontend, make install
+├── Makefile
 ├── backend/
 │   ├── app/
-│   │   ├── main.py               FastAPI app, CORS, security headers, middleware stack
-│   │   ├── config.py             pydantic-settings env config
-│   │   ├── dependencies.py       Async SQLAlchemy engine + get_db
-│   │   ├── middleware/
-│   │   │   ├── auth.py           JWKS-based JWT validation (Supabase) + issuer check
-│   │   │   └── rate_limit.py     In-memory sliding-window rate limiter
-│   │   ├── models/               User, Account, Transaction (SQLAlchemy)
-│   │   ├── schemas/              spending.py, transaction.py (Pydantic)
-│   │   ├── routers/
-│   │   │   ├── banking.py        GET /accounts, GET /transactions, PATCH /transactions/{id}/category
-│   │   │   ├── plaid.py          POST /create-link-token, POST /exchange-token, POST /sync, POST /backfill, GET /items, POST /webhook
-│   │   │   └── spending.py       GET /spending/summary
-│   │   ├── services/
-│   │   │   ├── banking.py        Provider-agnostic account/transaction queries
-│   │   │   ├── plaid.py          Plaid API integration + DB persistence
-│   │   │   └── spending.py       Spending summary aggregation
-│   │   └── utils/
-│   │       ├── encryption.py     AES-GCM encrypt/decrypt for Plaid tokens
-│   │       └── logging.py        Structured audit logging (auth, data access, enrollment)
-│   ├── alembic/                  Database migrations
-│   ├── certs/                    (legacy, gitignored)
+│   │   ├── main.py, config.py, dependencies.py
+│   │   ├── middleware/       # auth.py (JWKS JWT), rate_limit.py
+│   │   ├── models/           # SQLAlchemy tables (user, account, transaction, plaid_item, category, merchant_rule)
+│   │   ├── schemas/          # Pydantic validation (one file per domain)
+│   │   ├── routers/          # HTTP endpoints (banking, plaid, spending, category, merchant_rule, billing)
+│   │   ├── services/         # Business logic (one per router)
+│   │   └── utils/            # encryption, logging, validation
+│   ├── scripts/              # Admin CLI (grant_pro, revoke_pro, backfills, remove items)
+│   ├── alembic/              # Database migrations
 │   └── requirements.txt
 ├── frontend/
-│   ├── app/                      Expo Router screens (file-based routing)
-│   │   ├── _layout.tsx           Root layout (ErrorBoundary + SafeAreaProvider + providers)
-│   │   ├── index.tsx             Auth gate (redirects to login or dashboard)
-│   │   ├── login.tsx             Login screen
-│   │   └── dashboard/
-│   │       ├── _layout.tsx       Dashboard layout (sidebar on web, bottom tabs on mobile)
-│   │       ├── index.tsx         Redirects to /dashboard/spending
-│   │       ├── overview.tsx      Overview page (stats, alerts)
-│   │       ├── spending.tsx      Spending page (time period, summary)
-│   │       ├── analytics.tsx     Analytics page (bar chart, category filters, stats)
-│   │       ├── categorize.tsx    Categorize page (drag & drop transaction categorization)
-│   │       └── settings.tsx      Settings page (placeholder)
+│   ├── eas.json              # EAS Build profiles (dev, preview, production)
+│   ├── app/                  # Expo Router screens (file-based routing)
+│   │   ├── _layout.tsx       # Root layout (ErrorBoundary + providers)
+│   │   ├── index.tsx, login.tsx, oauth-redirect.tsx
+│   │   └── dashboard/        # spending, analytics, categorize, accounts, settings
 │   └── src/
-│       ├── api/
-│       │   ├── client.ts         Centralized API client with in-memory cache (5-min TTL)
-│       │   └── supabase.ts       Supabase client (createClient)
-│       ├── components/           Shared UI components
-│       │   ├── AccordionReveal.tsx
-│       │   ├── ErrorBoundary.tsx  App-wide error boundary (class component)
-│       │   ├── LoginScreen.tsx
-│       │   ├── StaggeredView.tsx
-│       │   ├── StatCard.tsx
-│       │   ├── PlaidModal.tsx
-│       │   ├── ThemeToggle.tsx
-│       │   ├── TimePeriodSelector.tsx
-│       │   └── icons/            LedgerWiseLogo, GoogleIcon
-│       ├── contexts/
-│       │   ├── AuthContext.tsx    Google OAuth + Supabase session management
-│       │   ├── ThemeContext.tsx   Dark/light mode provider + useColors hook
-│       │   └── TransactionDataContext.tsx  Data fetching + client-side filtering
-│       ├── features/
-│       │   ├── analytics/        Analytics feature module
-│       │   │   ├── Analytics.tsx         Screen-level component
-│       │   │   ├── useAnalyticsData.ts   Data hook (aggregation, filtering)
-│       │   │   ├── index.ts              Barrel export
-│       │   │   ├── components/
-│       │   │   │   ├── BarChart.tsx       Monthly spending trend chart
-│       │   │   │   ├── CategoryFilterPills.tsx
-│       │   │   │   └── SummaryStatsRow.tsx
-│       │   │   ├── styles/
-│       │   │   │   └── analytics.styles.ts
-│       │   │   └── utils/
-│       │   │       └── analyticsAggregation.ts
-│       │   ├── categorize/       Categorize feature module
-│       │   │   ├── Categorize.tsx        Screen-level component (desktop 2-panel + mobile)
-│       │   │   ├── useCategorizeData.ts  Data hook (uncategorized txns, categories, assignment)
-│       │   │   ├── useCategorizeDrag.ts  Mobile drag gesture + crossfade animations
-│       │   │   ├── useDragSource.ts      HTML5 drag source hook (web)
-│       │   │   ├── useDropTarget.ts      HTML5 drop target hook (web)
-│       │   │   ├── index.ts              Barrel export
-│       │   │   ├── components/
-│       │   │   │   ├── TransactionRow.tsx       Draggable transaction (web)
-│       │   │   │   ├── CategoryTarget.tsx       Drop target category card (web)
-│       │   │   │   ├── ProgressHeader.tsx       Linear progress bar
-│       │   │   │   ├── ProgressRing.tsx         SVG circular progress indicator
-│       │   │   │   ├── MobileCategorizeList.tsx Mobile main view + toast
-│       │   │   │   ├── MobileDraggableRow.tsx   Long-press + pan gesture row (mobile)
-│       │   │   │   └── CategoryGridOverlay.tsx  Category grid + cancel zone (mobile)
-│       │   │   │   └── CategoryTile.tsx         Animated tile in mobile grid
-│       │   │   ├── styles/
-│       │   │   │   ├── categorize.styles.ts     Desktop styles
-│       │   │   │   └── mobileCategorize.styles.ts Mobile styles
-│       │   │   └── utils/
-│       │   │       ├── normalizeCategory.ts     Category name formatting
-│       │   │       ├── dragState.ts             Module-level drag state (web)
-│       │   │       └── dragGhost.ts             HTML5 drag ghost image builder
-│       │   └── spending/         Spending feature module
-│       │       ├── SpendingSummary.tsx    Screen-level component
-│       │       ├── useAccordionHeight.ts
-│       │       ├── index.ts              Barrel export
-│       │       ├── components/
-│       │       │   ├── CategoryAccordion.tsx
-│       │       │   └── ProportionBar.tsx
-│       │       ├── styles/
-│       │       │   ├── spending.styles.ts
-│       │       │   └── spendingScreen.styles.ts
-│       │       └── utils/
-│       │           ├── categoryRanking.ts
-│       │           └── spendingSummary.ts  computeSpendingSummary + re-exports from transactionFilters
-│       ├── hooks/
-│       │   └── useThemeStyles.ts   Theme-aware StyleSheet factory hook
-│       ├── styles/               Shared/layout StyleSheet files
-│       │   ├── auth.styles.ts
-│       │   ├── authGate.styles.ts
-│       │   ├── dashboardLayout.styles.ts
-│       │   ├── overview.styles.ts
-│       │   ├── placeholder.styles.ts
-│       │   ├── shared.styles.ts
-│       │   ├── statCard.styles.ts
-│       │   ├── plaidModal.styles.ts
-│       │   └── timePeriod.styles.ts
-│       ├── theme/                Design tokens
-│       │   ├── colors.ts         Light mode palette
-│       │   ├── darkColors.ts     Dark mode palette
-│       │   ├── spacing.ts
-│       │   ├── typography.ts
-│       │   ├── shadows.ts
-│       │   └── index.ts          Barrel export
-│       ├── types/                Shared TypeScript interfaces (one file per domain)
-│       │   ├── account.ts
-│       │   ├── analytics.ts
-│       │   ├── categorize.ts
-│       │   ├── spending.ts
-│       │   └── transaction.ts
-│       └── utils/                Shared utilities
-│           ├── categoryColors.ts
-│           ├── formatters.ts     Currency + date formatting helpers
-│           ├── pressable.ts      Platform-safe hover state helper
-│           ├── responsive.ts     Screen width breakpoint utilities
-│           └── transactionFilters.ts  isSpending, isRefund, isPayment (shared across features)
+│       ├── api/              # API client + Supabase client
+│       ├── components/       # Shared UI components
+│       ├── contexts/         # Auth, Theme, TransactionData, Upgrade
+│       ├── features/         # accounts, analytics, billing, categorize, spending
+│       ├── hooks/            # Shared hooks (usePlaidLink, useThemeStyles)
+│       ├── styles/           # Shared/layout StyleSheets
+│       ├── theme/            # Design tokens (colors, spacing, typography, shadows)
+│       ├── types/            # Shared TypeScript interfaces (one file per domain)
+│       └── utils/            # Shared utilities
 ```
+
+Explore individual files with `Glob` and `Read` — the tree above shows organization, not exhaustive contents.
 
 ## Key Architecture Decisions
 
@@ -264,6 +157,10 @@ Backend is platform-agnostic (JSON over HTTPS) — no changes needed for mobile.
 11. **Theme system** — `ThemeContext` provides `isDark`, `toggleTheme`, and `colors`. Style files export factory functions (`createXStyles(colors)`) consumed by `useThemeStyles()` hook, which re-creates styles when theme changes. Design tokens (colors, spacing, typography, shadows) live in `src/theme/`.
 12. **Dual drag & drop for categorize** — Web uses native HTML5 drag/drop via `useDragSource`/`useDropTarget` hooks (bypasses RNW's synthetic events; module-level `dragState.ts` avoids unreliable `dataTransfer`). Mobile uses `react-native-gesture-handler` (LongPress + Pan) with `react-native-reanimated` shared values for UI-thread position tracking. Hit testing uses refs (not state) on every pan frame to avoid excessive re-renders. Crossfade animation transitions between transaction list and category grid during drag.
 13. **Optimistic categorization** — `useCategorizeData` maintains a local `reassigned` Map for instant UI feedback. On success, `updateTransactionLocally()` updates the global `TransactionDataContext`. On failure, the optimistic entry is reverted from the Map.
+14. **Custom categories** — Users can create, rename, recolor, and delete custom categories. Deleting a category prompts for reassignment of its transactions. Backend CRUD via `category` router/service with user-scoped queries.
+15. **Merchant rules** — When categorizing a transaction, users can apply the same category to all transactions from that merchant. Backend previews match count before batch-applying. Rules stored in `merchant_rule` model.
+16. **Stripe billing** — Pro/Free tier system. `billing` router handles Stripe Checkout session creation and webhook events (subscription.created, subscription.deleted). User model tracks `stripe_customer_id`. Frontend uses `UpgradeContext` for tier state and `ProLockOverlay` to gate Pro features.
+17. **EAS Build** — `eas.json` configures development, preview, and production build profiles for iOS via Expo Application Services.
 
 ## Environment Variables
 
@@ -279,6 +176,11 @@ PLAID_SECRET=
 PLAID_ENV=sandbox
 PLAID_REDIRECT_URI=
 PLAID_WEBHOOK_URL=
+
+STRIPE_SECRET_KEY=           # Stripe secret key
+STRIPE_WEBHOOK_SECRET=       # Stripe webhook signing secret
+STRIPE_PRICE_ID_MONTHLY=     # Stripe price ID for monthly plan
+STRIPE_PRICE_ID_YEARLY=      # Stripe price ID for yearly plan
 
 ENCRYPTION_KEY=        # AES-256-GCM key (64 hex chars) — encrypts Plaid tokens at rest
 ```
@@ -316,8 +218,13 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=    # Google Cloud Console → iOS OAuth client
 
 ```bash
 make install       # Install all dependencies
-make backend       # Start FastAPI (auto-creates venv)
-make frontend      # Start Expo
+make backend       # Start FastAPI (auto-creates venv, auto-detects LAN IP for CORS)
+make frontend      # Start Expo (auto-detects LAN IP for API URL)
+make migrate       # Run Alembic migrations (alembic upgrade head)
+
+# Admin
+make grant-pro EMAIL=user@example.com    # Grant pro status
+make revoke-pro EMAIL=user@example.com   # Revoke pro status
 
 # Manual alternatives
 cd backend && uvicorn app.main:app --reload --port 8000 --host 0.0.0.0
@@ -331,7 +238,13 @@ cd backend && alembic revision --autogenerate -m "description"
 # After editing .env, restart with: npx expo start --web --clear
 ```
 
-**Deploy:** Push to `main` → Railway auto-deploys both backend and frontend services.
+### Deployment
+- Push to `main` → Railway auto-deploys both backend and frontend services.
+- **No staging environment** — `main` is production. Test locally before merging.
+- Never push directly to `main` with untested changes. Use feature branches + PRs.
+- After deploy, verify the app loads and core flows work (login, transaction list, spending summary).
+- Database migrations run manually (`make migrate`) — they are **not** auto-applied on deploy. Run migrations before deploying code that depends on schema changes.
+- If a deploy breaks production, revert the commit on `main` — Railway will auto-redeploy the previous state.
 
 ## Security & Compliance
 
@@ -346,15 +259,17 @@ This is a **financial application** with access to real bank accounts. Security 
 ### Implemented Security Controls
 - **Plaid tokens encrypted at rest** — AES-256-GCM (`app/utils/encryption.py`). Key in `ENCRYPTION_KEY` env var. Tokens are encrypted before DB storage and decrypted only when needed for Plaid API calls.
 - **HTTPS only** — enforced by Railway in production.
-- **CORS restricted** — only known frontend origins, explicit methods (`GET`, `POST`, `OPTIONS`), explicit headers (`Authorization`, `Content-Type`).
-- **JWT validation** — JWKS-based (`middleware/auth.py`), validates signature, audience, expiration, and **issuer** (must match Supabase project URL). Guards all banking + spending routes.
+- **CORS restricted** — only known frontend origins, explicit methods (`GET`, `POST`, `PATCH`, `DELETE`, `OPTIONS`), explicit headers (`Authorization`, `Content-Type`).
+- **JWT validation** — JWKS-based (`middleware/auth.py`), validates signature, audience, expiration, and **issuer** (must match Supabase project URL). Guards all banking, spending, category, and merchant-rule routes.
 - **User-scoped queries** — all data endpoints filter by authenticated `user_id`. No cross-user data access.
-- **Rate limiting** — in-memory sliding-window (`middleware/rate_limit.py`). 60 req/min global per IP, 5 req/min on sensitive endpoints (`/enroll`).
+- **Rate limiting** — in-memory sliding-window (`middleware/rate_limit.py`). 60 req/min global per IP, 5 req/min on sensitive endpoints (plaid, billing, merchant-rules), 30 req/min on data endpoints (accounts, transactions, spending, categories).
 - **Input validation** — Pydantic schemas with strict validators. `TokenRequest` validates token format, length, and allowed characters.
 - **Generic error responses** — internal exceptions are logged server-side but never exposed to clients. All user-facing errors return safe, generic messages.
 - **Audit logging** — structured logs (`utils/logging.py`) for: auth success/failure with IP, data access by user, enrollment events, request method/path/status/duration. Sensitive values (tokens, passwords) are **never** logged.
 - **Plaid webhook verification** — JWT signature verification with body hash matching for incoming Plaid webhooks.
+- **Stripe webhook verification** — signature verification via Stripe SDK for incoming billing webhooks.
 - **Google OAuth client IDs are public** — they are not secrets (validated server-side by Google).
+- **Stripe config validation** — startup fails fast if Stripe env vars are partially configured (all four required when any one is set).
 
 ### Security Rules for All Code Changes
 1. **Never log or expose Plaid access tokens** — they grant direct bank access.
