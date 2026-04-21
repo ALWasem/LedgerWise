@@ -42,9 +42,10 @@ async def get_my_accounts(
             balance_limit=str(acct.balance_limit) if acct.balance_limit is not None else None,
             item_id=acct.item_id,
             persistent_account_id=acct.persistent_account_id,
+            last_synced_at=last_synced_at,
             created_at=acct.created_at,
         )
-        for acct in accounts
+        for acct, last_synced_at in accounts
     ]
 
 

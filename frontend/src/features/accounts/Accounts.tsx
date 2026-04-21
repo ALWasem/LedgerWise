@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useUpgrade } from '../../contexts/UpgradeContext';
 import { useColors } from '../../contexts/ThemeContext';
 import { usePlaidLink } from '../../hooks/usePlaidLink';
-import { backfillPlaidTransactions } from '../../api/client';
+import { syncPlaidItem } from '../../api/client';
 import type { Account } from '../../types/account';
 import StaggeredView from '../../components/StaggeredView';
 import AccountCard from './components/AccountCard';
@@ -39,21 +39,22 @@ export default function Accounts() {
   const handleRequestRemove = useCallback((account: Account) => {
     setAccountToRemove(account);
   }, []);
+  const handleCloseRemoveDialog = useCallback(() => setAccountToRemove(null), []);
   const [linkError, setLinkError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
+  const [syncingItemId, setSyncingItemId] = useState<string | null>(null);
 
-  const handleSync = useCallback(async () => {
-    if (!token || syncing) return;
-    setSyncing(true);
+  const handleSync = useCallback(async (itemId: string) => {
+    if (!token || syncingItemId) return;
+    setSyncingItemId(itemId);
     try {
-      await backfillPlaidTransactions(token);
+      await syncPlaidItem(token, itemId);
       refresh();
     } catch {
-      // Sync failure is non-critical — user can retry
+      setLinkError('Sync failed — please try again.');
     } finally {
-      setSyncing(false);
+      setSyncingItemId(null);
     }
-  }, [token, syncing, refresh]);
+  }, [token, syncingItemId, refresh]);
 
   const { openPlaidLink, linkLoading, enrolling, mobileLinkToken, handleMobileSuccess, handleMobileExit } = usePlaidLink(
     token,
@@ -142,7 +143,7 @@ export default function Accounts() {
                     account={item.account}
                     onRemove={handleRequestRemove}
                     onSync={handleSync}
-                    syncing={syncing}
+                    syncing={syncingItemId === item.account.item_id}
                   />
                 </View>
               ) : (
@@ -175,7 +176,7 @@ export default function Accounts() {
       {accountToRemove && (
         <RemoveAccountDialog
           account={accountToRemove}
-          onClose={() => setAccountToRemove(null)}
+          onClose={handleCloseRemoveDialog}
         />
       )}
 

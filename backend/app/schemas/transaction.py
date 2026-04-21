@@ -51,6 +51,7 @@ class AccountResponse(BaseModel):
     balance_limit: str | None = None
     item_id: str | None = None
     persistent_account_id: str | None = None
+    last_synced_at: datetime | None = None
     created_at: datetime | None = None
 
 

@@ -167,6 +167,16 @@ export async function syncPlaidTransactions(token: string): Promise<{ synced: nu
   return data;
 }
 
+export async function syncPlaidItem(token: string, itemId: string): Promise<{ synced: number }> {
+  const res = await fetch(`${API_URL}/api/v1/plaid/sync/${encodeURIComponent(itemId)}`, {
+    method: 'POST',
+    headers: authHeaders(token),
+  });
+  const data = await handleResponse<{ synced: number }>(res);
+  clearApiCache();
+  return data;
+}
+
 export async function backfillPlaidTransactions(token: string): Promise<{ fetched: number }> {
   const res = await fetch(`${API_URL}/api/v1/plaid/backfill`, {
     method: 'POST',

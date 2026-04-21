@@ -7,18 +7,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.models import Account, Transaction
+from app.models.plaid_item import PlaidItem
 from app.schemas import TransactionResponse
 
 
 async def get_user_accounts(
     db: AsyncSession, user_id: str, account_type: str | None = None
-) -> list[Account]:
-    """Fetch all accounts belonging to a user, optionally filtered by type."""
-    stmt = select(Account).where(Account.user_id == user_id)
+) -> list[tuple[Account, "datetime | None"]]:
+    """Fetch all accounts belonging to a user with last_synced_at from PlaidItem."""
+    stmt = (
+        select(Account, PlaidItem.last_synced_at)
+        .outerjoin(PlaidItem, Account.item_id == PlaidItem.item_id)
+        .where(Account.user_id == user_id)
+    )
     if account_type:
         stmt = stmt.where(Account.account_type == account_type)
     result = await db.execute(stmt)
-    return list(result.scalars().all())
+    return list(result.all())
 
 
 async def get_user_transactions(

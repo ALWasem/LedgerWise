@@ -428,6 +428,21 @@ async def get_user_plaid_items(db: AsyncSession, user_id: str) -> list[PlaidItem
     return list(result.scalars().all())
 
 
+async def sync_single_item(db: AsyncSession, user_id: str, item_id: str) -> int:
+    """Sync transactions for a single Plaid item belonging to the user."""
+    stmt = select(PlaidItem).where(
+        PlaidItem.item_id == item_id, PlaidItem.user_id == user_id
+    )
+    result = await db.execute(stmt)
+    item = result.scalar_one_or_none()
+    if item is None:
+        raise ValueError(f"Plaid item {item_id} not found for user")
+    access_token = decrypt(item.access_token)
+    synced = await sync_transactions(db, user_id, item.item_id, access_token)
+    await db.commit()
+    return synced
+
+
 async def sync_all_items(db: AsyncSession, user_id: str) -> int:
     """Sync transactions for all of a user's Plaid items."""
     items = await get_user_plaid_items(db, user_id)

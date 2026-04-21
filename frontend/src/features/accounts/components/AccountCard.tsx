@@ -7,12 +7,12 @@ import { useThemeStyles } from '../../../hooks/useThemeStyles';
 import { createAccountsStyles } from '../styles/accounts.styles';
 import { isHovered } from '../../../utils/pressable';
 import type { Account } from '../../../types/account';
-import { getAccountTypeLabel, getAccountTypeIcon, formatConnectedDate } from '../utils/accountHelpers';
+import { getAccountTypeLabel, getAccountTypeIcon, formatLastSynced } from '../utils/accountHelpers';
 
 interface Props {
   account: Account;
   onRemove: (account: Account) => void;
-  onSync: () => void;
+  onSync: (itemId: string) => void;
   syncing?: boolean;
 }
 
@@ -26,6 +26,9 @@ function AccountCard({ account, onRemove, onSync, syncing = false }: Props) {
   const handleMouseEnter = useCallback(() => setCardHovered(true), []);
   const handleMouseLeave = useCallback(() => setCardHovered(false), []);
   const handleRemove = useCallback(() => onRemove(account), [onRemove, account]);
+  const handleSync = useCallback(() => {
+    if (account.item_id) onSync(account.item_id);
+  }, [onSync, account.item_id]);
 
   const webHoverProps = isWeb
     ? { onMouseEnter: handleMouseEnter, onMouseLeave: handleMouseLeave }
@@ -33,7 +36,7 @@ function AccountCard({ account, onRemove, onSync, syncing = false }: Props) {
 
   const iconName = getAccountTypeIcon(account.account_type) as keyof typeof Ionicons.glyphMap;
   const displayName = account.institution_name ?? account.account_name ?? 'Unknown Account';
-  const connectedDate = formatConnectedDate(account.created_at);
+  const lastSynced = formatLastSynced(account.last_synced_at);
   // On mobile, always show the trash icon since there's no hover
   const showRemoveButton = !isWeb || cardHovered;
 
@@ -66,7 +69,7 @@ function AccountCard({ account, onRemove, onSync, syncing = false }: Props) {
                 showRemoveButton && styles.syncButtonVisible,
                 (isHovered(state) || state.pressed) && styles.syncButtonHovered,
               ]}
-              onPress={onSync}
+              onPress={handleSync}
               disabled={syncing}
               accessibilityRole="button"
               accessibilityLabel={`Sync ${displayName} transactions`}
@@ -99,12 +102,10 @@ function AccountCard({ account, onRemove, onSync, syncing = false }: Props) {
             <Text style={styles.statusTextConnected}>Connected</Text>
           </View>
 
-          {connectedDate !== '' && (
-            <View style={styles.connectedDate}>
-              <Ionicons name="calendar-outline" size={14} color={colors.text.tertiary} />
-              <Text style={styles.connectedDateText}>{connectedDate}</Text>
-            </View>
-          )}
+          <View style={styles.connectedDate}>
+            <Ionicons name="calendar-outline" size={14} color={colors.text.tertiary} />
+            <Text style={styles.connectedDateText}>{lastSynced}</Text>
+          </View>
         </View>
       </View>
     </View>

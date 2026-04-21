@@ -9,6 +9,7 @@ export interface Account {
   balance_limit: string | null;
   item_id: string | null;
   persistent_account_id: string | null;
+  last_synced_at: string | null;
   created_at: string | null;
 }
 

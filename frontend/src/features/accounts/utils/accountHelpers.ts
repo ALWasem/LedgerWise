@@ -18,8 +18,8 @@ export function getAccountTypeIcon(type: string | null): string {
   }
 }
 
-export function formatConnectedDate(dateString: string | null): string {
-  if (!dateString) return '';
+export function formatLastSynced(dateString: string | null): string {
+  if (!dateString) return 'Never synced';
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {
     month: 'short',

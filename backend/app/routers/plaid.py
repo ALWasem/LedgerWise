@@ -115,6 +115,27 @@ async def sync_transactions(
     return SyncResponse(synced=total)
 
 
+@router.post("/sync/{item_id}", response_model=SyncResponse)
+async def sync_item_transactions(
+    item_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> SyncResponse:
+    """Re-sync transactions for a single Plaid item."""
+    log_data_access(user_id, f"plaid_sync_item:{item_id}")
+    try:
+        total = await plaid_service.sync_single_item(db, user_id, item_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Linked account not found.")
+    except Exception:
+        logger.error(
+            "Unexpected error during item sync for user=%s item=%s",
+            user_id, item_id, exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Transaction sync failed.")
+    return SyncResponse(synced=total)
+
+
 @router.post("/backfill", response_model=BackfillResponse)
 async def backfill_transactions(
     user_id: str = Depends(get_current_user_id),
