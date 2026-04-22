@@ -146,4 +146,59 @@ export const createCategoryBottomSheetStyles = (deps: StyleDeps) => StyleSheet.c
     fontWeight: '600',
     color: deps.colors.semantic.error,
   },
+
+  // --- Delete confirmation ---
+  deleteConfirmContainer: {
+    gap: 12,
+  },
+  deleteWarningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: deps.colors.isDark ? 'rgba(251, 191, 36, 0.1)' : 'rgba(245, 158, 11, 0.08)',
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  deleteWarningText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 13,
+    fontWeight: '500',
+    color: deps.colors.text.secondary,
+    flex: 1,
+  },
+  deleteConfirmRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  deleteConfirmCancel: {
+    flex: 1,
+    backgroundColor: deps.colors.surface.bg,
+    borderWidth: 1,
+    borderColor: deps.colors.border.default,
+    borderRadius: radius.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteConfirmCancelText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14,
+    fontWeight: '600',
+    color: deps.colors.text.primary,
+  },
+  deleteConfirmButton: {
+    flex: 1,
+    backgroundColor: deps.colors.semantic.error,
+    borderRadius: radius.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteConfirmButtonText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
 });

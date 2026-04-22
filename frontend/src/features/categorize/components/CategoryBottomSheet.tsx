@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Keyboard, Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '../../../contexts/ThemeContext';
@@ -12,6 +12,7 @@ interface Props {
   onClose: () => void;
   onSave: (name: string, colorId: number) => Promise<void>;
   onDelete?: () => Promise<void>;
+  deleteTransactionCount?: number;
   initialName?: string;
   initialColorId?: number;
   existingNames: string[];
@@ -23,6 +24,7 @@ function CategoryBottomSheet({
   onClose,
   onSave,
   onDelete,
+  deleteTransactionCount = 0,
   initialName,
   initialColorId,
   existingNames,
@@ -34,6 +36,7 @@ function CategoryBottomSheet({
   const [colorId, setColorId] = useState(1);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
@@ -45,6 +48,7 @@ function CategoryBottomSheet({
       setError('');
       setSaving(false);
       setDeleting(false);
+      setConfirmingDelete(false);
     }
   }, [visible, initialName, initialColorId, takenColorIds]);
 
@@ -85,10 +89,13 @@ function CategoryBottomSheet({
   const busy = saving || deleting;
 
   // Determine which color IDs are unavailable (taken by other categories, excluding current)
-  const unavailableIds = new Set(
-    isEditing && initialColorId
-      ? takenColorIds.filter((id) => id !== initialColorId)
-      : takenColorIds,
+  const unavailableIds = useMemo(
+    () => new Set(
+      isEditing && initialColorId
+        ? takenColorIds.filter((id) => id !== initialColorId)
+        : takenColorIds,
+    ),
+    [isEditing, initialColorId, takenColorIds],
   );
 
   return (
@@ -195,21 +202,55 @@ function CategoryBottomSheet({
               )}
             </Pressable>
 
-            {/* Delete Button — edit mode only */}
-            {isEditing && onDelete && (
+            {/* Delete — edit mode only */}
+            {isEditing && onDelete && !confirmingDelete && (
               <Pressable
                 style={[styles.deleteButton, busy && styles.saveButtonDisabled]}
-                onPress={handleDelete}
+                onPress={() => setConfirmingDelete(true)}
                 disabled={busy}
                 accessibilityRole="button"
                 accessibilityLabel="Delete category"
               >
-                {deleting ? (
-                  <ActivityIndicator size="small" color={colors.semantic.error} />
-                ) : (
-                  <Text style={styles.deleteButtonText}>Delete category</Text>
-                )}
+                <Text style={styles.deleteButtonText}>Delete category</Text>
               </Pressable>
+            )}
+
+            {/* Delete confirmation */}
+            {confirmingDelete && onDelete && (
+              <View style={styles.deleteConfirmContainer}>
+                <View style={styles.deleteWarningBox}>
+                  <Ionicons name="warning-outline" size={18} color={colors.semantic.warning} />
+                  <Text style={styles.deleteWarningText}>
+                    {deleteTransactionCount > 0
+                      ? `${deleteTransactionCount} transaction${deleteTransactionCount !== 1 ? 's' : ''} will become uncategorized`
+                      : 'This category will be permanently deleted'}
+                  </Text>
+                </View>
+                <View style={styles.deleteConfirmRow}>
+                  <Pressable
+                    style={styles.deleteConfirmCancel}
+                    onPress={() => setConfirmingDelete(false)}
+                    disabled={deleting}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancel delete"
+                  >
+                    <Text style={styles.deleteConfirmCancelText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.deleteConfirmButton, deleting && styles.saveButtonDisabled]}
+                    onPress={handleDelete}
+                    disabled={deleting}
+                    accessibilityRole="button"
+                    accessibilityLabel="Confirm delete category"
+                  >
+                    {deleting ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.deleteConfirmButtonText}>Delete</Text>
+                    )}
+                  </Pressable>
+                </View>
+              </View>
             )}
           </View>
         </Pressable>

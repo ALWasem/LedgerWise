@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react';
-import { Platform, Text, View } from 'react-native';
+import { Keyboard, Platform, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, runOnJS, type SharedValue } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -47,6 +47,7 @@ function MobileDraggableRow({
   // Bind transaction to the start callback so the gesture worklet
   // only needs to forward coordinates via runOnJS
   const handleDragStart = useCallback((pageX: number, pageY: number) => {
+    Keyboard.dismiss();
     onDragStart(transaction, pageX, pageY);
   }, [transaction, onDragStart]);
 

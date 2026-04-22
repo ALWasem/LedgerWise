@@ -107,6 +107,43 @@ function CategoryListScreen({
 
   const keyExtractor = useCallback((item: CategoryInfo) => item.id, []);
 
+  const listFooter = useMemo(() => (
+    <Pressable
+      style={({ pressed }) => [
+        styles.newCategoryFooter,
+        pressed && styles.newCategoryFooterPressed,
+      ]}
+      onPress={handleAddPress}
+      accessibilityRole="button"
+      accessibilityLabel="Create new category"
+    >
+      {({ pressed }) => (
+        <>
+          <Ionicons
+            name="add"
+            size={20}
+            color={
+              pressed
+                ? (colors.isDark ? colors.purple[400] : colors.purple[600])
+                : colors.text.tertiary
+            }
+          />
+          <Text style={[
+            styles.newCategoryFooterText,
+            pressed && styles.newCategoryFooterTextPressed,
+          ]}>New category</Text>
+        </>
+      )}
+    </Pressable>
+  ), [styles, colors, handleAddPress]);
+
+  const listEmpty = useMemo(() => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="folder-open-outline" size={48} color={colors.text.tertiary} />
+      <Text style={styles.emptyText}>No categories yet. Tap "+ Add" to create one.</Text>
+    </View>
+  ), [styles, colors.text.tertiary]);
+
   return (
     <Modal
       visible={visible}
@@ -144,41 +181,8 @@ function CategoryListScreen({
           data={categories}
           renderItem={renderCategory}
           keyExtractor={keyExtractor}
-          ListFooterComponent={
-            <Pressable
-              style={({ pressed }) => [
-                styles.newCategoryFooter,
-                pressed && styles.newCategoryFooterPressed,
-              ]}
-              onPress={handleAddPress}
-              accessibilityRole="button"
-              accessibilityLabel="Create new category"
-            >
-              {({ pressed }) => (
-                <>
-                  <Ionicons
-                    name="add"
-                    size={20}
-                    color={
-                      pressed
-                        ? (colors.isDark ? colors.purple[400] : colors.purple[600])
-                        : colors.text.tertiary
-                    }
-                  />
-                  <Text style={[
-                    styles.newCategoryFooterText,
-                    pressed && styles.newCategoryFooterTextPressed,
-                  ]}>New category</Text>
-                </>
-              )}
-            </Pressable>
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="folder-open-outline" size={48} color={colors.text.tertiary} />
-              <Text style={styles.emptyText}>No categories yet. Tap "+ Add" to create one.</Text>
-            </View>
-          }
+          ListFooterComponent={listFooter}
+          ListEmptyComponent={listEmpty}
         />
 
         {/* Bottom Sheet for Create / Edit */}
@@ -187,6 +191,7 @@ function CategoryListScreen({
           onClose={handleSheetClose}
           onSave={handleSheetSave}
           onDelete={sheetMode === 'edit' ? handleSheetDelete : undefined}
+          deleteTransactionCount={editTarget?.transactionCount}
           initialName={editTarget?.name}
           initialColorId={editTarget?.colorId}
           existingNames={existingNames}
