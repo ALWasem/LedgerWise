@@ -49,7 +49,7 @@ _TXN_UPDATE_COLUMNS = (
     "amount", "date", "description", "category", "merchant_name",
     "status", "personal_finance_category_primary",
     "personal_finance_category_detailed", "payment_channel",
-    "pending", "authorized_date",
+    "pending", "authorized_date", "pending_transaction_id",
 )
 
 
@@ -71,6 +71,7 @@ def _build_txn_values(txn, account_db_id: uuid.UUID) -> dict[str, Any]:
         "payment_channel": txn.payment_channel if txn.payment_channel else None,
         "pending": txn.pending,
         "authorized_date": txn.authorized_date,
+        "pending_transaction_id": txn.pending_transaction_id,
     }
 
 
@@ -86,6 +87,32 @@ async def _batch_upsert_transactions(
         set_={col: getattr(stmt.excluded, col) for col in _TXN_UPDATE_COLUMNS},
     )
     await db.execute(stmt)
+
+
+async def _delete_stale_pending(
+    db: AsyncSession, values_list: list[dict]
+) -> None:
+    """Delete pending transactions superseded by their posted counterparts.
+
+    When a pending transaction posts, Plaid assigns it a new transaction_id
+    and sets ``pending_transaction_id`` to the original pending ID.  This
+    function finds all posted rows in the batch that carry a
+    ``pending_transaction_id`` and deletes the matching pending rows so
+    the user doesn't see duplicates.
+    """
+    pending_ids_to_remove: list[str] = [
+        v["pending_transaction_id"]
+        for v in values_list
+        if v.get("pending_transaction_id") and not v.get("pending")
+    ]
+    if not pending_ids_to_remove:
+        return
+    await db.execute(
+        delete(Transaction).where(
+            Transaction.plaid_transaction_id.in_(pending_ids_to_remove),
+            Transaction.pending.is_(True),
+        )
+    )
 
 
 async def create_link_token(
@@ -331,6 +358,7 @@ async def fetch_all_transactions(
             fetched_transaction_ids.append(txn.transaction_id)
 
         await _batch_upsert_transactions(db, batch_values)
+        await _delete_stale_pending(db, batch_values)
         total_fetched += len(batch_values)
 
         offset += len(response.transactions)
@@ -393,6 +421,7 @@ async def sync_transactions(
             synced_transaction_ids.append(txn.transaction_id)
 
         await _batch_upsert_transactions(db, batch_values)
+        await _delete_stale_pending(db, batch_values)
         total_synced += len(batch_values)
 
         # Handle removed transactions (bulk delete, scoped to user's accounts)

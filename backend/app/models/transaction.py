@@ -35,6 +35,7 @@ class Transaction(Base):
     payment_channel: Mapped[str | None] = mapped_column(String(20))
     pending: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
     authorized_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    pending_transaction_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Shared fields
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
